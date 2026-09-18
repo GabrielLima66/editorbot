@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.zip
+*.backup.html
+*.monolith-backup.html
+Claude outputs/
+.claude/scheduled_tasks.lock
+.claude/settings.local.json

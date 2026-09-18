@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor de Bot</title>
+<script src="vendor/lucide.umd.js"></script>
+<link rel="stylesheet" href="vendor/tailwind.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#faf9fc] min-h-screen text-[#1f1d2b]">
+
+<div class="max-w-3xl mx-auto px-6 py-14">
+
+  <header class="mb-10">
+    <p class="text-sm text-[#8b899b] mb-1">Ferramentas internas</p>
+    <h1 class="text-2xl font-semibold tracking-tight">Editor de Bot</h1>
+    <p class="text-[#6b697c] mt-2 leading-relaxed max-w-lg">
+      Crie um bot novo do zero ou carregue um JSON de bot exportado da plataforma pra editar —
+      estados, transições, condições e ações, tudo direto por aqui.
+    </p>
+  </header>
+
+  <!-- Upload -->
+  <section id="upload-section">
+    <button id="btn-criar-bot-vazio" type="button" class="w-full flex items-center justify-center gap-2 text-sm font-medium text-white bg-primary rounded-2xl px-4 py-4 transition-colors hover:opacity-90">
+      <i data-lucide="sparkles" class="w-4.5 h-4.5"></i>
+      Criar um bot novo do zero
+    </button>
+    <div class="flex items-center gap-3 my-4">
+      <div class="flex-1 h-px bg-[#e6e4ef]"></div>
+      <p class="text-xs font-medium text-[#8b899b]">ou</p>
+      <div class="flex-1 h-px bg-[#e6e4ef]"></div>
+    </div>
+    <label id="drop-zone"
+      class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[#d8d6e6] rounded-2xl h-48 cursor-pointer transition-colors hover:border-primary hover:bg-surface-2/30">
+      <input type="file" id="file-input" accept=".json" class="hidden">
+      <div class="w-11 h-11 rounded-full bg-surface-2 flex items-center justify-center">
+        <i data-lucide="upload" class="w-5 h-5 text-[#8b899b]"></i>
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-medium">Arraste o JSON do bot aqui</p>
+        <p class="text-xs text-[#8b899b] mt-1">ou clique para selecionar um arquivo</p>
+      </div>
+    </label>
+  </section>
+
+  <!-- Resumo do bot carregado -->
+  <section id="bot-summary" class="hidden">
+    <div class="flex items-center justify-between rounded-2xl border border-[#e6e4ef] bg-white px-5 py-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-surface-2 flex items-center justify-center shrink-0">
+          <i data-lucide="workflow" class="w-5 h-5 text-primary"></i>
+        </div>
+        <div class="min-w-0">
+          <p id="bot-name" class="text-sm font-medium truncate"></p>
+          <p id="bot-meta" class="text-xs text-[#8b899b]"></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="btn-troca-arquivo" class="text-sm text-[#6b697c] hover:text-[#1f1d2b] px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors">
+          Trocar arquivo
+        </button>
+        <button id="btn-ver-bot" class="flex items-center gap-2 text-sm font-medium text-[#1f1d2b] border border-[#e6e4ef] rounded-lg px-4 py-2 hover:bg-surface-2 transition-colors">
+          <i data-lucide="eye" class="w-4 h-4"></i>
+          Ver tela do bot
+        </button>
+        <button id="btn-abrir-modal" class="flex items-center gap-2 text-sm font-medium text-white bg-primary rounded-lg px-4 py-2 transition-colors">
+          <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+          Transformar
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resultado -->
+  <section id="result-section" class="hidden mt-6">
+    <div class="rounded-2xl border border-[#e6e4ef] bg-white p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-[#22c55e]"></i>
+        <p class="text-sm font-medium">Transformação aplicada</p>
+      </div>
+      <div id="result-log" class="text-sm text-[#4a4859] space-y-1 mb-4"></div>
+      <button id="btn-download" class="flex items-center gap-2 text-sm font-medium text-white bg-primary rounded-lg px-4 py-2 transition-colors">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        Baixar JSON convertido
+      </button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===================== MODAL ===================== -->
+<div id="modal-overlay" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
+  <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl flex flex-col max-h-[85vh]">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-[#e6e4ef]">
+      <div class="w-9 h-9 rounded-xl bg-surface-2 flex items-center justify-center">
+        <i data-lucide="arrow-right-left" class="w-4.5 h-4.5 text-primary"></i>
+      </div>
+      <h2 class="text-base font-semibold">Aplicar transformação</h2>
+      <button id="btn-fechar-modal" class="ml-auto text-[#8b899b] hover:text-[#1f1d2b] p-1 rounded-lg hover:bg-surface-2 transition-colors">
+        <i data-lucide="x" class="w-4.5 h-4.5"></i>
+      </button>
+    </div>
+
+    <!-- Busca -->
+    <div class="px-6 pt-5">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 text-[#8b899b] absolute left-3 top-1/2 -translate-y-1/2"></i>
+        <input id="search-input" type="text" placeholder="Buscar transformação…"
+          class="w-full text-sm pl-9 pr-3 py-2.5 rounded-lg border border-[#e6e4ef] bg-white focus:outline-none focus:ring-2 ring-primary focus:border-primary">
+      </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="px-6 pt-3">
+      <ul id="options-list" role="listbox" class="h-72 overflow-y-auto rounded-xl border border-[#e6e4ef] bg-surface-2/30 divide-y divide-[#e6e4ef]">
+        <!-- populado via JS -->
+      </ul>
+    </div>
+
+    <!-- Descrição da opção selecionada -->
+    <div id="selected-detail" class="px-6 pt-4 text-xs text-[#6b697c] leading-relaxed min-h-[2.5rem]"></div>
+
+    <!-- Footer -->
+    <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#e6e4ef] mt-2">
+      <button id="btn-cancelar" class="text-sm font-medium text-[#6b697c] hover:text-[#1f1d2b] px-4 py-2 rounded-lg hover:bg-surface-2 transition-colors">
+        Cancelar
+      </button>
+      <button id="btn-aplicar" disabled
+        class="flex items-center gap-2 text-sm font-medium text-white bg-primary rounded-lg px-4 py-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+        <span id="btn-aplicar-spinner" class="hidden w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+        <span id="btn-aplicar-label">Aplicar transformação</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== MODAL: TELA DO BOT (somente leitura) ===================== -->
+<div id="bot-view-overlay" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
+  <div class="bv-panel w-full max-w-6xl rounded-2xl shadow-xl flex flex-col max-h-[95vh]">
+
+    <div class="bv-header flex items-center gap-3 px-6 py-5 border-b shrink-0">
+      <h2 class="text-lg font-semibold">Editar Bot</h2>
+      <button id="btn-fechar-bot-view" class="bv-btn-close ml-auto text-[#8b899b] p-1 rounded-lg transition-colors">
+        <i data-lucide="x" class="w-4.5 h-4.5"></i>
+      </button>
+    </div>
+
+    <div class="bv-body flex-1 min-h-0 overflow-y-auto px-6 py-5">
+
+      <div class="bv-config-card">
+        <!-- Identificação -->
+        <div class="flex items-end gap-4 w-full">
+          <div class="flex-1 min-w-0">
+            <label class="bv-label text-xs font-medium block mb-1">Nome</label>
+            <input id="bv-nome" class="field-view font-semibold">
+          </div>
+          <div id="bv-numero-wrap" class="hidden w-[110px] shrink-0">
+            <label class="bv-label text-xs font-medium block mb-1">Número do Bot</label>
+            <input id="bv-numero" class="field-view" title="Editar o número (ID) deste bot" type="number">
+          </div>
+          <div class="w-[160px] shrink-0">
+            <label class="bv-label text-xs font-medium block mb-1">Status</label>
+            <select id="bv-status" class="field-view"></select>
+          </div>
+        </div>
+
+        <div class="bv-divider"></div>
+
+        <!-- Timeout -->
+        <p class="bv-eyebrow text-xs font-bold mb-3">Timeout</p>
+        <div class="bv-config-grid">
+          <div>
+            <label class="bv-label text-xs font-medium block mb-1">Tempo para Resposta do bot (seg.)</label>
+            <input id="bv-tempo-resposta" class="field-view">
+          </div>
+          <div>
+            <label class="bv-label text-xs font-medium block mb-1">Ações de timeout</label>
+            <select id="bv-acao-timeout" class="field-view"></select>
+          </div>
+          <div>
+            <label class="bv-label text-xs font-medium block mb-1">Tempo para entrega</label>
+            <input id="bv-tempo-entrega" class="field-view">
+            <p class="bv-hint text-xs mt-1">Configuração de tempo (em segundos) para entrega da mensagem para a fila</p>
+          </div>
+          <div id="bv-destino-wrap" class="hidden">
+            <label id="bv-destino-label" class="bv-label text-xs font-medium block mb-1"></label>
+            <div id="bv-destino-valor"></div>
+          </div>
+          <div id="bv-msg-encerrar-wrap" class="col-full hidden">
+            <label class="bv-label text-xs font-medium block mb-1">Mensagem ao Encerrar Atendimento</label>
+            <textarea id="bv-msg-encerrar" rows="2" class="textarea-view"></textarea>
+          </div>
+        </div>
+
+        <div class="bv-divider"></div>
+
+        <!-- Integrações -->
+        <p class="bv-eyebrow text-xs font-bold mb-3">Integrações</p>
+        <div class="bv-config-grid">
+          <div id="bv-transcricao-wrap" style="max-width: 340px;">
+            <label class="bv-label text-xs font-medium block mb-1">Conta para transcrição de áudio</label>
+            <input id="bv-transcricao" class="field-view">
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-5">
+        <div class="flex items-center justify-between mb-3">
+          <p class="bv-estados-title text-sm font-medium">Transições</p>
+          <button id="btn-adicionar-estado" type="button" class="flex items-center gap-1.5 text-sm font-medium text-white bg-primary rounded-lg px-3 py-1.5 transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar
+          </button>
+        </div>
+        <div id="bv-estados"></div>
+        <datalist id="bv-estados-datalist"></datalist>
+        <datalist id="variaveis-datalist"></datalist>
+        <datalist id="acao-tipo-datalist"></datalist>
+        <datalist id="update-contact-datalist"></datalist>
+      </div>
+
+    </div>
+
+    <div class="bv-footer flex items-center justify-between gap-4 px-6 py-4 border-t shrink-0 w-full">
+      <div id="bv-footer-left" class="flex-1 min-w-0"><span id="bv-contador-estados-transicoes" class="text-sm font-semibold text-[var(--text)]"></span></div>
+      <div id="bv-footer-right" class="flex items-center gap-2.5 shrink-0">
+        <button id="btn-fechar-bot-view-2" class="bv-btn-fechar text-sm font-medium text-[#9795a6] px-5 py-2.5 rounded-lg transition-colors">
+          Fechar
+        </button>
+        <button id="btn-bv-baixar" class="flex items-center gap-2 text-sm font-medium text-white bg-primary rounded-lg px-5 py-2.5 transition-colors">
+          <i data-lucide="download" class="w-4.5 h-4.5"></i>
+          Baixar JSON
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== MODAL: PENDÊNCIAS ANTES DE BAIXAR ===================== -->
+<div id="pendencias-overlay" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-[60]">
+  <div class="bv-panel w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+
+    <div class="bv-header flex items-center gap-3 px-6 py-5 border-b shrink-0">
+      <h2 class="text-lg font-semibold">Pendências depois de importar</h2>
+      <button id="btn-fechar-pendencias" class="bv-btn-close ml-auto text-[#8b899b] p-1 rounded-lg transition-colors">
+        <i data-lucide="x" class="w-4.5 h-4.5"></i>
+      </button>
+    </div>
+
+    <div class="overflow-y-auto px-6 py-5">
+      <p class="bv-hint text-xs mb-4">O JSON já foi baixado. Estes campos referenciam cadastros que só existem no ambiente de destino (fila, agente, script, OpenAI, etc.) — esta ferramenta não tem como preenchê-los sozinha. Use a lista abaixo como conferência depois de importar o bot no ambiente, marcando cada item conforme for configurando.</p>
+      <div id="pendencias-lista"></div>
+    </div>
+
+    <div class="bv-footer flex items-center justify-end gap-2 px-6 py-4 border-t shrink-0">
+      <button id="btn-pendencias-fechar" class="flex items-center gap-2 text-sm font-medium text-white bg-primary rounded-lg px-4 py-2 transition-colors">
+        Entendi
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Orpen — Editor de Bot (overlay)",
+  "version": "0.3.1",
+  "description": "Substitui o modal nativo de edição de bot do ContactCenter por um overlay moderno, isolado em Shadow DOM. Shift+clique em \"Editar\" abre o modal nativo original.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*/rcx/ContactCenter/bot.php*",
+        "*://*/ContactCenter/bot.php*",
+        "*://*/bot.php*"
+      ],
+      "js": ["content/page-env-collector.js"],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*/rcx/ContactCenter/bot.php*",
+        "*://*/ContactCenter/bot.php*",
+        "*://*/bot.php*"
+      ],
+      "js": ["vendor/lucide.umd.js", "content/bootstrap.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "bot_transform.html",
+        "js/*",
+        "css/*",
+        "vendor/*",
+        "icons/*",
+        "content/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
