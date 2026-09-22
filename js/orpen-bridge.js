@@ -319,7 +319,7 @@ export async function abrirEditorOrpenNovo(envData = null) {
   state.botCarregado._isNewBot = true;
 
   abrirBotView(state.botCarregado);
-  if (titulo) titulo.innerHTML = `Novo Bot <span class="text-xs font-medium text-[var(--text-muted)] bg-[#231F2E] border border-[var(--obd-border)] px-2.5 py-1 rounded-full ml-2">Preencha os dados básicos</span>`;
+  if (titulo) titulo.innerHTML = `Novo Bot <span class="bv-badge-header-id">Preencha os dados básicos</span>`;
 }
 export async function abrirEditorOrpen(botId, envData = null) {
   if (envData) {
@@ -366,7 +366,7 @@ export async function abrirEditorOrpen(botId, envData = null) {
 
     state.botCarregado = fromGetBotResponse(raw);
     abrirBotView(state.botCarregado);
-    if (titulo) titulo.innerHTML = `Editar Bot <span class="text-xs font-medium text-[var(--text-muted)] bg-[#231F2E] border border-[var(--obd-border)] px-2.5 py-1 rounded-full ml-2">#${state.botCarregado.ID} — ${state.botCarregado.NAME || '(sem nome)'}</span>`;
+    if (titulo) titulo.innerHTML = `Editar Bot <span class="bv-badge-header-id">#${state.botCarregado.ID} — ${state.botCarregado.NAME || '(sem nome)'}</span>`;
   } catch (err) {
     console.error('[EDITOR_BOT] Falha ao carregar bot:', err);
     mostrarToast('Falha ao carregar bot: ' + err.message);

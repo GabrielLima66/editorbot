@@ -88,8 +88,24 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
   overflow: hidden !important;
 }
 #bot-view-overlay .bv-panel {
-  margin-top: calc(4vh / 1.15) !important;
-  margin-bottom: calc(4vh / 1.15) !important;
+  /* margin-top/bottom TEM que ser um valor fixo, nunca `auto`. `margin:auto`
+     num flex item centraliza pelo mesmo mecanismo interno de alinhamento que
+     `align-items:center` — e é exatamente esse mecanismo (alinhar no eixo
+     transversal + zoom) que tem o bug do Chromium citado no comentário do
+     overlay abaixo (empurra o painel pra coordenadas negativas: o header
+     saía cortado no topo, sem voltar). Já tentamos `margin:auto` aqui pra
+     centralizar mesmo com altura variável e o bug voltou (header cortado a
+     100% de zoom do navegador, só sumia reduzindo o zoom pra 80-90%) — por
+     isso voltou a ser um valor fixo, igual o align-items:flex-start do
+     overlay: nenhum dos dois passa pelo path de "centralizar no eixo
+     transversal" que dispara o bug. Com altura livre (sem `height` fixa,
+     só `max-height` abaixo), um bot pequeno fica com folga só embaixo (não
+     perfeitamente centralizado), mas isso é preferível a arriscar o header
+     sumir. margin-left/right:auto é diferente: centraliza no eixo principal
+     (horizontal), não passa pelo mesmo path de alinhamento do eixo
+     transversal e nunca apresentou esse bug. */
+  margin-top: calc(6vh / 1.15) !important;
+  margin-bottom: calc(3vh / 1.15) !important;
   margin-left: auto !important;
   margin-right: auto !important;
   background: var(--obd-bg);
@@ -103,15 +119,29 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
      font-size do <html> (diferente de rem), então são seguros aqui. */
   width: calc(92vw / 1.15) !important;
   max-width: calc(1320px / 1.15) !important;
-  /* height FIXA (não auto): com height:auto, o painel só tinha altura até
-     onde o conteúdo (renderizado) mandasse, então o flex (header shrink-0 /
-     body flex-1 overflow-y-auto / footer shrink-0) não tinha uma caixa
-     estável pra distribuir — .bv-header podia acabar sendo empurrado/cortado
-     conforme o conteúdo de .bv-body mudava de tamanho durante a edição.
-     Com height fixa, .bv-panel sempre ocupa a mesma caixa e só .bv-body
-     rola por dentro dela; .bv-header/.bv-footer ficam sempre visíveis. */
-  height: calc(92vh / 1.15) !important;
-  max-height: calc(92vh / 1.15) !important;
+  /* SEM height fixa: o painel cresce com o conteúdo (o flex-column do
+     bot_transform.html: header shrink-0 / body flex-1 min-h-0 overflow-y-auto
+     / footer shrink-0 já resolve isso sozinho) até bater no max-height
+     abaixo. Só a partir daí .bv-body passa a rolar por dentro — é o padrão
+     igual ao já usado em #pendencias-overlay. Isso é o que faz o modal se
+     ajustar ao tamanho do conteúdo (bot pequeno = painel pequeno, sem sobra
+     vazia) em vez de sempre ocupar a mesma altura mesmo com 1 estado só.
+     A defesa contra o bug do header cortado (ver comentário do margin-top
+     acima) é o margin-top fixo e generoso (6vh) em si — o topo do painel
+     nunca se move por causa do conteúdo, só por causa do margin-top. Um bot
+     com muitos estados/transições só cresce pra BAIXO até bater no teto
+     abaixo, então o max-height não precisa da mesma folga extra do topo:
+     ele só limita até onde o rodapé pode chegar antes de precisar rolar por
+     dentro (.bv-body). Testado com folga generosa demais aqui (72vh) em uso
+     real: sobrava muito espaço vazio embaixo do painel em telas normais,
+     forçando rolagem interna cedo demais em bots com muitas transições
+     (ex.: 19 transições/10 estados). max-height voltou a ocupar quase todo
+     o espaço restante (91vh = 100 − 6 de margin-top − 3 de margin-bottom),
+     deixando só 3vh de folga embaixo — suficiente pro rodapé não vazar da
+     viewport, sem desperdiçar tela. Se precisar aumentar a folga do topo de
+     novo no futuro (bug do header voltando em zoom mais extremo ainda),
+     mexer SÓ no margin-top acima — não precisa tirar espaço daqui. */
+  max-height: calc(91vh / 1.15) !important;
   border-radius: 14px;
   border: 1px solid var(--obd-border);
   zoom: 1.15;
@@ -136,6 +166,29 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 #bot-view-overlay .bv-label { color: var(--text-muted); font-size: 0.8125rem; font-weight: 500; }
 #bot-view-overlay .bv-hint { color: var(--text-faint); font-size: 0.8125rem; }
 #bot-view-overlay .bv-badge-readonly { background: #231F2E; color: var(--text-muted); border-radius: 9999px; padding: 0.2rem 0.65rem; }
+/* Badge de ID/nome do bot no header (#bv-titulo-header, injetado via innerHTML
+   em orpen-bridge.js). Precisa ser uma classe própria aqui (não classes
+   Tailwind com valor arbitrário tipo `border-[var(--obd-border)]`): o
+   vendor/tailwind.css é um build ESTÁTICO, gerado escaneando só o HTML/JS que
+   o Tailwind enxergou em build-time — esse innerHTML é montado 100% em
+   runtime dentro de orpen-bridge.js (específico da extensão), então nenhuma
+   dessas classes (bg-[#231F2E], text-[var(--text-muted)],
+   border-[var(--obd-border)], px-2.5, py-1, ml-2) nunca foi gerada no CSS
+   vendorizado. Sobrava só `.border{border-width:1px}` (Tailwind v4 não seta
+   border-color default) + `.rounded-full`, sem padding/bg/cor — um contorno
+   de 1px em currentColor (herda do <h2>, cor quase branca) sem preenchimento
+   nem respiro: exatamente o "círculo branco" ao redor do texto reportado. */
+#bot-view-overlay .bv-badge-header-id {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: #231F2E;
+  border: 1px solid var(--obd-border);
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  margin-left: 0.5rem;
+  display: inline-block;
+}
 #bot-view-overlay .bv-btn-close:hover, #pendencias-overlay .bv-btn-close:hover { background: #2A2833; color: var(--text); }
 #pendencias-overlay .pendencia-item { background: var(--obd-surface); border: 1px solid var(--obd-border); border-radius: 0.5rem; padding: 0.625rem 0.75rem; margin-bottom: 0.5rem; }
 #pendencias-overlay .pendencia-item:last-child { margin-bottom: 0; }
