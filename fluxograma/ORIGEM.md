@@ -23,9 +23,21 @@ commit. Quando o Fluxo BOT mudar: re-portar o que mudou, rodar `npm run golden`,
 | `rotulos.py` | `rotulos.ts` | Só o que o fluxograma usa. |
 | `filtro.py` | `filtro.ts` | Só o Modo Cliente (decisão P4). |
 | `grafo_para_reactflow.py` | `grafoParaReactflow.ts` | |
-| `overrides.py` (`aplicar_overrides_reactflow`) | `nomesAmbiente.ts` | Só os ramos fila/bot_externo/calendário, alimentados por `state.ambienteOrpen`. |
+| — | `nomesAmbiente.ts` | Nomes de fila/bot externo/calendário vindos de `state.ambienteOrpen`, aplicados como dado real do nó (`rotulo`), **não** como override manual. Ver "Diferença intencional" abaixo. |
+| `frontend/src/{layout,NoEstado,ArestaConversa,texto,tiposNo,icones,coresEstado,types}.*`, `tema.css` | `src/render/` | Cópia byte a byte, verificada por `tests/copiasRender.test.ts`. |
 | `ui/janela.py` (`_atualizar`) | `pipeline.ts` | Sequência parser → grafo → filtro → React Flow → nomes. |
 | — | `pythonCompat.ts` | Comportamentos do Python que o JS faz diferente (strip, splitlines, int, ==, truthiness, unescape…). |
+
+## Diferença intencional: nomes do ambiente
+
+No desktop, nome de fila/bot externo/calendário só existe como override
+manual (Nomenclatura → `overrideRotulo`), e esse caminho desenha fila e bot
+externo com os asteriscos crus (bug do Fluxo BOT). Na extensão, o nome vem do
+cadastro da Orpen e entra no próprio `rotulo`, com a mesma fórmula do texto
+padrão (`*Transfere para a fila {nome}*`, cujos asteriscos o `texto.ts`
+remove). No calendário, `naoResolvida` vira `false`. Os goldens `*.nomes.json`
+continuam sendo saída pura do desktop, e os testes os convertem com
+`nomesComoDadoReal` (`tests/apoio.ts`) antes de comparar.
 
 ## Divergências conhecidas e aceitas
 

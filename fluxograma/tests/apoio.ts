@@ -40,6 +40,28 @@ function lerGoldens(pasta: string, pastaFixtures: string): Golden[] {
 export const GOLDENS = lerGoldens(join(DIR_TESTES, "golden"), join(DIR_TESTES, "fixtures"));
 export const GOLDENS_LOCAIS = lerGoldens(join(DIR_TESTES, "golden_local"), join(DIR_TESTES, "golden_local", "fixtures"));
 
+type NoGolden = { data: Record<string, unknown> };
+
+/** Os goldens *.nomes.json sao saida PURA do desktop: o nome entra como
+ * override manual (`overrideRotulo`). Na extensao o nome do ambiente e dado
+ * real do no (decisao registrada na spec, D6): vai pro `rotulo` e o
+ * calendario deixa de ser "nao resolvido". Esta e a unica diferenca
+ * intencional em relacao ao desktop, e e exatamente isto que ela faz. */
+export function nomesComoDadoReal<T extends { nodes: unknown[] }>(resultado: T): T {
+  const copia = structuredClone(resultado);
+  for (const no of copia.nodes as NoGolden[]) {
+    const d = no.data;
+    if (typeof d.overrideRotulo !== "string") continue;
+    if (d.tipo === "fila" || d.tipo === "bot_externo") d.rotulo = d.overrideRotulo;
+    else if (d.tipo === "calendario") {
+      d.rotulo = d.overrideRotulo;
+      d.naoResolvida = false;
+    } else continue;
+    delete d.overrideRotulo;
+  }
+  return copia;
+}
+
 export function lerFixture(caminho: string): { dados: unknown; sha256: string } {
   const bytes = readFileSync(caminho);
   return { dados: JSON.parse(bytes.toString("utf-8")), sha256: createHash("sha256").update(bytes).digest("hex") };

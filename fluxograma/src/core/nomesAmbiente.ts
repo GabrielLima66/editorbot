@@ -1,7 +1,10 @@
-// Nomes reais de fila / bot externo / calendario (D6 da spec). A aplicacao
-// e o port dos ramos fila/bot_externo/calendario de
-// aplicar_overrides_reactflow (Fluxo BOT backend/core/overrides.py); a
-// montagem a partir de state.ambienteOrpen e especifica da extensao.
+// Nomes reais de fila / bot externo / calendario (D6 da spec), vindos de
+// state.ambienteOrpen. Diferente da Nomenclatura do desktop (override manual
+// em `overrideRotulo`, que o desenho mostra com os *asteriscos* crus - bug do
+// Fluxo BOT), aqui o nome e DADO REAL do no: entra no proprio `rotulo`, com a
+// mesma formula que grafo.py ja usa pro texto padrao ("*Transfere para a fila
+// {numero}*", cujos asteriscos o texto.ts remove), so trocando o numero pelo
+// nome. Calendario com nome deixa de ser "nao resolvido".
 import { CALENDARIO_ROTULOS } from "./dicionarios";
 import type { GrafoReactFlow } from "./grafoParaReactflow";
 import { pyStr, pyTruthy, strip } from "./pythonCompat";
@@ -54,22 +57,23 @@ function buscar(mapa: Record<string, string>, referencia: unknown): string | und
   return Object.hasOwn(mapa, chave) ? mapa[chave] : undefined;
 }
 
-/** Muta e devolve `dados`, como aplicar_overrides_reactflow. */
+/** Muta e devolve `dados`. Referencia sem nome no ambiente fica como esta. */
 export function aplicarNomesAmbiente(dados: GrafoReactFlow, nomes: NomesAmbiente): GrafoReactFlow {
   for (const no of dados.nodes) {
     const info = no.data;
-    let texto: string | null = null;
     if (info.tipo === "bot_externo") {
       const nome = buscar(nomes.bots, info.referencia);
-      texto = pyTruthy(nome) ? `*Transfere para o bot ${nome}*` : null;
+      if (pyTruthy(nome)) info.rotulo = `*Transfere para o bot ${nome}*`;
     } else if (info.tipo === "fila") {
       const nome = buscar(nomes.filas, info.referencia);
-      texto = pyTruthy(nome) ? `*Transfere para a fila ${nome}*` : null;
+      if (pyTruthy(nome)) info.rotulo = `*Transfere para a fila ${nome}*`;
     } else if (info.tipo === "calendario") {
       const nome = buscar(nomes.calendarios, info.referencia);
-      texto = pyTruthy(nome) ? `${CALENDARIO_ROTULOS[info.variavelCalendario as string]} — ${nome}` : null;
+      if (pyTruthy(nome)) {
+        info.rotulo = `${CALENDARIO_ROTULOS[info.variavelCalendario as string]} — ${nome}`;
+        info.naoResolvida = false;
+      }
     }
-    if (texto) info.overrideRotulo = texto;
   }
   return dados;
 }

@@ -3,12 +3,21 @@
 // ordem de nodes e edges (o layout do dagre depende dela).
 import { describe, expect, test } from "vitest";
 import { gerarGrafoReactFlow } from "../src/core/pipeline";
-import { GOLDENS, GOLDENS_LOCAIS, commitDeOrigem, lerFixture, paraFormaExtensao, type Golden } from "./apoio";
+import {
+  GOLDENS,
+  GOLDENS_LOCAIS,
+  commitDeOrigem,
+  lerFixture,
+  nomesComoDadoReal,
+  paraFormaExtensao,
+  type Golden,
+} from "./apoio";
 
 const COMMIT = commitDeOrigem();
 
 function conferir(golden: Golden) {
   const { dados, sha256 } = lerFixture(golden.caminhoFixture);
+  const esperado = golden.nomes ? nomesComoDadoReal(golden.resultado) : golden.resultado;
 
   test("golden gerado do commit declarado em ORIGEM.md, sem alteracoes locais", () => {
     expect(golden.origem.commit).toBe(COMMIT);
@@ -21,12 +30,12 @@ function conferir(golden: Golden) {
 
   test("JSON exportado -> mesmo resultado do Python", () => {
     const { nodes, edges } = gerarGrafoReactFlow(dados, golden.nomes);
-    expect({ nodes, edges }).toStrictEqual(golden.resultado);
+    expect({ nodes, edges }).toStrictEqual(esperado);
   });
 
   test("formato state.botCarregado da extensao -> mesmo resultado do Python", () => {
     const { nodes, edges } = gerarGrafoReactFlow(paraFormaExtensao(dados as Record<string, unknown>), golden.nomes);
-    expect({ nodes, edges }).toStrictEqual(golden.resultado);
+    expect({ nodes, edges }).toStrictEqual(esperado);
   });
 }
 

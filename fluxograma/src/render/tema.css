@@ -1,0 +1,357 @@
+/* Fonte embutida (restricao 01 do handoff: sem rede em runtime, "file://")
+   - o pacote @fontsource/inter resolve os pesos 400/500 em arquivos .woff2
+   locais, que o Vite inlina como data URI no build (ver vite.config.ts,
+   assetsInlineLimit). Nada disso faz request de rede: e so como o bundler
+   empacota um arquivo que ja esta em node_modules. */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+
+:root {
+  color-scheme: dark;
+
+  /* Estados de interacao (SPEC: clique marca foco + vizinhos, resto
+     escurece) - independentes de tipo, por isso vivem aqui e nao em
+     tiposNo.ts. */
+  --cor-selecao: #9184d9;
+  --cor-selecao-halo: color-mix(in oklab, #9184d9 22%, transparent);
+  --cor-vizinho: #5d5294;
+  --cor-vizinho-halo: color-mix(in oklab, #5d5294 14%, transparent);
+
+  /* Pilula "nao resolvida" (condicao sem match / calendario sempre, ate
+     alguem preencher o override) - ambar, reaproveitado do design
+     handoff. */
+  --cor-nao-resolvido: oklch(78% 0.14 80);
+
+  /* Aresta: cinza no fluxo normal; retorno ao inicio reaproveita o
+     vermelho de "defeito" (mesmo matiz do orfao), tracejado. */
+  --cor-aresta: #75798c;
+  --cor-aresta-retorno: oklch(64% 0.19 25);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #14161b;
+  color: #e8e9ec;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app__barra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #1c1f26;
+  border-bottom: 1px solid #2a2e37;
+  font-size: 13px;
+}
+
+.app__barra select {
+  background: #262a33;
+  color: #e8e9ec;
+  border: 1px solid #3a3f4b;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.app__divisor {
+  width: 1px;
+  align-self: stretch;
+  background: #2f3440;
+}
+
+.app__nome-bot {
+  color: #9aa1b0;
+}
+
+.app__legenda-botao {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--cor-selecao);
+  border: 1px solid color-mix(in oklab, var(--cor-selecao) 55%, transparent);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.app__legenda-botao:hover {
+  background: color-mix(in oklab, var(--cor-selecao) 12%, transparent);
+  border-color: var(--cor-selecao);
+}
+.app__legenda-botao[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--cor-selecao) 18%, transparent);
+}
+.app__legenda-botao svg {
+  width: 15px;
+  height: 15px;
+}
+
+.app__canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.react-flow {
+  background: #14161b;
+}
+
+/* ---------- Card de no ---------- */
+
+.no-fluxo {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid;
+  padding: 8px 11px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.no-fluxo__kicker-linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.no-fluxo__icone {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.no-fluxo__kicker {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+
+.no-fluxo__titulo {
+  color: #f5f5f5;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.no-fluxo__texto {
+  color: #f5f5f5;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.no-fluxo__opcoes-caixa {
+  background: color-mix(in oklab, #f5f5f5 6%, transparent);
+  border-radius: 4px;
+  padding: 7px 10px;
+}
+
+.no-fluxo__opcoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.no-fluxo__opcoes li {
+  position: relative;
+  padding-left: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12.5px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.no-fluxo__opcoes li::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: #d2cefd;
+  font-weight: 600;
+}
+
+/* Pilula (condicao/calendario) - icone e kicker centralizados e
+   empilhados, corpo centralizado; menos preenchimento vertical, cantos
+   totalmente arredondados. Nunca tem opcoes (so mensagem tem). */
+.no-fluxo--pilula {
+  border-width: 1.5px;
+  border-radius: 999px;
+  padding: 9px 18px;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.no-fluxo--pilula .no-fluxo__kicker-linha {
+  flex-direction: column;
+  gap: 3px;
+}
+.no-fluxo--pilula .no-fluxo__texto {
+  font-size: 12px;
+}
+
+.no-fluxo--nao-resolvido {
+  border-style: dashed;
+  border-color: var(--cor-nao-resolvido) !important;
+}
+
+/* Retangulo com barra inferior (fim de fluxo: fila / bot externo / fila
+   dinamica / encerrado) - a barra marca o grupo "isso encerra o bot". */
+.no-fluxo--retangulo-barra {
+  padding-bottom: 11px;
+}
+.no-fluxo--retangulo-barra::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--cor-barra);
+}
+
+/* Orfao - unico retangulo (nao "fim de fluxo") com borda tracejada, pra
+   ficar reconhecivel como defeito mesmo em P&B. */
+.no-fluxo--tracejado {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+/* Diagrama e so leitura - os conectores do React Flow (bolinhas nas
+   laterais) sugeriam que da pra arrastar ligacoes, o que nao existe aqui.
+   opacity 0 em vez de display:none pra geometria continuar valendo: o
+   React Flow calcula a ponta da aresta a partir da posicao do handle. */
+.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Destaque de selecao (Canvas.tsx) ----------
+   Estilizado direto no wrapper que o React Flow desenha
+   (.react-flow__node-<tipo>), nao dentro de .no-fluxo - o wrapper tem o
+   mesmo tamanho exato do card renderizado dentro dele (layout.ts ja
+   define width/height explicitos), entao o anel fica correto sem precisar
+   passar nada por `data`/NoEstado.tsx. */
+.react-flow__node,
+.react-flow__edge {
+  transition: opacity 150ms ease;
+}
+
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px var(--cor-selecao), 0 0 14px 2px var(--cor-selecao-halo);
+  border-radius: 8px;
+}
+.react-flow__node-condicao.selected,
+.react-flow__node-calendario.selected {
+  border-radius: 999px; /* pilula - ver .no-fluxo--pilula */
+}
+
+.react-flow__node.no-vizinho {
+  box-shadow: 0 0 0 1.5px var(--cor-vizinho), 0 0 10px 1px var(--cor-vizinho-halo);
+  border-radius: 8px;
+}
+.react-flow__node-condicao.no-vizinho,
+.react-flow__node-calendario.no-vizinho {
+  border-radius: 999px;
+}
+
+.react-flow__node.no-apagado {
+  opacity: 0.35;
+}
+
+.react-flow__edge.aresta-apagada {
+  opacity: 0.25;
+}
+
+/* ---------- Legenda ---------- */
+
+.legenda {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: 216px;
+  background: #1b1e26;
+  border: 1px solid #2a2e37;
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  transform: translateX(0);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+.legenda[data-aberta="false"] {
+  transform: translateX(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.legenda__titulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin: 0 0 14px;
+}
+
+.legenda__grupo + .legenda__grupo {
+  margin-top: 16px;
+}
+
+.legenda__grupo-nome {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #7d8492;
+  margin: 0 0 8px;
+}
+
+.legenda__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 3px 0;
+  font-size: 13px;
+  color: #d6d9e0;
+}
+
+.legenda__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.5px solid;
+  flex-shrink: 0;
+}
+.legenda__swatch--pilula {
+  border-radius: 999px;
+}
+.legenda__swatch--tracejado {
+  border-style: dashed;
+}

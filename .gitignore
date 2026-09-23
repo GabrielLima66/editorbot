@@ -7,3 +7,4 @@ fluxograma/tests/golden_local/
 Claude outputs/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+fluxograma/tests/visual_out/

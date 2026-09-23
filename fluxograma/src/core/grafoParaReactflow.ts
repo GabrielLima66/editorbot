@@ -33,7 +33,6 @@ export interface NodeData {
   naoResolvida?: boolean;
   variavelCalendario?: string;
   valoresObservados?: unknown[];
-  overrideRotulo?: string;
 }
 
 export interface NoReactFlow {

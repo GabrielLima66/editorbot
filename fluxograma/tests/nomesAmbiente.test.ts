@@ -68,11 +68,15 @@ test("de ponta a ponta: fila, bot externo e calendario com o nome do ambiente", 
     ],
   };
   const { nodes } = gerarGrafoReactFlow(bot, montarNomesAmbiente(AMBIENTE));
-  const porId = Object.fromEntries(nodes.map((n) => [n.id, n.data.overrideRotulo]));
-  expect(porId["fila:7101"]).toBe("*Transfere para a fila [7101] Suporte*");
-  expect(porId["bot_externo:1208262"]).toBe("*Transfere para o bot [1208262] [IMPORT] BOT SUPORTE FIN OUVIDORIA*");
-  expect(porId["calendario:3"]).toBe("Dentro do horário — Equipe-suporte-feriado");
-  expect(porId["fila:999"]).toBeUndefined();
+  const porId = Object.fromEntries(nodes.map((n) => [n.id, n.data]));
+  // mesma formula do texto padrao do grafo.py (os *asteriscos* o desenho
+  // remove), so com o nome no lugar do numero - nunca override manual
+  expect(porId["fila:7101"].rotulo).toBe("*Transfere para a fila [7101] Suporte*");
+  expect(porId["bot_externo:1208262"].rotulo).toBe("*Transfere para o bot [1208262] [IMPORT] BOT SUPORTE FIN OUVIDORIA*");
+  expect(porId["calendario:3"].rotulo).toBe("Dentro do horário — Equipe-suporte-feriado");
+  expect(porId["calendario:3"].naoResolvida).toBe(false);
+  expect(porId["fila:999"].rotulo).toBe("*Transfere para a fila 999*");
+  for (const d of Object.values(porId)) expect(d).not.toHaveProperty("overrideRotulo");
 });
 
 test("aplicarNomesAmbiente nao mexe em tipos que nao sao fila/bot/calendario", () => {

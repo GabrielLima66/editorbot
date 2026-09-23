@@ -4,9 +4,9 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 1 (port + paridade) concluída em 23/09/2026, branch `feat/exportar-fluxograma`
-- **Última Tarefa Concluída:** Port do pipeline Python do Fluxo BOT (commit 7c9c976) em `fluxograma/src/core/`, 103 testes passando (goldens gerados pelo Python original). Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 1"
-- **Próxima Tarefa em Aberto:** Fase 2 da SPEC-exportar-fluxograma.md (renderizador em iframe + captura PNG/SVG). Goldens com 3 bots reais do Backup JSON já passam (127 testes)
+- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 2 (renderizador + captura) concluída em 23/09/2026, branch `feat/exportar-fluxograma`
+- **Última Tarefa Concluída:** Renderizador em iframe (`vendor/fluxograma/`) com paridade visual automatizada contra o build real do desktop: 22/22 casos com 0 pixel de diferença em PNG e SVG. Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 2"
+- **Próxima Tarefa em Aberto:** Fase 3 (integração na extensão: linha de base + salvar antes, botão no rodapé, download, toasts)
 - **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Correspondência de IDs de fila, bot externo e calendário com os cadastros validada com bots reais.
 
 ---
@@ -25,6 +25,16 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 23/09/2026 — 🏁 MARCO
+
+Fase 2 concluída: o renderizador da extensão gera PNG e SVG pixel a pixel idênticos aos do desktop (22 casos, incluindo 5 bots reais), verificado automaticamente contra o build real do Fluxo BOT num Chrome real.
+
+---
+### 23/09/2026 — 🔵 DECISÃO
+
+Nomes de fila/bot externo/calendário vindos do ambiente entram como dado real do nó, não como override manual ("como temos as informações corretas, não precisamos mais alterar nome de filas"). Evita também um bug do desktop, em que o override desenha fila e bot externo com os asteriscos crus.
+
+---
 ### 23/09/2026 — 🏁 MARCO
 
 Fase 1 da exportação de fluxograma concluída: pipeline Python do Fluxo BOT portado para TS com paridade provada por goldens (103 testes; teste de mutação confirma que divergências sutis de strip/splitlines são pegas).

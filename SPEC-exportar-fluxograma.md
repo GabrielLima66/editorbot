@@ -114,15 +114,19 @@ Atenção: **não usar `vite-plugin-singlefile`** aqui, ao contrário do desktop
 
 O shape de `state.botCarregado` (montado por `fromGetBotResponse` em `js/orpen-adapter.js`) é compatível com o que o parser do desktop espera: `BOT_STATES`/`BOT_TRANSITIONS`/`BOT_CONDITIONS`/`BOT_ACTIONS` achatados, com as chaves nomeadas presentes. As diferenças a tratar estão em "Diferenças de fonte de dados" abaixo.
 
-### D6. Nomes reais vêm do ambiente Orpen, pelo mesmo mecanismo do desktop
+### D6. Nomes reais vêm do ambiente Orpen, como dado real do nó
 
-No desktop, o usuário digita nomes na Nomenclatura, e `aplicar_overrides_reactflow` (`backend/core/overrides.py`) aplica esses nomes no campo `overrideRotulo` dos nós. Na extensão, **os mesmos três ramos desse mecanismo** são alimentados automaticamente com os cadastros que o `content/page-env-collector.js` já coleta em `state.ambienteOrpen`, sem mudar o collector.
+Os nomes vêm dos cadastros que o `content/page-env-collector.js` já coleta em `state.ambienteOrpen`, sem mudar o collector. Eles entram como **dado real do nó** (no próprio `rotulo`), com a mesma fórmula que o `grafo.py` do desktop usa para o texto padrão, só trocando o número pelo nome.
 
-| Nó | Referência no grafo | Fonte no ambiente | Texto final (mesmo formato do desktop) |
+Isso **não** usa a Nomenclatura do desktop (override manual em `overrideRotulo`, via `aplicar_overrides_reactflow`). Motivos:
+- Os nomes do ambiente são corretos por definição. Não são uma "renomeação" do usuário (decisão de 2026-09-23: "como temos as informações corretas, não precisamos mais alterar nome de filas").
+- O caminho de override tem um **bug no desktop**: o nome personalizado de fila/bot externo é desenhado com os asteriscos crus (`*Transfere para a fila X*`). O `overrides.py` monta o texto com `*…*`, e o `texto.ts` só remove os asteriscos do texto padrão. Achado na comparação visual da Fase 2. Pelo caminho de dado real, o desenho remove os asteriscos normalmente.
+
+| Nó | Referência no grafo | Fonte no ambiente | Texto no nó |
 |---|---|---|---|
-| `fila` | `destiny` da ação tipo 5 | `queues[]` → `{ id: q.NAME, name: '[NAME] BEE_NAME' }` | `*Transfere para a fila {name}*`, ex.: "Transfere para a fila [12] Suporte" |
-| `bot_externo` | `destiny` da ação tipo 4 | `bots[]` → `{ id, name: '[Bot] NOME' }` | `*Transfere para o bot {nome}*`, com `nome` = `[ID] NOME`. O prefixo `[Bot] ` que o collector acrescenta para os datalists é removido aqui, senão sairia "para o bot [Bot] …". |
-| `calendario` | `CONDITION_TYPE` da condição `calendario`/`calendario_falso` (é o ID do calendário, ver `dicionarios.py`) | `calendars[]` → `{ id, name }` | `{Dentro do horário \| Fora do horário} — {name}`. Com o nome resolvido, a pílula deixa de sair tracejada como "não resolvida", exatamente como acontece no desktop quando o usuário preenche o calendário. |
+| `fila` | `destiny` da ação tipo 5 | `queues[]` → `{ id: q.NAME, name: '[NAME] BEE_NAME' }` | "Transfere para a fila [12] Suporte" (`rotulo` = `*Transfere para a fila {name}*`; o desenho tira os asteriscos, como no texto padrão) |
+| `bot_externo` | `destiny` da ação tipo 4 | `bots[]` → `{ id, name: '[Bot] NOME' }` | "Transfere para o bot [ID] NOME". O prefixo `[Bot] ` que o collector acrescenta para os datalists é removido aqui, senão sairia "para o bot [Bot] …". |
+| `calendario` | `CONDITION_TYPE` da condição `calendario`/`calendario_falso` (é o ID do calendário, ver `dicionarios.py`) | `calendars[]` → `{ id, name }` | "{Dentro do horário \| Fora do horário} — {name}", com `naoResolvida = false`: o nó sai como "CALENDÁRIO", sem a borda tracejada de "não resolvido". |
 
 Regras:
 - Referência sem correspondência no ambiente fica como hoje (número, ou "não resolvido" no calendário), igual ao desktop sem nomenclatura preenchida.
@@ -344,7 +348,7 @@ Cobertura de cada armadilha:
 
 ### Fase 2: Renderizador em iframe + captura PNG/SVG (1 a 1,5 dia)
 
-1. Copiar a camada de render (D3) para `fluxograma/src/render/`, cada arquivo com um cabeçalho indicando a origem e o commit.
+1. Copiar a camada de render (D3) para `fluxograma/src/render/` **byte a byte** (sem cabeçalho). O teste `copiasRender.test.ts` compara cada cópia com o arquivo original no commit de `ORIGEM.md`, e o `.gitattributes` desliga a conversão de fim de linha nessa pasta.
 2. `exportar.ts`: mantém `capturarDiagrama(nodes, formato)` **com os mesmos parâmetros do desktop**: padding 0,06, fundo `#f4f5f7`, `pixelRatio` 2 para PNG e 1 para SVG, `getViewportForBounds(bounds, l, a, 0.05, 4, 0.06)`. Troca a ponte Qt por um retorno de `Blob`. Para PNG, usa `toBlob` em vez de `toPng` para não passar por base64 num bot grande (o pixel resultante é o mesmo). Para SVG, usa `toSvg` e converte o data URL em `Blob` `image/svg+xml`.
 3. `Renderizador.tsx`: ReactFlow sem `Controls`/`MiniMap`/`Background`/seleção. Monta as arestas com cor por estado exatamente como o `App.tsx` do desktop (`corPorEstado`, `MarkerType.ArrowClosed` 16×16, vermelho `oklch(64% 0.19 25)` nas back edges).
 4. Condição de pronto antes de capturar: **antes do layout**, `await document.fonts.load()` para cada fonte que o `layout.ts` mede (`500 11px`, `600 14px`, `400 13px`, `400 12px` e `400 12.5px Inter`). `document.fonts.ready` sozinho não basta: ele resolve na hora se nenhum texto usou a fonte ainda (achado da Fase 0). Depois: layout calculado → `useNodesInitialized()` verdadeiro → número de `.react-flow__edge` renderizados igual a `edges.length` → dois `requestAnimationFrame`. Timeout de 30 s, que gera o erro "Não foi possível desenhar o fluxograma a tempo".
@@ -353,9 +357,18 @@ Cobertura de cada armadilha:
 7. Build: `npm run build` → `vendor/fluxograma/` (`index.html` + `assets/`), sem script inline. Conferir que a página abre sem erro de CSP no console da extensão.
 
 **Aceite:**
-- [ ] Abrindo `vendor/fluxograma/index.html` com um fixture injetado por um harness de teste, PNG e SVG são gerados sem erro de CSP.
-- [ ] Para os 5 sintéticos, PNG e SVG da extensão comparados lado a lado com os do desktop (mesmo JSON, **desktop sem sidecar e com `dicionario_filas.json` vazio**) mostram os mesmos nós, textos, cores, setas e posições. Diferenças só de anti-aliasing entre as versões de Chromium são aceitáveis; qualquer diferença de posição, quebra de linha ou texto não é.
-- [ ] O SVG gerado abre corretamente em Chrome e Edge.
+- [x] Abrindo `vendor/fluxograma/index.html` com um fixture injetado por um harness de teste, PNG e SVG são gerados sem erro de CSP.
+- [x] Para os 5 sintéticos, PNG e SVG da extensão comparados lado a lado com os do desktop (mesmo JSON, **desktop sem sidecar e com `dicionario_filas.json` vazio**) mostram os mesmos nós, textos, cores, setas e posições. Diferenças só de anti-aliasing entre as versões de Chromium são aceitáveis; qualquer diferença de posição, quebra de linha ou texto não é.
+- [x] O SVG gerado abre corretamente em Chrome e Edge (validado na Fase 0 com o mesmo `toSvg`).
+
+#### Resultado da Fase 2 (2026-09-23, branch `feat/exportar-fluxograma`)
+
+- Renderizador em `fluxograma/src/app/` (`main.tsx`, `Renderizador.tsx`, `exportar.ts`, `ponteExtensao.ts`); build em `vendor/fluxograma/`, sem script inline e sem `eval`/`new Function`.
+- **Paridade visual automatizada** (`npm run paridade:visual`, e `PARIDADE_FORMATO=svg npm run paridade:visual`). Num Chrome real (154), o script abre o **build real do desktop** (`Fluxo BOT/frontend/dist/index.html`) com o grafo gerado pelo Python e chama a captura do próprio desktop. Do outro lado, pede ao nosso iframe o arquivo do bot **bruto**, pelo mesmo handshake que a extensão vai usar. Depois compara pixel a pixel (o SVG é comparado já desenhado pelo Chrome, porque o texto do arquivo carrega estilos de contexto da página, como tamanho do container e idioma, que não mudam o desenho).
+- **Resultado: 22 de 22 casos idênticos, 0 pixel diferente, em PNG e em SVG.** São os 6 sintéticos e os 5 bots reais, cada um com e sem nomes do ambiente, inclusive o "OP 1 - CONSULTA - 2026" (PNG de 16.384 × 5.845 px).
+- `src/render/` é cópia byte a byte do Fluxo BOT, verificada por teste (136 testes no total).
+- Achado: o bug dos asteriscos no nome personalizado do desktop (ver D6). A extensão aplica os nomes do ambiente como dado real do nó, então não herda o bug. A paridade dos casos com nomes compara com a saída do desktop convertida por `nomesComoDadoReal` (`tests/apoio.ts`), e essa é a única diferença intencional.
+- Para a Fase 3: gerar o nonce com `crypto.getRandomValues`, e não `crypto.randomUUID`, que só existe em página `https` (caso alguma instalação da Orpen rode em `http`).
 
 ### Fase 3: Integração na extensão (1,5 a 2 dias)
 
