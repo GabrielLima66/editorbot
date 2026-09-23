@@ -1,0 +1,865 @@
+{
+ "origem": {
+  "commit": "7c9c976",
+  "alteracoesLocais": false
+ },
+ "fixture": "cobertura-port.json",
+ "fixtureSha256": "33d4ba3ef773acc04f666171ef4cd14a6d45800676aa21427696400c24603477",
+ "resultado": {
+  "nodes": [
+   {
+    "id": "0",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "HOME",
+     "referencia": "0",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "1",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "MENU INTERATIVO",
+     "referencia": "1",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "2",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "MENU TEXTO",
+     "referencia": "2",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "3",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "DENTRO DO HORARIO",
+     "referencia": "3",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "A1",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "ESTADO ALFANUMERICO",
+     "referencia": "A1",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "B2",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "FOLHA",
+     "referencia": "B2",
+     "aguardaResposta": false
+    }
+   },
+   {
+    "id": "10",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "INALCANCAVEL",
+     "referencia": "10",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "mensagem:10211",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Bem-vindo! Escolha uma opção.",
+     "referencia": "10211",
+     "mensagem": "Bem-vindo! Escolha uma opção.",
+     "opcoesMenu": [
+      "Comercial",
+      "Financeiro",
+      "Suporte"
+     ]
+    }
+   },
+   {
+    "id": "mensagem:10311",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "*Mensagem interativa*",
+     "referencia": "10311",
+     "mensagem": "*Mensagem interativa*"
+    }
+   },
+   {
+    "id": "mensagem:10411",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Estamos fora do horário.",
+     "referencia": "10411",
+     "mensagem": "Estamos fora do horário."
+    }
+   },
+   {
+    "id": "encerrado",
+    "type": "encerrado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "encerrado",
+     "rotulo": "*Encerra o atendimento*",
+     "referencia": ""
+    }
+   },
+   {
+    "id": "mensagem:20111",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Escolha:\n*1* - Boleto\n2) Segunda via\n٣. Outros assuntos 4 - Encerrar",
+     "referencia": "20111",
+     "mensagem": "Escolha:\n*1* - Boleto\n2) Segunda via\n٣. Outros assuntos 4 - Encerrar"
+    }
+   },
+   {
+    "id": "fila:7101",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7101*",
+     "referencia": "7101"
+    }
+   },
+   {
+    "id": "bot_externo:1208262",
+    "type": "bot_externo",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "bot_externo",
+     "rotulo": "*Transfere para o bot 1208262*",
+     "referencia": "1208262"
+    }
+   },
+   {
+    "id": "fila_dinamica:fila_destino",
+    "type": "fila_dinamica",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila_dinamica",
+     "rotulo": "*Transfere para fila dinâmica ({$fila_destino})*",
+     "referencia": "fila_destino",
+     "valoresObservados": [
+      "7201",
+      7203
+     ]
+    }
+   },
+   {
+    "id": "orfao:99",
+    "type": "orfao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "orfao",
+     "rotulo": "*Erro: estado inexistente (99)*",
+     "referencia": "99"
+    }
+   },
+   {
+    "id": "mensagem:30511",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Até logo! Obrigado pelo contato. Volte sempre que precisar de ajuda com boletos, segunda via, negociação de débitos, alteração de vencimento ou qualquer outro assunto financeiro. Nosso time está disponível de segunda a sexta. Atendimento humano também pelo telefone.",
+     "referencia": "30511",
+     "mensagem": "Até logo! Obrigado pelo contato. Volte sempre que precisar de ajuda com boletos, segunda via, negociação de débitos, alteração de vencimento ou qualquer outro assunto financeiro. Nosso time está disponível de segunda a sexta. Atendimento humano também pelo telefone."
+    }
+   },
+   {
+    "id": "fila_dinamica:bot_preferido",
+    "type": "fila_dinamica",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila_dinamica",
+     "rotulo": "*Transfere para fila dinâmica ({$bot_preferido})*",
+     "referencia": "bot_preferido",
+     "valoresObservados": []
+    }
+   },
+   {
+    "id": "mensagem:70111",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "﻿",
+     "referencia": "70111",
+     "mensagem": "﻿"
+    }
+   },
+   {
+    "id": "calendario:103",
+    "type": "calendario",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "calendario",
+     "rotulo": "Dentro do horário (calendário 227)",
+     "referencia": "227",
+     "naoResolvida": true,
+     "variavelCalendario": "calendario"
+    }
+   },
+   {
+    "id": "calendario:104",
+    "type": "calendario",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "calendario",
+     "rotulo": "Fora do horário (calendário 227)",
+     "referencia": "227",
+     "naoResolvida": true,
+     "variavelCalendario": "calendario_falso"
+    }
+   },
+   {
+    "id": "condicao:201",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Financeiro (+2 variações)\"",
+     "referencia": "201",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:202",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Suporte\"",
+     "referencia": "202",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:203",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: contém \"Comercial\"",
+     "referencia": "203",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:301",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Boleto\"",
+     "referencia": "301",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:302",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Segunda via\"",
+     "referencia": "302",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:303",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Outros assuntos\"",
+     "referencia": "303",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:304",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"9\"",
+     "referencia": "304",
+     "naoResolvida": true
+    }
+   },
+   {
+    "id": "condicao:305",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Encerrar\"",
+     "referencia": "305",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "calendario:402",
+    "type": "calendario",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "calendario",
+     "rotulo": "Dentro do horário (calendário 234)",
+     "referencia": "234",
+     "naoResolvida": true,
+     "variavelCalendario": "calendario"
+    }
+   },
+   {
+    "id": "condicao:501",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"sim\"",
+     "referencia": "501",
+     "naoResolvida": true
+    }
+   },
+   {
+    "id": "condicao:701",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"x\"",
+     "referencia": "701",
+     "naoResolvida": true
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "e:102:10211:0-mensagem:10211",
+    "source": "0",
+    "target": "mensagem:10211",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "102",
+     "acaoId": "10211",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:102:10212:mensagem:10211-1",
+    "source": "mensagem:10211",
+    "target": "1",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "102",
+     "acaoId": "10212",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:103::0-calendario:103",
+    "source": "0",
+    "target": "calendario:103",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "103",
+     "acaoId": "",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:103:10311:calendario:103-mensagem:10311",
+    "source": "calendario:103",
+    "target": "mensagem:10311",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "103",
+     "acaoId": "10311",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:103:10312:mensagem:10311-3",
+    "source": "mensagem:10311",
+    "target": "3",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "103",
+     "acaoId": "10312",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:104::0-calendario:104",
+    "source": "0",
+    "target": "calendario:104",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "104",
+     "acaoId": "",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:104:10411:calendario:104-mensagem:10411",
+    "source": "calendario:104",
+    "target": "mensagem:10411",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "104",
+     "acaoId": "10411",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:104::mensagem:10411-encerrado",
+    "source": "mensagem:10411",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "104",
+     "acaoId": "",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:201::1-condicao:201",
+    "source": "1",
+    "target": "condicao:201",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "201",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:201:20111:condicao:201-mensagem:20111",
+    "source": "condicao:201",
+    "target": "mensagem:20111",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "201",
+     "acaoId": "20111",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:201:20113:mensagem:20111-2",
+    "source": "mensagem:20111",
+    "target": "2",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "201",
+     "acaoId": "20113",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:202::1-condicao:202",
+    "source": "1",
+    "target": "condicao:202",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "202",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:202:20211:condicao:202-fila:7101",
+    "source": "condicao:202",
+    "target": "fila:7101",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "202",
+     "acaoId": "20211",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:203::1-condicao:203",
+    "source": "1",
+    "target": "condicao:203",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "203",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:203:20311:condicao:203-bot_externo:1208262",
+    "source": "condicao:203",
+    "target": "bot_externo:1208262",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "203",
+     "acaoId": "20311",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:301::2-condicao:301",
+    "source": "2",
+    "target": "condicao:301",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "301",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:301:30112:condicao:301-fila_dinamica:fila_destino",
+    "source": "condicao:301",
+    "target": "fila_dinamica:fila_destino",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "301",
+     "acaoId": "30112",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:302::2-condicao:302",
+    "source": "2",
+    "target": "condicao:302",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "302",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:302:30213:condicao:302-fila_dinamica:fila_destino",
+    "source": "condicao:302",
+    "target": "fila_dinamica:fila_destino",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "302",
+     "acaoId": "30213",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:303::2-condicao:303",
+    "source": "2",
+    "target": "condicao:303",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "303",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:303:30311:condicao:303-orfao:99",
+    "source": "condicao:303",
+    "target": "orfao:99",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "303",
+     "acaoId": "30311",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:304::2-condicao:304",
+    "source": "2",
+    "target": "condicao:304",
+    "data": {
+     "isBackEdge": true,
+     "transicaoId": "304",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:304:30411:condicao:304-0",
+    "source": "condicao:304",
+    "target": "0",
+    "data": {
+     "isBackEdge": true,
+     "transicaoId": "304",
+     "acaoId": "30411",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:305::2-condicao:305",
+    "source": "2",
+    "target": "condicao:305",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "305",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:305:30511:condicao:305-mensagem:30511",
+    "source": "condicao:305",
+    "target": "mensagem:30511",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "305",
+     "acaoId": "30511",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:305::mensagem:30511-encerrado",
+    "source": "mensagem:30511",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "305",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:401:40111:3-A1",
+    "source": "3",
+    "target": "A1",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "401",
+     "acaoId": "40111",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:402::3-calendario:402",
+    "source": "3",
+    "target": "calendario:402",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "402",
+     "acaoId": "",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:402:40211:calendario:402-fila_dinamica:bot_preferido",
+    "source": "calendario:402",
+    "target": "fila_dinamica:bot_preferido",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "402",
+     "acaoId": "40211",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:501::A1-condicao:501",
+    "source": "A1",
+    "target": "condicao:501",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "501",
+     "acaoId": "",
+     "estadoOrigemId": "A1"
+    }
+   },
+   {
+    "id": "e:501:50111:condicao:501-B2",
+    "source": "condicao:501",
+    "target": "B2",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "501",
+     "acaoId": "50111",
+     "estadoOrigemId": "A1"
+    }
+   },
+   {
+    "id": "e:501::B2-condicao:501",
+    "source": "B2",
+    "target": "condicao:501",
+    "data": {
+     "isBackEdge": true,
+     "transicaoId": "501",
+     "acaoId": "",
+     "estadoOrigemId": "A1"
+    }
+   },
+   {
+    "id": "e:501:50112:condicao:501-3",
+    "source": "condicao:501",
+    "target": "3",
+    "data": {
+     "isBackEdge": true,
+     "transicaoId": "501",
+     "acaoId": "50112",
+     "estadoOrigemId": "A1"
+    }
+   },
+   {
+    "id": "e:701::10-condicao:701",
+    "source": "10",
+    "target": "condicao:701",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "701",
+     "acaoId": "",
+     "estadoOrigemId": "10"
+    }
+   },
+   {
+    "id": "e:701:70111:condicao:701-mensagem:70111",
+    "source": "condicao:701",
+    "target": "mensagem:70111",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "701",
+     "acaoId": "70111",
+     "estadoOrigemId": "10"
+    }
+   },
+   {
+    "id": "e:701:70112:mensagem:70111-2",
+    "source": "mensagem:70111",
+    "target": "2",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "701",
+     "acaoId": "70112",
+     "estadoOrigemId": "10"
+    }
+   }
+  ]
+ }
+}

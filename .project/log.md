@@ -4,9 +4,9 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 0 (spike) concluída em 23/09/2026
-- **Última Tarefa Concluída:** Spike validado na bot.php real (iframe de extensão, variante (b) na tela com opacity 0, fonte, bot grande, nomes de fila/calendário). Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 0"
-- **Próxima Tarefa em Aberto:** Fase 1 da SPEC-exportar-fluxograma.md: port do pipeline Python do Fluxo BOT (commit 7c9c976) para TS, com testes golden
+- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 1 (port + paridade) concluída em 23/09/2026, branch `feat/exportar-fluxograma`
+- **Última Tarefa Concluída:** Port do pipeline Python do Fluxo BOT (commit 7c9c976) em `fluxograma/src/core/`, 103 testes passando (goldens gerados pelo Python original). Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 1"
+- **Próxima Tarefa em Aberto:** Rodar os goldens com 3+ bots reais do "Backup JSON" (`npm run golden -- --local <pasta>`); depois Fase 2 (renderizador em iframe + captura PNG/SVG)
 - **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Correspondência de IDs de fila, bot externo e calendário com os cadastros validada com bots reais.
 
 ---
@@ -25,6 +25,16 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 23/09/2026 — 🏁 MARCO
+
+Fase 1 da exportação de fluxograma concluída: pipeline Python do Fluxo BOT portado para TS com paridade provada por goldens (103 testes; teste de mutação confirma que divergências sutis de strip/splitlines são pegas).
+
+---
+### 23/09/2026 — 📝 NOTA
+
+A ordem das transições muda o layout. O `getBot` da Orpen ordena (estado, prioridade, ID); o `exportBotJSON` nativo não tem ORDER BY. Comparação com o desktop deve usar o "Backup JSON" da extensão dos dois lados, não o export nativo.
+
+---
 ### 23/09/2026 — 🏁 MARCO
 
 Fase 0 da exportação de fluxograma concluída. Todas as premissas técnicas validadas na bot.php real, incluindo a correspondência de fila, bot externo e calendário com os cadastros do ambiente. Detalhes na SPEC-exportar-fluxograma.md, seção "Resultado da Fase 0".

@@ -1,0 +1,105 @@
+{
+  "ID": "900001",
+  "NAME": "Cobertura do port (sintetico)",
+  "CONF_DELIVERY_TIME": "1800",
+  "CONF_DELIVERY_QUEUE": "",
+  "TIME_ANSWER": "300",
+  "TIMEOUT_DELAY": "1800",
+  "TIMEOUT_ACTION": "",
+  "TIMEOUT_DESTINY": "",
+  "TIMEOUT_MESSAGE": "",
+  "BOT_STATES": [
+    { "ID": "1", "STATE_NUMBER": "0", "ALIAS": "HOME" },
+    { "ID": "2", "STATE_NUMBER": "1", "ALIAS": "MENU INTERATIVO" },
+    { "ID": "3", "STATE_NUMBER": "2", "ALIAS": "MENU TEXTO" },
+    { "ID": "4", "STATE_NUMBER": "3", "ALIAS": "DENTRO DO HORARIO" },
+    { "ID": "5", "STATE_NUMBER": "A1", "ALIAS": "ESTADO ALFANUMERICO" },
+    { "ID": "6", "STATE_NUMBER": "B2", "ALIAS": "FOLHA" },
+    { "ID": "7", "STATE_NUMBER": "10", "ALIAS": "INALCANCAVEL" }
+  ],
+  "BOT_TRANSITIONS": [
+    { "ID": "101", "STATE": "0", "PRIORITY": "1" },
+    { "ID": "102", "STATE": "0", "PRIORITY": "2" },
+    { "ID": "103", "STATE": "0", "PRIORITY": "3" },
+    { "ID": "104", "STATE": "0", "PRIORITY": "4" },
+    { "ID": "201", "STATE": "1", "PRIORITY": "1" },
+    { "ID": "202", "STATE": "1", "PRIORITY": "2" },
+    { "ID": "203", "STATE": "1", "PRIORITY": "3" },
+    { "ID": "204", "STATE": "1", "PRIORITY": "4" },
+    { "ID": "205", "STATE": "1", "PRIORITY": "5" },
+    { "ID": "301", "STATE": "2", "PRIORITY": "1" },
+    { "ID": "302", "STATE": "2", "PRIORITY": "2" },
+    { "ID": "303", "STATE": "2", "PRIORITY": "3" },
+    { "ID": "304", "STATE": "2", "PRIORITY": "4" },
+    { "ID": "305", "STATE": "2", "PRIORITY": "5" },
+    { "ID": "401", "STATE": "3", "PRIORITY": "1" },
+    { "ID": "402", "STATE": "3", "PRIORITY": "2" },
+    { "ID": "501", "STATE": "A1", "PRIORITY": "1" },
+    { "ID": "701", "STATE": "10", "PRIORITY": "1" }
+  ],
+  "BOT_CONDITIONS": [
+    { "ID": "1011", "TRANSITION_ID": "101", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "#TESTE" } },
+    { "ID": "1021", "TRANSITION_ID": "102", "CONDITION_TYPE": "9", "CONDITION_DATA": { "variable": "error_count", "value": "100" } },
+    { "ID": "1031", "TRANSITION_ID": "103", "CONDITION_TYPE": "227", "CONDITION_DATA": { "variable": "calendario", "value": "" } },
+    { "ID": "1041", "TRANSITION_ID": "104", "CONDITION_TYPE": "227", "CONDITION_DATA": { "variable": "calendario_falso", "value": "" } },
+    { "ID": "2011", "TRANSITION_ID": "201", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "1\num\nUM" } },
+    { "ID": "2021", "TRANSITION_ID": "202", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "2" } },
+    { "ID": "2031", "TRANSITION_ID": "203", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "3" } },
+    { "ID": "2041", "TRANSITION_ID": "204", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "" } },
+    { "ID": "2051", "TRANSITION_ID": "205", "CONDITION_TYPE": "7", "CONDITION_DATA": { "variable": "error_count", "value": "3" } },
+    { "ID": "3011", "TRANSITION_ID": "301", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "1" } },
+    { "ID": "3021", "TRANSITION_ID": "302", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "2" } },
+    { "ID": "3031", "TRANSITION_ID": "303", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "٣" } },
+    { "ID": "3041", "TRANSITION_ID": "304", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "9" } },
+    { "ID": "3051", "TRANSITION_ID": "305", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "4" } },
+    { "ID": "4011", "TRANSITION_ID": "401", "CONDITION_TYPE": "0", "CONDITION_DATA": { "variable": "message", "value": "" } },
+    { "ID": "4021", "TRANSITION_ID": "402", "CONDITION_TYPE": "234", "CONDITION_DATA": { "variable": "calendario", "value": "" } },
+    { "ID": "5011", "TRANSITION_ID": "501", "CONDITION_TYPE": "1", "CONDITION_DATA": "", "3": "{&quot;variable&quot;:&quot;message&quot;,&quot;value&quot;:&quot;sim&quot;}" },
+    { "ID": "7011", "TRANSITION_ID": "701", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "x" } }
+  ],
+  "BOT_ACTIONS": [
+    { "ID": "10111", "TRANSITION_ID": "101", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Mensagem de teste interna" } },
+    { "ID": "10112", "TRANSITION_ID": "101", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "3" } },
+
+    { "ID": "10212", "TRANSITION_ID": "102", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "1" } },
+    { "ID": "10211", "TRANSITION_ID": "102", "ACTION_TYPE": "10", "ACTION_DATA": { "message_option_text": "{\"interactive\":{\"type\":\"list\",\"body\":{\"text\":\"Bem-vindo! Escolha uma opção.\"},\"action\":{\"sections\":[{\"rows\":[{\"id\":\"1\",\"title\":\"Financeiro\"},{\"id\":\"2\",\"title\":\"Suporte\"}]}],\"buttons\":[{\"reply\":{\"id\":\"3\",\"title\":\"Comercial\"}}]}}}" } },
+
+    { "ID": "10311", "TRANSITION_ID": "103", "ACTION_TYPE": "11", "ACTION_DATA": { "form_id": "5" } },
+    { "ID": "10312", "TRANSITION_ID": "103", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "3" } },
+
+    { "ID": "10411", "TRANSITION_ID": "104", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "{\"interactive\":{\"body\":{\"text\":\"Estamos fora do horário.\"}}}" } },
+    { "ID": "10412", "TRANSITION_ID": "104", "ACTION_TYPE": "6", "ACTION_DATA": { "status": "12" } },
+
+    { "ID": "20113", "TRANSITION_ID": "201", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "2" } },
+    { "ID": "20111", "TRANSITION_ID": "201", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Escolha:\n*1* - Boleto\n2) Segunda via\n٣. Outros assuntos 4 - Encerrar" } },
+    { "ID": "20112", "TRANSITION_ID": "201", "ACTION_TYPE": "9", "ACTION_DATA": { "checkpoint": "menu-financeiro" } },
+
+    { "ID": "20211", "TRANSITION_ID": "202", "ACTION_TYPE": "5", "ACTION_DATA": { "destiny": "7101" } },
+    { "ID": "20311", "TRANSITION_ID": "203", "ACTION_TYPE": "4", "ACTION_DATA": { "destiny": "1208262" } },
+
+    { "ID": "20411", "TRANSITION_ID": "204", "ACTION_TYPE": "8", "ACTION_DATA": {} },
+    { "ID": "20412", "TRANSITION_ID": "204", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Opção inválida." } },
+    { "ID": "20413", "TRANSITION_ID": "204", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "1" } },
+
+    { "ID": "20511", "TRANSITION_ID": "205", "ACTION_TYPE": "5", "ACTION_DATA": { "destiny": "7102" } },
+
+    { "ID": "30111", "TRANSITION_ID": "301", "ACTION_TYPE": "13", "ACTION_DATA": { "bot_variables_text": "{\"$fila_destino\":\"7201\",\"$$origem\":\"menu\"}" } },
+    { "ID": "30112", "TRANSITION_ID": "301", "ACTION_TYPE": "5", "ACTION_DATA": { "destiny": "{$fila_destino}" } },
+    { "ID": "30211", "TRANSITION_ID": "302", "ACTION_TYPE": "13", "ACTION_DATA": { "bot_variables_text": "{\"$fila_destino\":7203,\"$origem\":\"menu\"}" } },
+    { "ID": "30212", "TRANSITION_ID": "302", "ACTION_TYPE": "13", "ACTION_DATA": { "bot_variables_text": "{\"$fila_destino\":7203,\"$lista\":[1,2]}" } },
+    { "ID": "30213", "TRANSITION_ID": "302", "ACTION_TYPE": "5", "ACTION_DATA": { "destiny": "{$fila_destino}" } },
+    { "ID": "30311", "TRANSITION_ID": "303", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "99" } },
+    { "ID": "30411", "TRANSITION_ID": "304", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "0" } },
+    { "ID": "30511", "TRANSITION_ID": "305", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Até logo! Obrigado pelo contato. Volte sempre que precisar de ajuda com boletos, segunda via, negociação de débitos, alteração de vencimento ou qualquer outro assunto financeiro. Nosso time está disponível de segunda a sexta. Atendimento humano também pelo telefone." } },
+    { "ID": "30512", "TRANSITION_ID": "305", "ACTION_TYPE": "6", "ACTION_DATA": { "status": "3" } },
+
+    { "ID": "40111", "TRANSITION_ID": "401", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "A1" } },
+    { "ID": "40211", "TRANSITION_ID": "402", "ACTION_TYPE": "4", "ACTION_DATA": { "destiny": "{$bot_preferido}" } },
+
+    { "ID": "50111", "TRANSITION_ID": "501", "ACTION_TYPE": "2", "ACTION_DATA": "", "3": "{&quot;destiny&quot;:&quot;B2&quot;}" },
+    { "ID": "50112", "TRANSITION_ID": "501", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "3" } },
+
+    { "ID": "70111", "TRANSITION_ID": "701", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "﻿" } },
+    { "ID": "70112", "TRANSITION_ID": "701", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "2" } }
+  ]
+}

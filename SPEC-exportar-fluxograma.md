@@ -308,9 +308,39 @@ Fixtures:
 - Locais (gitignored): os 2 de `fixtures_reais/` e **pelo menos 3 bots reais baixados pelo "Backup JSON" da própria extensão**, incluindo o de 72 estados e o "RCX - PRODUÇÃO 15/01". O `gerar_golden.py` roda neles do mesmo jeito, porque o parser do desktop aceita o formato do Backup JSON.
 
 **Aceite:**
-- [ ] 100% dos goldens batem (sintéticos + locais, com e sem nomes do ambiente, nas duas formas de entrada).
-- [ ] Todos os 16 itens da tabela de armadilhas com teste ou cobertura por golden identificada.
-- [ ] `npm test` roda sem depender de navegador (Node + vitest).
+- [x] 100% dos goldens batem (sintéticos + locais, com e sem nomes do ambiente, nas duas formas de entrada).
+- [x] Todos os 16 itens da tabela de armadilhas com teste ou cobertura por golden identificada (ver abaixo).
+- [x] `npm test` roda sem depender de navegador (Node + vitest).
+- [ ] Goldens locais com **pelo menos 3 bots reais do "Backup JSON"** da extensão (hoje só os 2 de `fixtures_reais` do Fluxo BOT).
+
+#### Resultado da Fase 1 (2026-09-23, branch `feat/exportar-fluxograma`)
+
+- Port em `fluxograma/src/core/`, mapa arquivo a arquivo em `fluxograma/ORIGEM.md`. **103 testes passando**, `tsc --noEmit` limpo.
+- Goldens: 5 sintéticos do Fluxo BOT + `cobertura-port.json` (escrito à mão para exercitar as armadilhas) + 2 bots reais locais, cada um sem e com nomes do ambiente, nas duas formas de entrada; mais 15 casos de erro com a mensagem idêntica à do Python.
+- **Teste de mutação**: trocar o `splitlines` do Python por `split("\n")`, ou o `strip` do Python pelo `trim()` do JS, faz a paridade falhar. Os goldens pegam divergências sutis.
+- Divergências aceitas (só com dado que a Orpen não produz) listadas em `ORIGEM.md`.
+- **Achado: ordem de entrada.** O `getBot` (usado pela extensão) ordena estados por número, transições por estado + prioridade, e condições/ações por ID. O `exportBotJSON` nativo da Orpen **não tem `ORDER BY`**. Como o dagre depende da ordem, o mesmo bot pode ter layout um pouco diferente no desktop se ele abrir o export nativo. Não é erro do port: a comparação da Fase 4 usa o "Backup JSON" da extensão dos dois lados.
+
+Cobertura de cada armadilha:
+
+| # | Coberto por |
+|---|---|
+| 1 Ordem de inserção | Todos os goldens (comparação estrita da ordem de `nodes`/`edges`); `cobertura-port` tem estados `"10"`/`"A1"`/`"B2"` que um objeto JS reordenaria |
+| 2 DFS / pilha | Back edges nos goldens (`cobertura-port`, bot real `eav_parque_lage`) |
+| 3 Ordenação de estados | `cobertura-port` (`"0"`, dígitos, `"A1"`, `"B2"`, `"10"`) + `compararStr` em `pythonCompat.test.ts` |
+| 4 `int()` | `pythonCompat.test.ts` + `erros.json` (ID não numérico) + ações fora de ordem no `cobertura-port` |
+| 5 `html.unescape` | Chave `"3"` escapada no `cobertura-port` + `pythonCompat.test.ts` |
+| 6 `splitlines` | Menu com U+2028 no `cobertura-port` + `pythonCompat.test.ts` + mutação |
+| 7 `strip` | Mensagem só com BOM no `cobertura-port` + `pythonCompat.test.ts` + mutação |
+| 8 Regex com `\d` Unicode | Opção `٣` (dígito arábico) no `cobertura-port` |
+| 9 `isdigit` | `pythonCompat.test.ts` |
+| 10 Truthiness | `pythonCompat.test.ts` + goldens (opção sem valor, fallback) |
+| 11 `==` estrutural | `7203` repetido na fila dinâmica do `cobertura-port` + `pythonCompat.test.ts` |
+| 12 `isinstance` | Goldens (dados mistos string/número) |
+| 13 f-string `{$var}` | Fila dinâmica no `cobertura-port` |
+| 14 `.lower()` com acento | Goldens ("contém") |
+| 15 `setdefault` | Transição que passa por dois estados (`A1` → `B2` → `3`) no `cobertura-port` |
+| 16 IDs de nós/arestas | Todos os goldens |
 
 ### Fase 2: Renderizador em iframe + captura PNG/SVG (1 a 1,5 dia)
 

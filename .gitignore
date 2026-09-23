@@ -1,4 +1,5 @@
 node_modules/
+fluxograma/tests/golden_local/
 .DS_Store
 *.zip
 *.backup.html

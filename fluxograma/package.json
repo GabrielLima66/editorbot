@@ -1,0 +1,21 @@
+{
+  "name": "fluxograma",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "golden": "\"C:/Users/RCX/Desktop/Fluxo BOT/.venv/Scripts/python.exe\" scripts/gerar_golden.py"
+  },
+  "dependencies": {
+    "he": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/he": "^1.2.3",
+    "@types/node": "^24.13.3",
+    "typescript": "~6.0.2",
+    "vitest": "^4.0.0"
+  }
+}

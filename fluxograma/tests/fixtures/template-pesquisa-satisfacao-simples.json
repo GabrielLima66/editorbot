@@ -1,0 +1,255 @@
+{
+  "0": "99",
+  "ID": "99",
+  "1": "PESQUISA DE SATISFACAO - EMPRESA_X",
+  "NAME": "PESQUISA DE SATISFACAO - EMPRESA_X",
+  "2": "600",
+  "CONF_DELIVERY_TIME": "600",
+  "3": "7001",
+  "CONF_DELIVERY_QUEUE": "7001",
+  "4": "3",
+  "TIME_ANSWER": "3",
+  "5": "600",
+  "TIMEOUT_DELAY": "600",
+  "6": "close",
+  "TIMEOUT_ACTION": "close",
+  "7": "322",
+  "TIMEOUT_DESTINY": "322",
+  "8": "Seu atendimento foi finalizado.",
+  "TIMEOUT_MESSAGE": "Seu atendimento foi finalizado.",
+  "BOT_STATES": [
+    {
+      "0": "347",
+      "ID": "347",
+      "1": "0",
+      "STATE_NUMBER": "0",
+      "2": "HOME",
+      "ALIAS": "HOME"
+    },
+    {
+      "0": "348",
+      "ID": "348",
+      "1": "1",
+      "STATE_NUMBER": "1",
+      "2": "RATE",
+      "ALIAS": "RATE"
+    }
+  ],
+  "BOT_TRANSITIONS": [
+    {
+      "0": "3452",
+      "ID": "3452",
+      "1": "0",
+      "STATE": "0",
+      "2": "",
+      "CONDITION": "",
+      "3": "",
+      "MESSAGE": "",
+      "4": "",
+      "TARGET_TYPE": "",
+      "5": "",
+      "TARGET": "",
+      "6": "0",
+      "PRIORITY": "0"
+    },
+    {
+      "0": "3453",
+      "ID": "3453",
+      "1": "1",
+      "STATE": "1",
+      "2": "",
+      "CONDITION": "",
+      "3": "",
+      "MESSAGE": "",
+      "4": "",
+      "TARGET_TYPE": "",
+      "5": "",
+      "TARGET": "",
+      "6": "0",
+      "PRIORITY": "0"
+    },
+    {
+      "0": "3454",
+      "ID": "3454",
+      "1": "1",
+      "STATE": "1",
+      "2": "",
+      "CONDITION": "",
+      "3": "",
+      "MESSAGE": "",
+      "4": "",
+      "TARGET_TYPE": "",
+      "5": "",
+      "TARGET": "",
+      "6": "1",
+      "PRIORITY": "1"
+    },
+    {
+      "0": "3455",
+      "ID": "3455",
+      "1": "1",
+      "STATE": "1",
+      "2": "",
+      "CONDITION": "",
+      "3": "",
+      "MESSAGE": "",
+      "4": "",
+      "TARGET_TYPE": "",
+      "5": "",
+      "TARGET": "",
+      "6": "2",
+      "PRIORITY": "2"
+    }
+  ],
+  "BOT_CONDITIONS": [
+    {
+      "0": "3650",
+      "ID": "3650",
+      "1": "3452",
+      "TRANSITION_ID": "3452",
+      "2": "8",
+      "CONDITION_TYPE": "8",
+      "CONDITION_DATA": {
+        "variable": "error_count",
+        "value": "1000"
+      }
+    },
+    {
+      "0": "3651",
+      "ID": "3651",
+      "1": "3453",
+      "TRANSITION_ID": "3453",
+      "2": "11",
+      "CONDITION_TYPE": "11",
+      "CONDITION_DATA": {
+        "variable": "message",
+        "value": ""
+      }
+    },
+    {
+      "0": "3652",
+      "ID": "3652",
+      "1": "3454",
+      "TRANSITION_ID": "3454",
+      "2": "2",
+      "CONDITION_TYPE": "2",
+      "CONDITION_DATA": {
+        "variable": "message",
+        "value": "Não\nNao\nnao\nnão\nNAO\nNÃO"
+      }
+    },
+    {
+      "0": "3653",
+      "ID": "3653",
+      "1": "3455",
+      "TRANSITION_ID": "3455",
+      "2": "2",
+      "CONDITION_TYPE": "2",
+      "CONDITION_DATA": {
+        "variable": "message",
+        "value": ""
+      }
+    }
+  ],
+  "BOT_ACTIONS": [
+    {
+      "0": "6586",
+      "ID": "6586",
+      "1": "3452",
+      "TRANSITION_ID": "3452",
+      "2": "1",
+      "ACTION_TYPE": "1",
+      "ACTION_DATA": {
+        "message_text": "{\n  \"interactive\": {\n    \"type\": \"list\",\n    \"header\": {\n      \"type\": \"text\",\n      \"text\": \"\"\n    },\n    \"body\": {\n      \"text\": \"Participe da nossa pesquisa de satisfação e contribua para melhorarmos cada vez mais o nosso atendimento!😀\\n\\nO que você achou do seu atendimento?\"\n    },\n    \"footer\": {\n      \"text\": \"\"\n    },\n    \"action\": {\n      \"button\": \"Nota\",\n      \"sections\": [\n        {\n          \"title\": \"Pesquisa de Satisfação\",\n          \"rows\": [\n            {\n              \"id\": \"5\",\n              \"title\": \"Ótimo\",\n\"description\": \"⭐⭐⭐⭐⭐\"\n            },\n            {\n              \"id\": \"4\",\n              \"title\": \"Bom\",\n\"description\": \"⭐⭐⭐⭐\"\n            },\n            {\n              \"id\": \"3\",\n              \"title\": \"Regular\",\n\"description\": \"⭐⭐⭐\"\n            },\n            {\n              \"id\": \"2\",\n              \"title\": \"Ruim\",\n\"description\": \"⭐⭐\"\n            },\n            {\n              \"id\": \"1\",\n              \"title\": \"Péssimo\",\n\"description\": \"⭐\"\n            }\n          ]\n        }\n      ]\n    }\n  }\n}"
+      }
+    },
+    {
+      "0": "6587",
+      "ID": "6587",
+      "1": "3452",
+      "TRANSITION_ID": "3452",
+      "2": "2",
+      "ACTION_TYPE": "2",
+      "ACTION_DATA": {
+        "destiny": "1"
+      }
+    },
+    {
+      "0": "6588",
+      "ID": "6588",
+      "1": "3453",
+      "TRANSITION_ID": "3453",
+      "2": "7",
+      "ACTION_TYPE": "7",
+      "ACTION_DATA": {
+        "script_name": "81"
+      }
+    },
+    {
+      "0": "6589",
+      "ID": "6589",
+      "1": "3453",
+      "TRANSITION_ID": "3453",
+      "2": "1",
+      "ACTION_TYPE": "1",
+      "ACTION_DATA": {
+        "message_text": "Seu atendimento foi finalizado."
+      }
+    },
+    {
+      "0": "6590",
+      "ID": "6590",
+      "1": "3453",
+      "TRANSITION_ID": "3453",
+      "2": "6",
+      "ACTION_TYPE": "6",
+      "ACTION_DATA": {
+        "crm_status": "322"
+      }
+    },
+    {
+      "0": "6591",
+      "ID": "6591",
+      "1": "3454",
+      "TRANSITION_ID": "3454",
+      "2": "1",
+      "ACTION_TYPE": "1",
+      "ACTION_DATA": {
+        "message_text": "Seu atendimento foi finalizado."
+      }
+    },
+    {
+      "0": "6592",
+      "ID": "6592",
+      "1": "3454",
+      "TRANSITION_ID": "3454",
+      "2": "6",
+      "ACTION_TYPE": "6",
+      "ACTION_DATA": {
+        "crm_status": "322"
+      }
+    },
+    {
+      "0": "6593",
+      "ID": "6593",
+      "1": "3455",
+      "TRANSITION_ID": "3455",
+      "2": "1",
+      "ACTION_TYPE": "1",
+      "ACTION_DATA": {
+        "message_text": "Seu atendimento foi finalizado."
+      }
+    },
+    {
+      "0": "6594",
+      "ID": "6594",
+      "1": "3455",
+      "TRANSITION_ID": "3455",
+      "2": "6",
+      "ACTION_TYPE": "6",
+      "ACTION_DATA": {
+        "crm_status": "322"
+      }
+    }
+  ]
+}
