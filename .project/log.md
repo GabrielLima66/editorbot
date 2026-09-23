@@ -7,7 +7,7 @@ Iniciado em: 17/09/2026, 17:18:57
 - **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 0 (spike) concluída em 23/09/2026
 - **Última Tarefa Concluída:** Spike validado na bot.php real (iframe de extensão, variante (b) na tela com opacity 0, fonte, bot grande, nomes de fila/calendário). Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 0"
 - **Próxima Tarefa em Aberto:** Fase 1 da SPEC-exportar-fluxograma.md: port do pipeline Python do Fluxo BOT (commit 7c9c976) para TS, com testes golden
-- **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Nome de bot externo ainda não foi validado com bot real (fica para o aceite da Fase 3).
+- **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Correspondência de IDs de fila, bot externo e calendário com os cadastros validada com bots reais.
 
 ---
 
@@ -27,7 +27,7 @@ Iniciado em: 17/09/2026, 17:18:57
 <!-- LOG_ENTRIES -->
 ### 23/09/2026 — 🏁 MARCO
 
-Fase 0 da exportação de fluxograma concluída. Todas as premissas técnicas validadas na bot.php real, exceto o nome de bot externo (o bot testado não tinha esse caso). Detalhes na SPEC-exportar-fluxograma.md, seção "Resultado da Fase 0".
+Fase 0 da exportação de fluxograma concluída. Todas as premissas técnicas validadas na bot.php real, incluindo a correspondência de fila, bot externo e calendário com os cadastros do ambiente. Detalhes na SPEC-exportar-fluxograma.md, seção "Resultado da Fase 0".
 
 ---
 ### 23/09/2026 — 🔵 DECISÃO

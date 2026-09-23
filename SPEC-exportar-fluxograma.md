@@ -285,7 +285,8 @@ Teste com um bot sintético de 245 nós / 289 arestas (porte do "OP 1 - CONSULTA
 | `vendor/*` em `web_accessible_resources` | ✅ Cobre subpastas: o iframe `vendor/fluxograma-spike/index.html` carregou sem mudar o manifest. Os `assets/` são carregados pela própria página da extensão, então não precisam estar listados. |
 | D6: fila | ✅ `destiny` da ação tipo 5 = `queues[].id` (ex.: 7101 → "[7101] Suporte"). |
 | D6: calendário | ✅ `CONDITION_TYPE` = `calendars[].id` (227, 234, 182 resolvidos). |
-| D6: bot externo | ⏳ Não testado: o bot usado não tinha transferência para outro bot. Validar no aceite da Fase 3. Até lá vale a regra "sem correspondência, sem nome". |
+| D6: bot externo | ✅ `destiny` da ação tipo 4 = `bots[].id` (ex.: 1208262 → "[IMPORT] BOT SUPORTE FIN OUVIDORIA", exibido como "[1208262] [IMPORT] BOT SUPORTE FIN OUVIDORIA"). Destino dinâmico (`{$pref_agent}`) vira fila dinâmica, sem nome, como no desktop. |
+| Volume real do ambiente | 61 filas, 178 bots, 23 calendários. Um único bot de produção chegou a ter 9 filas, 1 bot externo e 2 calendários, todos resolvidos. |
 | Nomes com espaço no fim | ⚠️ Encontrado nos cadastros (ex.: `"[-50] QA - Teste Valor Negativo "`). Os **nomes** também passam por `trim()` (ver D6). |
 
 ### Fase 1: Port do pipeline + paridade golden (2 a 3 dias)
@@ -362,7 +363,7 @@ Fixtures:
 - [ ] Bot novo: botão desabilitado com a dica.
 - [ ] Geração em segundo plano: dá para rolar e editar o bot enquanto gera.
 - [ ] PNG e SVG baixados com o nome correto.
-- [ ] Bot com transferência para outro bot (ação tipo 4): o bot externo aparece com o nome do cadastro (item do D6 que não foi testado na Fase 0).
+- [ ] Bot com transferência para outro bot (ação tipo 4): o bot externo aparece como "[ID] NOME", sem o prefixo "[Bot]".
 - [ ] Filas, bots externos e calendários com nome real no fluxograma; referência inexistente no ambiente aparece como hoje (número / calendário "não resolvido").
 - [ ] Bot com erro estrutural (transição órfã) mostra toast de erro e não baixa nada.
 - [ ] Checklist de regressão (abaixo) 100% ok.
