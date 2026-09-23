@@ -126,7 +126,7 @@ No desktop, o usuário digita nomes na Nomenclatura, e `aplicar_overrides_reactf
 
 Regras:
 - Referência sem correspondência no ambiente fica como hoje (número, ou "não resolvido" no calendário), igual ao desktop sem nomenclatura preenchida.
-- A comparação de ID é por string, sem espaços nas pontas (`String(id).trim()`), dos dois lados.
+- A comparação de ID é por string, sem espaços nas pontas (`String(id).trim()`), dos dois lados. O **nome** também passa por `trim()`: a Fase 0 encontrou cadastros com espaço sobrando no fim.
 - Se `state.ambienteOrpen` não existir (o collector falhou), o fluxograma sai sem nomes e o toast de pronto avisa: "Fluxograma gerado sem os nomes do ambiente (cadastros da Orpen não carregados)".
 
 O que **não** tem como ser resolvido (e por quê), para registro:
@@ -188,7 +188,7 @@ Arquivos existentes que mudam, **só por adição**:
 | `js/orpen-bridge.js` | (a) Insere no `.bv-footer`, à esquerda de "Backup JSON", o botão "Gerar fluxograma" + seletor PNG/SVG, e liga o listener em `ligarBotoesExtensao`, com `import()` dinâmico de `fluxograma-export.js` só no clique. (b) `abrirEditorOrpen`: grava `state.baselineSalvo` depois de `fromGetBotResponse`. (c) `salvarBotNaOrpen`: passa a `return true` no sucesso e `return false` em toda saída de falha (validação de ID/nome, erro HTTP, erro do servidor, exceção), e atualiza `state.baselineSalvo` no sucesso. Nenhuma outra linha muda; toasts, spinners, pendências e o reload de bot novo continuam como estão. (d) Exporta `salvarBotNaOrpen` para o `fluxograma-export.js` poder chamá-lo. |
 | `js/state.js` | Campo novo `baselineSalvo: null`. |
 | `css/styles.css` | Regras novas escopadas ao botão (estado "gerando", spinner, seletor) e ao diálogo de confirmação. Nenhuma regra existente é alterada. O diálogo **não usa `zoom` nem centralização por flex no eixo vertical** (evita o bug de header cortado já documentado no próprio `styles.css`). |
-| `manifest.json` | Só o bump de `version`. `vendor/*` já está em `web_accessible_resources`; confirmar na Fase 0 que o padrão cobre subpastas (`vendor/fluxograma/assets/…`). Se não cobrir, **acrescentar** a entrada `vendor/fluxograma/*`. |
+| `manifest.json` | Só o bump de `version`. `vendor/*` já cobre `vendor/fluxograma/index.html` (confirmado na Fase 0). |
 | `.gitignore` | Acrescentar `fluxograma/node_modules/` e `fluxograma/tests/golden_local/`. |
 | `CHANGELOG.md`, `DOCUMENTACAO_EXTENSAO.md` | Documentação da feature. |
 
@@ -198,7 +198,7 @@ Não mudam: `orpen-adapter.js`, `bot-view-render.js`, `bot-view-interactions.js`
 
 ## Protocolo extensão ↔ iframe
 
-1. `fluxograma-export.js` cria, uma única vez, o iframe `chrome.runtime.getURL('vendor/fluxograma/index.html') + '#n=<nonce>'`. O iframe é anexado fora do overlay do editor, para continuar vivo se o modal for fechado no meio da geração. Onde exatamente e com que CSS (oculto fora da tela ou invisível dentro dela) é decidido na Fase 0; ver risco R1.
+1. `fluxograma-export.js` cria, uma única vez, o iframe `chrome.runtime.getURL('vendor/fluxograma/index.html') + '#n=<nonce>'`, anexado ao `document.body` (fora do overlay do editor, para continuar vivo se o modal for fechado no meio da geração), **dentro da área visível e invisível** (variante (b) da Fase 0: `position:fixed; left:0; top:0; width:1280px; height:800px; border:0; opacity:0; pointer-events:none; z-index:0`). Fora da tela não funciona: o Chrome congela o iframe (risco R1, confirmado).
 2. No `load`, o content script cria um `MessageChannel` e envia `{tipo:'conectar', nonce}` com `targetOrigin = 'chrome-extension://<id>'`, transferindo a `port2`. O iframe só aceita a porta se o `nonce` bater com o do hash da URL. A partir daí tudo trafega pela porta privada. Nada passa por `window.postMessage` aberto, então scripts da página da Orpen não leem o arquivo gerado.
 3. Mensagens:
 
@@ -267,6 +267,27 @@ Protótipo descartável que prova as premissas arriscadas antes de investir no p
 
 **Saída:** nota curta em `.project/log.md` com a variante de iframe escolhida e os tempos medidos. Se a CSP bloquear o iframe, voltar a esta spec antes de seguir (plano B: renderizar no Shadow DOM, registrando a Inter via `FontFace` em `document.fonts` e passando `fontEmbedCSS` ao `html-to-image`).
 
+#### Resultado da Fase 0 (2026-09-23, `bot.php` real, branch `spike/fluxograma-fase0`)
+
+Teste com um bot sintético de 245 nós / 289 arestas (porte do "OP 1 - CONSULTA - 2026").
+
+| Item | Resultado |
+|---|---|
+| Iframe de extensão × CSP da Orpen | ✅ Carrega. R2 descartado; o plano B não é necessário. |
+| Handshake `MessageChannel` + nonce | ✅ Funciona. |
+| Variante (a) fora da tela | ❌ `fps: 0`: o Chrome congela o iframe e os nós nunca são medidos. R1 confirmado para essa variante. **Descartada.** |
+| Variante (b) na tela, `opacity:0` | ✅ 61 fps, arestas desenhadas em ~0,25 s. **Escolhida.** Estilo: `position:fixed; left:0; top:0; width:1280px; height:800px; border:0; opacity:0; pointer-events:none; z-index:0`, anexado ao `document.body`. |
+| Variante (c) mini card visível | ✅ Também funciona. Fica como alternativa se a (b) der problema. |
+| Fonte Inter | ⚠️ Na primeira rodada, `document.fonts.ready` resolvia antes de a Inter ser baixada (nenhum texto a usava ainda), então o `layout.ts` media os cards com a fonte de fallback. **Corrigido com `document.fonts.load()` explícito** (ver Fase 2, item 4). Depois da correção: `interCarregada: true`, `@font-face` Inter 400/500 embutido no SVG, e a largura do PNG passou de 15.785 para 14.594 px (medição coerente com o desenho). |
+| Bot grande, PNG | ✅ 10,4 s no total (captura 7,8 s), 14,2 MB, 14.594 × 16.384 px (altura reduzida pelo limite de 16.384 px do `html-to-image`, igual ao desktop). |
+| Bot grande, SVG | ✅ 6,3 s no total (captura 2,0 s), 15,6 MB. Abre no Chrome e no Edge. ~14,5 MB do arquivo são estilos inline que o `html-to-image` copia elemento por elemento; o desktop faz igual, então fica por paridade (otimização possível no futuro). |
+| `eval`/`new Function` no bundle (R7) | ✅ Nenhum. O build sai sem script inline e roda na CSP de página de extensão. |
+| `vendor/*` em `web_accessible_resources` | ✅ Cobre subpastas: o iframe `vendor/fluxograma-spike/index.html` carregou sem mudar o manifest. Os `assets/` são carregados pela própria página da extensão, então não precisam estar listados. |
+| D6: fila | ✅ `destiny` da ação tipo 5 = `queues[].id` (ex.: 7101 → "[7101] Suporte"). |
+| D6: calendário | ✅ `CONDITION_TYPE` = `calendars[].id` (227, 234, 182 resolvidos). |
+| D6: bot externo | ⏳ Não testado: o bot usado não tinha transferência para outro bot. Validar no aceite da Fase 3. Até lá vale a regra "sem correspondência, sem nome". |
+| Nomes com espaço no fim | ⚠️ Encontrado nos cadastros (ex.: `"[-50] QA - Teste Valor Negativo "`). Os **nomes** também passam por `trim()` (ver D6). |
+
 ### Fase 1: Port do pipeline + paridade golden (2 a 3 dias)
 
 É a fase mais importante. A fidelidade é garantida aqui.
@@ -295,7 +316,7 @@ Fixtures:
 1. Copiar a camada de render (D3) para `fluxograma/src/render/`, cada arquivo com um cabeçalho indicando a origem e o commit.
 2. `exportar.ts`: mantém `capturarDiagrama(nodes, formato)` **com os mesmos parâmetros do desktop**: padding 0,06, fundo `#f4f5f7`, `pixelRatio` 2 para PNG e 1 para SVG, `getViewportForBounds(bounds, l, a, 0.05, 4, 0.06)`. Troca a ponte Qt por um retorno de `Blob`. Para PNG, usa `toBlob` em vez de `toPng` para não passar por base64 num bot grande (o pixel resultante é o mesmo). Para SVG, usa `toSvg` e converte o data URL em `Blob` `image/svg+xml`.
 3. `Renderizador.tsx`: ReactFlow sem `Controls`/`MiniMap`/`Background`/seleção. Monta as arestas com cor por estado exatamente como o `App.tsx` do desktop (`corPorEstado`, `MarkerType.ArrowClosed` 16×16, vermelho `oklch(64% 0.19 25)` nas back edges).
-4. Condição de pronto antes de capturar: `document.fonts.ready` → layout calculado → `useNodesInitialized()` verdadeiro → número de `.react-flow__edge` renderizados igual a `edges.length` → dois `requestAnimationFrame`. Timeout de 30 s, que gera o erro "Não foi possível desenhar o fluxograma a tempo".
+4. Condição de pronto antes de capturar: **antes do layout**, `await document.fonts.load()` para cada fonte que o `layout.ts` mede (`500 11px`, `600 14px`, `400 13px`, `400 12px` e `400 12.5px Inter`). `document.fonts.ready` sozinho não basta: ele resolve na hora se nenhum texto usou a fonte ainda (achado da Fase 0). Depois: layout calculado → `useNodesInitialized()` verdadeiro → número de `.react-flow__edge` renderizados igual a `edges.length` → dois `requestAnimationFrame`. Timeout de 30 s, que gera o erro "Não foi possível desenhar o fluxograma a tempo".
 5. Canvas grande (só PNG): o `html-to-image 1.11.13` já reduz a escala automaticamente acima de 16.384 px por dimensão, e o desktop herda o mesmo comportamento. Manter (é paridade). Se mesmo assim o resultado vier vazio, devolver o erro "Fluxograma grande demais para PNG. Tente gerar em SVG".
 6. `ponteExtensao.ts`: o protocolo descrito acima.
 7. Build: `npm run build` → `vendor/fluxograma/` (`index.html` + `assets/`), sem script inline. Conferir que a página abre sem erro de CSP no console da extensão.
@@ -341,6 +362,7 @@ Fixtures:
 - [ ] Bot novo: botão desabilitado com a dica.
 - [ ] Geração em segundo plano: dá para rolar e editar o bot enquanto gera.
 - [ ] PNG e SVG baixados com o nome correto.
+- [ ] Bot com transferência para outro bot (ação tipo 4): o bot externo aparece com o nome do cadastro (item do D6 que não foi testado na Fase 0).
 - [ ] Filas, bots externos e calendários com nome real no fluxograma; referência inexistente no ambiente aparece como hoje (número / calendário "não resolvido").
 - [ ] Bot com erro estrutural (transição órfã) mostra toast de erro e não baixa nada.
 - [ ] Checklist de regressão (abaixo) 100% ok.
@@ -386,13 +408,13 @@ Rodar na `bot.php` real, com a extensão recarregada, antes de fechar as Fases 3
 
 | # | Risco | Mitigação |
 |---|---|---|
-| R1 | O Chrome estrangula iframe cross-origin fora da tela: `requestAnimationFrame`/`ResizeObserver` não disparam, e as arestas nunca desenham. | A Fase 0 testa as 3 variantes; a condição de pronto tem timeout com erro claro. |
-| R2 | A CSP da `bot.php` bloqueia o iframe de extensão. | Validado na Fase 0; plano B no Shadow DOM, com `FontFace` + `fontEmbedCSS`. |
+| R1 | O Chrome estrangula iframe cross-origin fora da tela: `requestAnimationFrame`/`ResizeObserver` não disparam, e as arestas nunca desenham. | **Confirmado na Fase 0** para iframe fora da tela. Mitigado com a variante (b), na tela e invisível. A condição de pronto mantém o timeout com erro claro. |
+| R2 | A CSP da `bot.php` bloqueia o iframe de extensão. | **Descartado na Fase 0**: o iframe carrega. |
 | R3 | O port diverge do Python em algum detalhe (ordem, Unicode, truthiness). | Tabela de armadilhas + goldens com ordem estrita + bots reais nos goldens locais. |
 | R4 | O Fluxo BOT evolui e o port fica desatualizado (duas implementações). | `ORIGEM.md` com o commit; o golden guarda o commit; regra de manutenção abaixo. |
 | R5 | A medição de texto (`measureText`) difere entre o Chromium do Qt e o Chrome e desloca levemente o layout. | Inter embutida nos dois lados; a comparação visual da Fase 2 aceita só diferença de anti-aliasing. Se aparecer deslocamento, investigar antes de liberar. |
 | R6 | Bot muito grande: memória e tempo de captura; PNG reduzido pelo limite de canvas. | Medido na Fase 0; `toBlob` + `ArrayBuffer` transferível; a geração não bloqueia o editor; o SVG existe como alternativa sem limite. |
-| R7 | Alguma dependência usar `eval`/`new Function` (bloqueado na CSP de página de extensão). | Verificado no build da Fase 2 (console da página da extensão). |
+| R7 | Alguma dependência usar `eval`/`new Function` (bloqueado na CSP de página de extensão). | **Descartado na Fase 0**: o bundle não usa nenhum dos dois. Conferir de novo no build da Fase 2 se alguma dependência mudar. |
 | R8 | A linha de base acusa alteração que não existe (falso positivo), porque algum campo do payload não é determinístico. | Por construção, `toUpdateBotPayload` + `serializeBracketNotation` são puros e ordenados. Teste na Fase 3: abrir um bot e clicar em gerar sem mexer em nada não pode abrir o diálogo. |
 | R9 | Mudar o `salvarBotNaOrpen` altera o "Salvar". | A mudança é só acrescentar `return true/false` e atualizar a linha de base; o listener existente ignora o retorno. Coberto pelo checklist de regressão. |
 | R10 | O SVG abre em branco em Word/PowerPoint/Illustrator (`foreignObject`). | Limitação conhecida, igual à do desktop. Dica no seletor ("SVG: melhor para abrir no navegador") e PNG como padrão. |

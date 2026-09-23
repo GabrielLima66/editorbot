@@ -4,10 +4,10 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Especificação (Fase 1 do spec-driven) concluída para os 4 módulos do Capability Map
-- **Última Tarefa Concluída:** SPEC-state-engine.md redigido e aprovado (com ajuste: reordenação via drag-and-drop, não só setas)
-- **Próxima Tarefa em Aberto:** Fase 2 (Plan) do módulo `interceptor` — primeiro do build order (interceptor → orpen-adapter → editor-ui → state-engine)
-- **Decisões Críticas / Bloqueios:** Nenhum bloqueio. Specs salvas na raiz: SPEC-interceptor.md, SPEC-orpen-adapter.md, SPEC-editor-ui.md, SPEC-state-engine.md. Ver CAPABILITY_MAP.md para o mapa completo.
+- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 0 (spike) concluída em 23/09/2026
+- **Última Tarefa Concluída:** Spike validado na bot.php real (iframe de extensão, variante (b) na tela com opacity 0, fonte, bot grande, nomes de fila/calendário). Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 0"
+- **Próxima Tarefa em Aberto:** Fase 1 da SPEC-exportar-fluxograma.md: port do pipeline Python do Fluxo BOT (commit 7c9c976) para TS, com testes golden
+- **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Nome de bot externo ainda não foi validado com bot real (fica para o aceite da Fase 3).
 
 ---
 
@@ -25,6 +25,26 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 23/09/2026 — 🏁 MARCO
+
+Fase 0 da exportação de fluxograma concluída. Todas as premissas técnicas validadas na bot.php real, exceto o nome de bot externo (o bot testado não tinha esse caso). Detalhes na SPEC-exportar-fluxograma.md, seção "Resultado da Fase 0".
+
+---
+### 23/09/2026 — 🔵 DECISÃO
+
+Iframe do renderizador fica na tela, invisível (variante b: `opacity:0; pointer-events:none`). Fora da tela o Chrome congela o iframe (`fps: 0`) e o fluxograma nunca desenha.
+
+---
+### 23/09/2026 — 🔴 PROBLEMA (resolvido)
+
+A fonte Inter não estava carregada quando o `layout.ts` media os cards: `document.fonts.ready` resolve na hora se nenhum texto usou a fonte ainda. Corrigido com `document.fonts.load()` explícito antes do layout (item incorporado à Fase 2 da spec).
+
+---
+### 23/09/2026 — 📝 NOTA
+
+Bot sintético de 245 nós / 289 arestas: PNG em ~10 s (14 MB, altura limitada a 16.384 px, igual ao desktop); SVG em ~6 s (15,6 MB, dos quais ~14,5 MB são estilos inline do html-to-image, também igual ao desktop).
+
+---
 ### 17/09/2026, 17:27:56 — 🏁 MARCO
 
 SPEC-state-engine aprovado com ajustes. Fase 1 finalizada para todos os módulos do Capability Map!
