@@ -4,9 +4,9 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 2 (renderizador + captura) concluída em 23/09/2026, branch `feat/exportar-fluxograma`
-- **Última Tarefa Concluída:** Renderizador em iframe (`vendor/fluxograma/`) com paridade visual automatizada contra o build real do desktop: 22/22 casos com 0 pixel de diferença em PNG e SVG. Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 2"
-- **Próxima Tarefa em Aberto:** Fase 3 (integração na extensão: linha de base + salvar antes, botão no rodapé, download, toasts)
+- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 3 com código completo (`39fe778`, branch `feat/exportar-fluxograma`), **aguardando teste manual na bot.php**
+- **Última Tarefa Concluída:** Botão "Gerar fluxograma" + seletor PNG/SVG no rodapé, confirmação "salvar antes de gerar", geração em iframe invisível, download e toasts. 136 testes e paridade visual 22/22 mantidos
+- **Próxima Tarefa em Aberto:** ⚠️ DÉBITO: roteiro de teste manual da Fase 3 (SPEC → Fase 3 → "Aceite (pendente de teste manual)"); adiado em 23/09/2026 porque o usuário estava fora do PC. Depois disso, Fase 4 (aceite final e release). Não fazer merge no main antes do teste
 - **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Correspondência de IDs de fila, bot externo e calendário com os cadastros validada com bots reais.
 
 ---
@@ -25,6 +25,11 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 23/09/2026 — 🟡 SUPOSIÇÃO (débito)
+
+Teste manual da Fase 3 na bot.php real adiado a pedido do usuário (fora do PC). O código está completo e coberto por testes automatizados, mas nada da integração com o editor (botão, diálogo, salvar antes, download) foi exercitado na Orpen ainda. O branch `feat/exportar-fluxograma` fica fora do main até esse teste.
+
+---
 ### 23/09/2026 — 🏁 MARCO
 
 Fase 2 concluída: o renderizador da extensão gera PNG e SVG pixel a pixel idênticos aos do desktop (22 casos, incluindo 5 bots reais), verificado automaticamente contra o build real do Fluxo BOT num Chrome real.

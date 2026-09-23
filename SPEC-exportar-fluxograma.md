@@ -398,7 +398,9 @@ Cobertura de cada armadilha:
 4. Fechar o modal no meio da geração **não** cancela nada: o download e o toast acontecem mesmo assim (o `#mb-toast-container` já fica fora do overlay, ver `css/styles.css`). Abrir outro bot durante uma geração também não interfere, porque a geração usa o snapshot.
 5. Nenhuma chamada nova à Orpen além do `updateBot` do salvamento confirmado pelo usuário.
 
-**Aceite:**
+> **Status (2026-09-23):** código completo e commitado no branch `feat/exportar-fluxograma` (`39fe778`). Build do renderizador refeito, 136 testes passando e paridade visual com o desktop mantida (22/22). **Pendente: teste manual na `bot.php` real** (os itens abaixo), adiado a pedido do usuário. O branch **não vai para o `main`** antes desse teste.
+
+**Aceite (pendente de teste manual):**
 - [ ] Bot sem alterações: gera direto, sem diálogo.
 - [ ] Bot com alteração: o diálogo aparece; "Cancelar" não salva nem gera; "Salvar e gerar" salva (o bot reaberto mostra a alteração gravada) e depois gera.
 - [ ] Salvamento com erro (ex.: nome vazio, conflito de número): o erro aparece como hoje e nada é gerado.
