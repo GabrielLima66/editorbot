@@ -3,14 +3,18 @@
 // nonce que veio no hash da URL; tudo depois trafega pela porta privada,
 // entao scripts da pagina da Orpen nao leem o arquivo gerado.
 import type { Formato } from "./exportar";
-import type { NomesAmbiente } from "../core/nomesAmbiente";
+import type { AmbienteOrpen, NomesAmbiente } from "../core/nomesAmbiente";
 
 export interface PedidoGerar {
   tipo: "gerar";
   id: number;
   bot: unknown;
   formato: Formato;
-  nomesAmbiente: NomesAmbiente | null;
+  /** Cadastros crus de state.ambienteOrpen (a extensao manda isto; os
+   * nomes sao montados aqui, por montarNomesAmbiente, que tem teste). */
+  ambiente?: AmbienteOrpen | null;
+  /** Nomes ja montados - usado pelo harness de paridade (goldens). */
+  nomesAmbiente?: NomesAmbiente | null;
 }
 
 export type Etapa = "grafo" | "layout" | "render" | "captura";
@@ -18,7 +22,7 @@ export type Etapa = "grafo" | "layout" | "render" | "captura";
 export type Resposta =
   | { tipo: "conectado" }
   | { tipo: "progresso"; id: number; etapa: Etapa }
-  | { tipo: "pronto"; id: number; formato: Formato; arquivo: ArrayBuffer; nos: number; arestas: number }
+  | { tipo: "pronto"; id: number; formato: Formato; arquivo: ArrayBuffer; nos: number; arestas: number; semNomes: boolean }
   | { tipo: "erro"; id: number; mensagem: string; detalhe?: string };
 
 export function aguardarConexao(onPedido: (pedido: PedidoGerar, responder: (r: Resposta, transferir?: Transferable[]) => void) => void) {

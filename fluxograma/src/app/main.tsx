@@ -3,6 +3,7 @@
 // arquivo. Uma geracao por vez.
 import { createRoot } from "react-dom/client";
 import { ReactFlowProvider } from "reactflow";
+import { montarNomesAmbiente } from "../core/nomesAmbiente";
 import { ParserError } from "../core/parser";
 import { gerarGrafoReactFlow } from "../core/pipeline";
 import type { GrafoReactFlow } from "../render/types";
@@ -32,10 +33,11 @@ async function gerar(pedido: PedidoGerar, responder: (r: Resposta, transferir?: 
   }
   ocupado = true;
 
+  const nomes = pedido.nomesAmbiente ?? montarNomesAmbiente(pedido.ambiente);
   let grafo: GrafoReactFlow;
   try {
     responder({ tipo: "progresso", id, etapa: "grafo" });
-    grafo = gerarGrafoReactFlow(pedido.bot, pedido.nomesAmbiente) as unknown as GrafoReactFlow;
+    grafo = gerarGrafoReactFlow(pedido.bot, nomes) as unknown as GrafoReactFlow;
   } catch (e) {
     if (e instanceof ParserError) return falhar(`O bot tem um problema de estrutura: ${e.message}`);
     return falhar("Não foi possível montar o fluxograma.", String(e));
@@ -58,7 +60,15 @@ async function gerar(pedido: PedidoGerar, responder: (r: Resposta, transferir?: 
             root.render(null);
             ocupado = false;
             responder(
-              { tipo: "pronto", id, formato, arquivo, nos: grafo.nodes.length, arestas: grafo.edges.length },
+              {
+                tipo: "pronto",
+                id,
+                formato,
+                arquivo,
+                nos: grafo.nodes.length,
+                arestas: grafo.edges.length,
+                semNomes: nomes === null,
+              },
               [arquivo],
             );
           } catch (e) {

@@ -93,6 +93,23 @@ async function extrairEsqueletoOverlay() {
   // como backup manual antes de aplicar a mudança).
   const btnBaixar = botView.querySelector('#btn-bv-baixar');
   if (btnBaixar) {
+    // Exportar fluxograma (SPEC-exportar-fluxograma.md): formato + botão, à
+    // esquerda do "Backup JSON". Estilo próprio em css/styles.css — as
+    // variantes disabled:/hover: do Tailwind não estão no CSS vendorizado.
+    btnBaixar.insertAdjacentHTML(
+      'beforebegin',
+      `<div id="bv-fluxograma-grupo" class="bv-fluxograma-grupo">
+        <select id="bv-fluxograma-formato" class="bv-fluxograma-formato" title="Formato do fluxograma. SVG: melhor para abrir no navegador.">
+          <option value="png">PNG</option>
+          <option value="svg">SVG</option>
+        </select>
+        <button id="btn-bv-fluxograma" type="button" class="bv-btn-fluxograma">
+          <i data-lucide="workflow" id="btn-bv-fluxograma-icon"></i>
+          <span id="btn-bv-fluxograma-spinner" class="bv-fluxograma-spinner hidden"></span>
+          <span id="btn-bv-fluxograma-label">Gerar fluxograma</span>
+        </button>
+      </div>`
+    );
     btnBaixar.innerHTML = '<i data-lucide="download" class="w-4.5 h-4.5"></i> Backup JSON';
     btnBaixar.title = 'Baixar uma cópia de segurança deste bot em JSON antes de salvar';
     btnBaixar.insertAdjacentHTML(
@@ -181,9 +198,49 @@ async function montarOverlay() {
   return montagemPromise;
 }
 
+// Exatamente o que o "Salvar" enviaria ao servidor — comparar com a versão
+// gravada em state.baselineSalvo diz se há alteração não salva, sem flag de
+// "sujo" espalhada pelo editor.
+function assinaturaBot(bot) {
+  return serializeBracketNotation(toUpdateBotPayload(bot));
+}
+
+function temAlteracoesNaoSalvas() {
+  const bot = state.botCarregado;
+  return !!bot && assinaturaBot(bot) !== state.baselineSalvo;
+}
+
+function atualizarBotaoFluxograma() {
+  const btn = $('#btn-bv-fluxograma');
+  if (!btn) return;
+  const novo = !!state.botCarregado?._isNewBot;
+  btn.disabled = novo || state.fluxogramaGerando;
+  btn.title = novo
+    ? 'Salve o bot pela primeira vez para gerar o fluxograma'
+    : 'Gerar o fluxograma deste bot (como está salvo na plataforma)';
+}
+
 function ligarBotoesExtensao(shadowRoot) {
   shadowRoot.getElementById('btn-bv-salvar').addEventListener('click', salvarBotNaOrpen);
   shadowRoot.getElementById('btn-bv-baixar').addEventListener('click', baixarBotJson);
+
+  // Módulo carregado só no primeiro clique: quem nunca gera fluxograma não
+  // paga nada (nem o iframe de vendor/fluxograma/ é criado).
+  shadowRoot.getElementById('btn-bv-fluxograma').addEventListener('click', () => {
+    import('./fluxograma-export.js')
+      .then((m) =>
+        m.gerarFluxograma({
+          formato: shadowRoot.getElementById('bv-fluxograma-formato').value,
+          salvar: salvarBotNaOrpen,
+          temAlteracoesNaoSalvas,
+          atualizarBotao: atualizarBotaoFluxograma,
+        })
+      )
+      .catch((err) => {
+        console.error('[EDITOR_BOT] Falha ao carregar o gerador de fluxograma:', err);
+        mostrarToast('Não foi possível carregar o gerador de fluxograma.');
+      });
+  });
 
   // Esc fecha o overlay — só faz sentido no modo extensão (injetado por
   // cima de uma tela que já tem o próprio teclado/foco da Orpen).
@@ -208,22 +265,25 @@ function baixarBotJson() {
   mostrarToast('Backup baixado: ' + nomeArquivo);
 }
 
+// Devolve true se o bot foi gravado, false em qualquer falha — o botão
+// "Salvar" ignora o retorno; o "Gerar fluxograma" usa pra só gerar depois de
+// salvar com sucesso.
 async function salvarBotNaOrpen() {
   const bot = state.botCarregado;
-  if (!bot) return;
+  if (!bot) return false;
 
   if (!bot.ID || !String(bot.ID).trim()) {
     mostrarToast('Preencha o Número do Bot (ID).');
     const input = $('#bv-numero');
     if (input) input.focus();
-    return;
+    return false;
   }
 
   if (!bot.NAME || !String(bot.NAME).trim()) {
     mostrarToast('Preencha o Nome do Bot.');
     const input = $('#bv-nome');
     if (input) input.focus();
-    return;
+    return false;
   }
 
   const botaoSalvar = $('#btn-bv-salvar');
@@ -256,6 +316,8 @@ async function salvarBotNaOrpen() {
     }
 
     if (data && data.status === 'success') {
+      // O que acabou de ser gravado é a nova referência de "sem alterações".
+      state.baselineSalvo = body;
       mostrarToast('Bot salvo com sucesso na plataforma.');
       if (bot._isNewBot) {
         bot._isNewBot = false;
@@ -265,15 +327,18 @@ async function salvarBotNaOrpen() {
         const pendencias = listarPendencias(bot);
         if (pendencias.length) abrirPendenciasModal(pendencias);
       }
+      return true;
     } else {
       const msg = data && data.message === 'duplicated'
         ? 'Conflito: já existe outro bot com esse número.'
         : (data && data.message) || 'Erro ao salvar (o servidor não deu detalhes).';
       mostrarToast('Erro ao salvar: ' + msg);
+      return false;
     }
   } catch (err) {
     mostrarToast('Falha ao salvar: ' + err.message);
     console.error('[EDITOR_BOT] Falha em salvarBotNaOrpen:', err);
+    return false;
   } finally {
     botaoSalvar.disabled = false;
     label.textContent = textoOriginal;
@@ -317,8 +382,10 @@ export async function abrirEditorOrpenNovo(envData = null) {
 
   // Flag puramente local pro UI saber como se comportar
   state.botCarregado._isNewBot = true;
+  state.baselineSalvo = null;
 
   abrirBotView(state.botCarregado);
+  atualizarBotaoFluxograma();
   if (titulo) titulo.innerHTML = `Novo Bot <span class="bv-badge-header-id">Preencha os dados básicos</span>`;
 }
 export async function abrirEditorOrpen(botId, envData = null) {
@@ -366,6 +433,10 @@ export async function abrirEditorOrpen(botId, envData = null) {
 
     state.botCarregado = fromGetBotResponse(raw);
     abrirBotView(state.botCarregado);
+    // Depois do abrirBotView: se o render normalizar algum campo, isso não
+    // conta como alteração do usuário.
+    state.baselineSalvo = assinaturaBot(state.botCarregado);
+    atualizarBotaoFluxograma();
     if (titulo) titulo.innerHTML = `Editar Bot <span class="bv-badge-header-id">#${state.botCarregado.ID} — ${state.botCarregado.NAME || '(sem nome)'}</span>`;
   } catch (err) {
     console.error('[EDITOR_BOT] Falha ao carregar bot:', err);

@@ -443,3 +443,87 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 .mb-toast { display: flex; align-items: center; gap: 0.5rem; max-width: 22rem; background: #232229; border: 1px solid #3a3944; color: #e7e6ef; font-size: 0.8125rem; line-height: 1.3; padding: 0.625rem 0.875rem; border-radius: 0.625rem; box-shadow: 0 8px 24px rgba(0,0,0,0.35); opacity: 0; transform: translateY(-6px); transition: opacity .18s ease, transform .18s ease; }
 .mb-toast.mb-toast-show { opacity: 1; transform: translateY(0); }
 .mb-toast i { color: #22c55e; flex-shrink: 0; }
+
+/* ---- Exportar fluxograma (SPEC-exportar-fluxograma.md) ----
+   Botão e seletor ficam DENTRO de .bv-panel (zoom 1.15) ao lado dos botões
+   do rodapé, que usam rem do Tailwind: rem aqui também, pra ter o mesmo
+   tamanho relativo deles. Estilo próprio porque as variantes disabled:/
+   hover: do Tailwind não estão no CSS vendorizado. */
+#bot-view-overlay .bv-fluxograma-grupo { display: flex; align-items: center; gap: 0.375rem; }
+#bot-view-overlay .bv-fluxograma-formato {
+  height: 2.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--obd-surface);
+  border: 1px solid var(--obd-border-field);
+  border-radius: 0.5rem;
+  color-scheme: dark;
+  cursor: pointer;
+}
+#bot-view-overlay .bv-btn-fluxograma {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid rgba(131, 119, 255, 0.55);
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+#bot-view-overlay .bv-btn-fluxograma:hover:not(:disabled) { background: rgba(131, 119, 255, 0.12); border-color: var(--accent); }
+#bot-view-overlay .bv-btn-fluxograma:disabled { opacity: 0.5; cursor: not-allowed; }
+#bot-view-overlay .bv-btn-fluxograma svg { width: 1.125rem; height: 1.125rem; flex-shrink: 0; }
+#bot-view-overlay .bv-fluxograma-spinner {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border: 2px solid rgba(131, 119, 255, 0.3);
+  border-top-color: var(--accent);
+  border-radius: 9999px;
+  animation: fx-girar 0.8s linear infinite;
+}
+@keyframes fx-girar { to { transform: rotate(360deg); } }
+
+/* Confirmação "salvar antes de gerar": fora de .bv-panel (sem zoom), então
+   px - rem aqui renderia ~62% menor por causa do html { font-size: 10px }
+   da Orpen. Centralização por flex é segura: o bug do header cortado é de
+   align-items:center COMBINADO com zoom, e aqui não há zoom. */
+.fx-confirmacao {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483003;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 14, 30, 0.55);
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.fx-confirmacao-painel {
+  width: 100%;
+  max-width: 440px;
+  padding: 22px 24px 20px;
+  color: #ebe9f3;
+  background: #1c1a24;
+  border: 1px solid #2a2833;
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+.fx-confirmacao-titulo { margin: 0 0 8px; font-size: 17px; font-weight: 600; font-family: "Space Grotesk", sans-serif; }
+.fx-confirmacao-texto { margin: 0; font-size: 14px; line-height: 1.5; color: #948fa6; }
+.fx-confirmacao-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.fx-btn-secundario,
+.fx-btn-primario { font-size: 14px; font-weight: 500; padding: 9px 18px; border-radius: 8px; cursor: pointer; transition: background-color 0.12s; }
+.fx-btn-secundario { color: #b3b0c4; background: transparent; border: 1px solid #34313f; }
+.fx-btn-secundario:hover { background: #2a2833; color: #ebe9f3; }
+.fx-btn-primario { color: #fff; background: #8377ff; border: 1px solid #8377ff; }
+.fx-btn-primario:hover { background: #7162fa; }
+.fx-btn-secundario:focus-visible,
+.fx-btn-primario:focus-visible { outline: 2px solid #8377ff; outline-offset: 2px; }
