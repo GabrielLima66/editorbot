@@ -6,7 +6,7 @@ Iniciado em: 17/09/2026, 17:18:57
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
 - **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 1 (port + paridade) concluída em 23/09/2026, branch `feat/exportar-fluxograma`
 - **Última Tarefa Concluída:** Port do pipeline Python do Fluxo BOT (commit 7c9c976) em `fluxograma/src/core/`, 103 testes passando (goldens gerados pelo Python original). Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 1"
-- **Próxima Tarefa em Aberto:** Rodar os goldens com 3+ bots reais do "Backup JSON" (`npm run golden -- --local <pasta>`); depois Fase 2 (renderizador em iframe + captura PNG/SVG)
+- **Próxima Tarefa em Aberto:** Fase 2 da SPEC-exportar-fluxograma.md (renderizador em iframe + captura PNG/SVG). Goldens com 3 bots reais do Backup JSON já passam (127 testes)
 - **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Correspondência de IDs de fila, bot externo e calendário com os cadastros validada com bots reais.
 
 ---

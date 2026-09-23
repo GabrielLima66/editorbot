@@ -311,7 +311,7 @@ Fixtures:
 - [x] 100% dos goldens batem (sintéticos + locais, com e sem nomes do ambiente, nas duas formas de entrada).
 - [x] Todos os 16 itens da tabela de armadilhas com teste ou cobertura por golden identificada (ver abaixo).
 - [x] `npm test` roda sem depender de navegador (Node + vitest).
-- [ ] Goldens locais com **pelo menos 3 bots reais do "Backup JSON"** da extensão (hoje só os 2 de `fixtures_reais` do Fluxo BOT).
+- [x] Goldens locais com **pelo menos 3 bots reais do "Backup JSON"** da extensão: "OP 1 - CONSULTA - 2026" (238 nós / 390 arestas, 21 back edges, 6 calendários, fila e bot externo), "RCX - PRODUÇÃO 15/01" e "Teste" (bot externo), além dos 2 de `fixtures_reais` do Fluxo BOT. **127 testes passando.**
 
 #### Resultado da Fase 1 (2026-09-23, branch `feat/exportar-fluxograma`)
 
