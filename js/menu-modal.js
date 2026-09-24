@@ -1,86 +1,178 @@
 // ---------------------------------------------------------------------------
-// Menu de botões do WhatsApp (ACTION_TYPE 10, interactive.type "button"):
-// resumo compacto na lista + modal com um celular simulado pra editar.
-// Primeiro teste: só "Botões" (Lista e WebChat seguem no builder antigo).
+// Menus (ACTION_TYPE 10): resumo compacto na lista + modal com um celular
+// simulado pra editar. Cobre WhatsApp Botões, WhatsApp Lista e WebChat, com
+// troca de tipo. Conteúdo não reconhecido segue no builder antigo.
 //
 // Fidelidade (o formato gravado não muda):
 //  - Salvar EDITA o JSON original em vez de montar um novo: só textos e IDs
-//    mexidos mudam; header/footer vazios que já existiam continuam, qualquer
-//    outra chave é preservada e a indentação é a do original (4 espaços ou
-//    nenhuma nos bots reais). O builder antigo, se gravasse, apagaria
-//    header/footer vazios (14 de 39 menus de botões reais).
+//    mexidos mudam; header/footer vazios que já existiam continuam, campos
+//    opcionais só são criados se já existiam ou forem preenchidos, qualquer
+//    outra chave é preservada e a indentação é a do original. (O builder
+//    antigo apagava header/footer vazios e inventava campos vazios.)
 //  - Salvar sem mudar nada não grava nada (texto fica byte a byte).
-//  - Salvar grava no bot na hora (o builder antigo nunca gravava as edições).
+//  - ID (botão/opção da lista) e valor (WebChat) vazios são gerados do texto,
+//    com espaços trocados por "_".
+//  - Troca de tipo só vira mudança estrutural no Salvar: pra WebChat o texto
+//    do menu vira uma ação "Mensagem" antes dele; de WebChat pra WhatsApp a
+//    "Mensagem" anterior é reincorporada (mesmas regras do builder antigo).
 // ---------------------------------------------------------------------------
 
 import { state } from './state.js';
-import { escapeHtml, mostrarToast } from './utils.js';
+import { escapeHtml, mostrarToast, setPath } from './utils.js';
 import { getRootNode, criarIcones } from './dom-root.js';
-import { parseMenuModel, defaultMenuModel, WHATSAPP_BUTTON_MAX } from './menu-builder.js';
-import { rerenderTransicao } from './bot-view-interactions.js';
+import {
+  parseMenuModel,
+  defaultMenuModel,
+  extrairItensMenu,
+  limiteParaTipoMenu,
+  converterModeloMenu,
+  mensagemPerdidaWebchat,
+  countListRows,
+  WHATSAPP_BUTTON_MAX,
+  WHATSAPP_LIST_MAX_ROWS,
+} from './menu-builder.js';
+import {
+  rerenderTransicao,
+  reabrirPreservandoExpansao,
+  dividirMensagemDoMenu,
+  mensagemAnteriorNaTransicao,
+  absorverMensagemAnterior,
+} from './bot-view-interactions.js';
 
 const CAMPO = 'message_option_text';
-// Limites da API do WhatsApp para mensagem interativa de botões.
-const LIMITE = { header: 60, body: 1024, footer: 60, titulo: 20, id: 256 };
-// Base de um menu NOVO (ação ainda vazia): mesma estrutura dos menus reais,
-// indentação de 4 espaços como a maioria deles. Cabeçalho/rodapé só entram
-// se forem preenchidos (atualizarMenuPreservando).
-const MODELO_NOVO_JSON = JSON.stringify({ interactive: { type: 'button', body: { text: '' }, action: { buttons: [] } } }, null, 4);
+// Limites da API do WhatsApp.
+const LIMITE = {
+  header: 60, body: 1024, footer: 60,
+  botaoTitulo: 20, botaoId: 256,
+  listaBotao: 20, secao: 24, linhaTitulo: 24, linhaDescricao: 72, linhaId: 200,
+};
+const TIPOS = [
+  { kind: 'whatsapp_button', label: 'Botões', resumo: 'WhatsApp · Botões' },
+  { kind: 'whatsapp_list', label: 'Lista', resumo: 'WhatsApp · Lista' },
+  { kind: 'webchat', label: 'WebChat', resumo: 'WebChat · Menu' },
+];
+// Estrutura mínima de cada tipo, usada quando o menu é novo ou mudou de tipo
+// (não há original do mesmo tipo pra preservar).
+const BASE_JSON = {
+  whatsapp_button: () => ({ interactive: { type: 'button', body: { text: '' }, action: { buttons: [] } } }),
+  whatsapp_list: () => ({ interactive: { type: 'list', body: { text: '' }, action: { button: '', sections: [] } } }),
+  webchat: () => ({ message_type: 'menu', menu_type: 'list', options: [] }),
+};
 
 export function menuVazio(raw) {
   return typeof raw !== 'string' || raw.trim() === '';
 }
 
-export function ehMenuDeBotoes(raw) {
-  return parseMenuModel(raw || '').kind === 'whatsapp_button';
+export function tipoDoModal(kind) {
+  return Object.hasOwn(BASE_JSON, kind);
+}
+
+// ID gerado a partir do texto: espaços viram "_" ("Falar com atendente" ->
+// "Falar_com_atendente"). ID/valor preenchido fica como está.
+function idDoTexto(texto) {
+  return String(texto || '').trim().replace(/\s+/g, '_');
+}
+function idFinal(id, texto) {
+  return String(id || '').trim() ? id : idDoTexto(texto);
+}
+
+function ehObjeto(v) {
+  return v && typeof v === 'object' && !Array.isArray(v);
 }
 
 // ---------------------------------------------------------------- fidelidade
 
 function indentacaoDe(raw) {
-  const m = /\n( +)"/.exec(raw);
+  const m = /\n( +)"/.exec(raw || '');
   return m ? m[1].length : 0;
+}
+
+/** Campo opcional: só grava se já existia no original ou se veio preenchido. */
+function definirOpcional(obj, chave, valor) {
+  if (Object.hasOwn(obj, chave) || valor) obj[chave] = valor;
 }
 
 /** Aplica o modelo editado SOBRE o JSON original, preservando o resto. */
 export function atualizarMenuPreservando(raw, model) {
-  const obj = JSON.parse(raw);
-  const it = obj.interactive;
+  const original = menuVazio(raw) ? null : parseMenuModel(raw);
+  const mesmoTipo = original && original.kind === model.kind;
+  const obj = mesmoTipo ? JSON.parse(raw) : BASE_JSON[model.kind]();
 
-  const campoTexto = (chave, valor, criar) => {
-    if (it[chave] && typeof it[chave] === 'object') it[chave].text = valor;
-    else if (valor) it[chave] = criar(valor);
-  };
-  campoTexto('header', model.header, (text) => ({ type: 'text', text }));
-  it.body = { ...(it.body && typeof it.body === 'object' ? it.body : {}), text: model.body };
-  campoTexto('footer', model.footer, (text) => ({ text }));
+  if (model.kind === 'webchat') {
+    const antigas = Array.isArray(obj.options) ? obj.options : [];
+    obj.options = model.options.map((o, i) => ({ ...(ehObjeto(antigas[i]) ? antigas[i] : {}), text: o.text, value: o.value }));
+  } else {
+    const it = obj.interactive;
+    const texto = (chave, valor, criar) => {
+      if (ehObjeto(it[chave])) it[chave].text = valor;
+      else if (valor) it[chave] = criar(valor);
+    };
+    texto('header', model.header, (text) => ({ type: 'text', text }));
+    it.body = { ...(ehObjeto(it.body) ? it.body : {}), text: model.body };
+    texto('footer', model.footer, (text) => ({ text }));
+    if (!ehObjeto(it.action)) it.action = {};
 
-  if (!it.action || typeof it.action !== 'object') it.action = {};
-  const originais = Array.isArray(it.action.buttons) ? it.action.buttons : [];
-  it.action.buttons = model.buttons.map((b, i) => {
-    const base = originais[i] && typeof originais[i] === 'object' ? originais[i] : { type: 'reply' };
-    return { ...base, reply: { ...(base.reply && typeof base.reply === 'object' ? base.reply : {}), id: b.id, title: b.title } };
-  });
+    if (model.kind === 'whatsapp_button') {
+      const antigos = Array.isArray(it.action.buttons) ? it.action.buttons : [];
+      it.action.buttons = model.buttons.map((b, i) => {
+        const base = ehObjeto(antigos[i]) ? antigos[i] : { type: 'reply' };
+        return { ...base, reply: { ...(ehObjeto(base.reply) ? base.reply : {}), id: b.id, title: b.title } };
+      });
+    } else {
+      definirOpcional(it.action, 'button', model.button);
+      const antigas = Array.isArray(it.action.sections) ? it.action.sections : [];
+      it.action.sections = model.sections.map((s, si) => {
+        const base = ehObjeto(antigas[si]) ? antigas[si] : {};
+        const secao = { ...base };
+        definirOpcional(secao, 'title', s.title);
+        const linhasAntigas = Array.isArray(base.rows) ? base.rows : [];
+        secao.rows = s.rows.map((r, ri) => {
+          const linha = { ...(ehObjeto(linhasAntigas[ri]) ? linhasAntigas[ri] : {}), id: r.id, title: r.title };
+          definirOpcional(linha, 'description', r.description);
+          return linha;
+        });
+        return secao;
+      });
+    }
+  }
 
-  const ind = indentacaoDe(raw);
+  const ind = mesmoTipo ? indentacaoDe(raw) : (indentacaoDe(raw) || 4);
   return ind ? JSON.stringify(obj, null, ind) : JSON.stringify(obj);
 }
 
 // ---------------------------------------------------------------- resumo na lista
 
+function chips(textos, vazio) {
+  return textos.length
+    ? textos.map((t) => `<span class="menu-resumo-chip">${escapeHtml(t || '(sem texto)')}</span>`).join('')
+    : `<span class="menu-resumo-vazio">${escapeHtml(vazio)}</span>`;
+}
+
 export function renderMenuResumo(model, transitionId, actionId) {
-  const corpo = (model.body || '').replace(/\s+/g, ' ').trim();
-  const chips = model.buttons.length
-    ? model.buttons.map((b) => `<span class="menu-resumo-chip">${escapeHtml(b.title || '(sem texto)')}</span>`).join('')
-    : '<span class="menu-resumo-vazio">Nenhum botão</span>';
+  const tipo = TIPOS.find((t) => t.kind === model.kind);
+  let corpo = '';
+  let opcoes = '';
+  if (model.kind === 'webchat') {
+    corpo = '<p class="menu-resumo-corpo menu-resumo-vazio">A pergunta vem da ação "Mensagem" anterior.</p>';
+    opcoes = chips(model.options.map((o) => o.text), 'Nenhuma opção');
+  } else {
+    const texto = (model.body || '').replace(/\s+/g, ' ').trim();
+    corpo = `<p class="menu-resumo-corpo${texto ? '' : ' menu-resumo-vazio'}">${escapeHtml(texto ? (texto.length > 160 ? texto.slice(0, 160) + '…' : texto) : 'Sem mensagem')}</p>`;
+    if (model.kind === 'whatsapp_button') {
+      opcoes = chips(model.buttons.map((b) => b.title), 'Nenhum botão');
+    } else {
+      const linhas = model.sections.flatMap((s) => s.rows.map((r) => r.title));
+      opcoes = (model.button ? `<span class="menu-resumo-chip menu-resumo-chip-lista">≡ ${escapeHtml(model.button)}</span>` : '') + chips(linhas, 'Nenhuma opção');
+    }
+  }
   return `
     <div class="menu-resumo">
       <div class="menu-resumo-topo">
-        <span class="menu-resumo-tipo"><i data-lucide="message-square"></i>WhatsApp · Botões</span>
+        <span class="menu-resumo-tipo"><i data-lucide="message-square"></i>${escapeHtml(tipo ? tipo.resumo : 'Menu')}</span>
         <button type="button" class="menu-resumo-editar" data-action="editar-menu" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}"><i data-lucide="pencil"></i>Editar menu</button>
       </div>
-      <p class="menu-resumo-corpo${corpo ? '' : ' menu-resumo-vazio'}">${escapeHtml(corpo ? (corpo.length > 160 ? corpo.slice(0, 160) + '…' : corpo) : 'Sem mensagem')}</p>
-      <div class="menu-resumo-chips">${chips}</div>
+      ${corpo}
+      <div class="menu-resumo-chips">${opcoes}</div>
     </div>`;
 }
 
@@ -95,54 +187,152 @@ export function renderMenuVazio(transitionId, actionId) {
     </div>`;
 }
 
-// ---------------------------------------------------------------- modal
+// ---------------------------------------------------------------- modal: conteúdo por tipo
 
-function renderBotao(b, i, total) {
+const campo = (caminho, valor, attrs) => `data-caminho="${caminho}" value="${escapeHtml(valor)}" ${attrs}`;
+
+function campoId(caminhoId, id, texto, max, rotulo) {
   return `
-    <div class="mm-botao" data-i="${i}">
-      <input type="text" class="mm-botao-titulo" data-campo="title" value="${escapeHtml(b.title)}" maxlength="${LIMITE.titulo}" placeholder="Texto do botão" aria-label="Texto do botão ${i + 1}">
-      <label class="mm-botao-id" title="Identificador que as condições usam pra saber qual botão o cliente escolheu">
-        ID <input type="text" data-campo="id" value="${escapeHtml(b.id)}" placeholder="${escapeHtml(idDoTexto(b.title) || 'gerado do texto')}" maxlength="${LIMITE.id}" spellcheck="false" aria-label="ID do botão ${i + 1} (vazio = gerado do texto)">
-      </label>
-      ${total > 1 ? `<button type="button" class="mm-botao-remover" data-mm="remover" data-i="${i}" title="Remover botão"><i data-lucide="x"></i></button>` : ''}
+    <label class="mm-botao-id" title="Identificador que as condições usam pra saber o que o cliente escolheu. Vazio = gerado do texto.">
+      ${rotulo} <input type="text" ${campo(caminhoId, id, `placeholder="${escapeHtml(idDoTexto(texto) || 'gerado do texto')}" maxlength="${max}" spellcheck="false" aria-label="${rotulo}"`)}>
+    </label>`;
+}
+
+function bolhaWhatsapp(m, extra) {
+  return `
+    <div class="mm-bolha">
+      <input type="text" class="mm-header" ${campo('header', m.header, `maxlength="${LIMITE.header}" placeholder="Cabeçalho (opcional)" aria-label="Cabeçalho"`)}>
+      <textarea class="mm-body" data-caminho="body" rows="4" maxlength="${LIMITE.body}" placeholder="Mensagem que o cliente vai receber" aria-label="Mensagem">${escapeHtml(m.body)}</textarea>
+      <input type="text" class="mm-footer" ${campo('footer', m.footer, `maxlength="${LIMITE.footer}" placeholder="Rodapé (opcional)" aria-label="Rodapé"`)}>
+      <div class="mm-bolha-meta"><span class="mm-contador">${m.body.length}/${LIMITE.body}</span><span>08:00</span></div>
+      ${extra || ''}
     </div>`;
+}
+
+function conteudoBotoes(m) {
+  const cheio = m.buttons.length >= WHATSAPP_BUTTON_MAX;
+  const botoes = m.buttons.map((b, i) => `
+    <div class="mm-botao">
+      <input type="text" class="mm-botao-titulo" ${campo(`buttons.${i}.title`, b.title, `maxlength="${LIMITE.botaoTitulo}" placeholder="Texto do botão" aria-label="Texto do botão ${i + 1}"`)}>
+      ${campoId(`buttons.${i}.id`, b.id, b.title, LIMITE.botaoId, 'ID')}
+      ${m.buttons.length > 1 ? `<button type="button" class="mm-botao-remover" data-mm="remover-botao" data-i="${i}" title="Remover botão"><i data-lucide="x"></i></button>` : ''}
+    </div>`).join('');
+  return `
+    ${bolhaWhatsapp(m)}
+    <div class="mm-botoes">${botoes}</div>
+    <button type="button" class="mm-adicionar" data-mm="adicionar-botao"${cheio ? ' disabled' : ''}><i data-lucide="plus"></i>Adicionar botão</button>
+    <p class="mm-limite">${m.buttons.length}/${WHATSAPP_BUTTON_MAX} botões — limite do WhatsApp</p>`;
+}
+
+function conteudoLista(m) {
+  const total = countListRows(m);
+  const cheio = total >= WHATSAPP_LIST_MAX_ROWS;
+  const variasSecoes = m.sections.length > 1;
+  const secoes = m.sections.map((s, si) => `
+    <div class="mm-secao">
+      <div class="mm-secao-topo">
+        <input type="text" class="mm-secao-titulo" ${campo(`sections.${si}.title`, s.title, `maxlength="${LIMITE.secao}" placeholder="Título da seção${variasSecoes ? '' : ' (opcional)'}" aria-label="Título da seção ${si + 1}"`)}>
+        ${variasSecoes ? `<button type="button" class="mm-botao-remover mm-secao-remover" data-mm="remover-secao" data-si="${si}" title="Remover seção"><i data-lucide="x"></i></button>` : ''}
+      </div>
+      ${s.rows.map((r, ri) => `
+        <div class="mm-linha">
+          <input type="text" class="mm-linha-titulo" ${campo(`sections.${si}.rows.${ri}.title`, r.title, `maxlength="${LIMITE.linhaTitulo}" placeholder="Opção" aria-label="Opção"`)}>
+          <input type="text" class="mm-linha-descricao" ${campo(`sections.${si}.rows.${ri}.description`, r.description, `maxlength="${LIMITE.linhaDescricao}" placeholder="Descrição (opcional)" aria-label="Descrição"`)}>
+          ${campoId(`sections.${si}.rows.${ri}.id`, r.id, r.title, LIMITE.linhaId, 'ID')}
+          ${total > 1 ? `<button type="button" class="mm-botao-remover" data-mm="remover-linha" data-si="${si}" data-ri="${ri}" title="Remover opção"><i data-lucide="x"></i></button>` : ''}
+        </div>`).join('')}
+      <button type="button" class="mm-adicionar mm-adicionar-leve" data-mm="adicionar-linha" data-si="${si}"${cheio ? ' disabled' : ''}><i data-lucide="plus"></i>Opção</button>
+    </div>`).join('');
+  const botaoLista = `
+    <div class="mm-lista-botao"><i data-lucide="list"></i>
+      <input type="text" ${campo('button', m.button, `maxlength="${LIMITE.listaBotao}" placeholder="Texto do botão (ex.: Ver opções)" aria-label="Texto do botão que abre a lista"`)}>
+    </div>`;
+  return `
+    ${bolhaWhatsapp(m, botaoLista)}
+    <div class="mm-lista">
+      <p class="mm-lista-rotulo">Opções da lista</p>
+      ${secoes}
+      <button type="button" class="mm-adicionar mm-adicionar-leve" data-mm="adicionar-secao"${cheio ? ' disabled' : ''}><i data-lucide="plus"></i>Seção</button>
+    </div>
+    <p class="mm-limite">${total}/${WHATSAPP_LIST_MAX_ROWS} opções no total — limite do WhatsApp</p>`;
+}
+
+function conteudoWebchat(m, textoAnterior) {
+  const anterior = textoAnterior !== null
+    ? `<div class="mm-bolha mm-bolha-leitura"><p class="mm-bolha-origem">Ação "Mensagem" anterior</p><p class="mm-bolha-texto">${escapeHtml(textoAnterior || '(vazia)')}</p></div>`
+    : '<p class="mm-dica">Não há ação "Mensagem" antes deste menu: o cliente verá só as opções.</p>';
+  const opcoes = m.options.map((o, i) => `
+    <div class="mm-botao">
+      <input type="text" class="mm-botao-titulo" ${campo(`options.${i}.text`, o.text, 'placeholder="Texto da opção" aria-label="Texto da opção"')}>
+      ${campoId(`options.${i}.value`, o.value, o.text, 256, 'Valor')}
+      ${m.options.length > 1 ? `<button type="button" class="mm-botao-remover" data-mm="remover-opcao" data-i="${i}" title="Remover opção"><i data-lucide="x"></i></button>` : ''}
+    </div>`).join('');
+  return `
+    ${anterior}
+    <div class="mm-botoes">${opcoes}</div>
+    <button type="button" class="mm-adicionar" data-mm="adicionar-opcao"><i data-lucide="plus"></i>Adicionar opção</button>`;
 }
 
 function avisosDoModelo(m) {
   const lista = [];
+  const repetidos = (valores) => {
+    const v = valores.filter(Boolean);
+    return new Set(v).size !== v.length;
+  };
+  if (m.kind === 'webchat') {
+    if (m.options.some((o) => !o.text.trim())) lista.push('Há opção sem texto.');
+    if (repetidos(m.options.map((o) => idFinal(o.value, o.text)))) lista.push('Há valores repetidos entre as opções.');
+    return lista;
+  }
   if (!m.body.trim()) lista.push('A mensagem (corpo) é obrigatória no WhatsApp.');
-  if (m.buttons.some((b) => !b.title.trim())) lista.push('Há botão sem texto.');
-  const ids = m.buttons.map(idFinal);
-  if (ids.some((id) => !id)) lista.push('Há botão sem texto e sem ID: as condições não vão conseguir identificá-lo.');
-  if (new Set(ids.filter(Boolean)).size !== ids.filter(Boolean).length) lista.push('Há IDs repetidos entre os botões.');
-  const titulos = m.buttons.map((b) => b.title.trim().toLowerCase()).filter(Boolean);
-  if (new Set(titulos).size !== titulos.length) lista.push('Há botões com o mesmo texto.');
+  if (m.kind === 'whatsapp_button') {
+    if (m.buttons.some((b) => !b.title.trim())) lista.push('Há botão sem texto.');
+    if (repetidos(m.buttons.map((b) => idFinal(b.id, b.title)))) lista.push('Há IDs repetidos entre os botões.');
+    if (repetidos(m.buttons.map((b) => b.title.trim().toLowerCase()))) lista.push('Há botões com o mesmo texto.');
+  } else {
+    if (!m.button.trim()) lista.push('O texto do botão que abre a lista é obrigatório.');
+    const linhas = m.sections.flatMap((s) => s.rows);
+    if (!linhas.length) lista.push('Adicione pelo menos uma opção.');
+    if (linhas.some((r) => !r.title.trim())) lista.push('Há opção sem texto.');
+    if (repetidos(linhas.map((r) => idFinal(r.id, r.title)))) lista.push('Há IDs repetidos entre as opções.');
+    if (m.sections.length > 1 && m.sections.some((s) => !s.title.trim())) lista.push('Com mais de uma seção, toda seção precisa de título.');
+  }
   return lista;
 }
 
-// ID gerado a partir do texto do botão: espaços viram "_".
-// "Falar com atendente" -> "Falar_com_atendente".
-function idDoTexto(texto) {
-  return texto.trim().replace(/\s+/g, '_');
+/** Modelo final: IDs/valores vazios gerados do texto. */
+function comIdsFinais(m) {
+  const c = JSON.parse(JSON.stringify(m));
+  if (c.kind === 'whatsapp_button') c.buttons.forEach((b) => { b.id = idFinal(b.id, b.title); });
+  if (c.kind === 'whatsapp_list') c.sections.forEach((s) => s.rows.forEach((r) => { r.id = idFinal(r.id, r.title); }));
+  if (c.kind === 'webchat') c.options.forEach((o) => { o.value = idFinal(o.value, o.text); });
+  return c;
 }
 
-// O ID é sempre editável; se ficar vazio, vale o gerado do texto.
-function idFinal(b) {
-  return b.id.trim() ? b.id : idDoTexto(b.title);
+function assinaturaDe(m) {
+  return JSON.stringify(m);
 }
+
+// ---------------------------------------------------------------- modal
 
 export function abrirModalMenu(transitionId, actionId) {
   const bot = state.botCarregado;
   const acao = (bot?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
   if (!acao) return;
   const novo = menuVazio(acao.ACTION_DATA?.[CAMPO]);
-  const raw = novo ? MODELO_NOVO_JSON : acao.ACTION_DATA[CAMPO];
+  const raw = novo ? '' : acao.ACTION_DATA[CAMPO];
   const original = novo ? { ...defaultMenuModel('whatsapp_button'), buttons: [{ id: '', title: '' }] } : parseMenuModel(raw);
-  if (original.kind !== 'whatsapp_button') return;
+  if (!tipoDoModal(original.kind)) return;
 
-  const modelo = JSON.parse(JSON.stringify(original));
-  const assinatura = () => JSON.stringify([modelo.header, modelo.body, modelo.footer, modelo.buttons]);
-  const assinaturaOriginal = assinatura();
+  const tipoOriginal = novo ? null : original.kind;
+  const textoAnterior = mensagemAnteriorNaTransicao(bot, transitionId, actionId);
+  let modelo = JSON.parse(JSON.stringify(original));
+  const assinaturaOriginal = assinaturaDe(modelo);
+  // Estado das trocas de tipo (só viram mudança no bot ao Salvar):
+  let textoParaMensagem = null; // WhatsApp -> WebChat: vira ação "Mensagem"
+  let absorver = false; // WebChat -> WhatsApp: "Mensagem" anterior vira o corpo
+  let textoWhatsappAntesDoWebchat = null; // pra voltar ao WhatsApp sem perder
+  let trocaPendente = null; // { kind, itensCabem, itensRemovidos }
 
   const root = getRootNode();
   const montagem = root === document ? document.body : root;
@@ -156,26 +346,15 @@ export function abrirModalMenu(transitionId, actionId) {
       <header class="mm-topo">
         <h3 id="mm-titulo" class="mm-titulo">${novo ? 'Criar menu' : 'Editar menu'}</h3>
         <div class="mm-tipos" role="tablist">
-          <button type="button" class="mm-tipo mm-tipo-ativo" aria-selected="true">Botões</button>
-          <button type="button" class="mm-tipo" disabled title="Em breve">Lista</button>
-          <button type="button" class="mm-tipo" disabled title="Em breve">WebChat</button>
+          ${TIPOS.map((t) => `<button type="button" class="mm-tipo" role="tab" data-mm="tipo" data-kind="${t.kind}">${t.label}</button>`).join('')}
         </div>
         <button type="button" class="mm-fechar" data-mm="cancelar" title="Fechar"><i data-lucide="x"></i></button>
       </header>
+      <div class="mm-troca hidden"></div>
       <div class="mm-corpo">
         <div class="mm-celular">
-          <div class="mm-celular-topo"><i data-lucide="message-circle"></i>Pré-visualização do WhatsApp</div>
-          <div class="mm-chat">
-            <div class="mm-bolha">
-              <input type="text" class="mm-header" data-campo="header" value="${escapeHtml(modelo.header)}" maxlength="${LIMITE.header}" placeholder="Cabeçalho (opcional)" aria-label="Cabeçalho">
-              <textarea class="mm-body" data-campo="body" rows="4" maxlength="${LIMITE.body}" placeholder="Mensagem que o cliente vai receber" aria-label="Mensagem">${escapeHtml(modelo.body)}</textarea>
-              <input type="text" class="mm-footer" data-campo="footer" value="${escapeHtml(modelo.footer)}" maxlength="${LIMITE.footer}" placeholder="Rodapé (opcional)" aria-label="Rodapé">
-              <div class="mm-bolha-meta"><span class="mm-contador"></span><span>08:00</span></div>
-            </div>
-            <div class="mm-botoes"></div>
-            <button type="button" class="mm-adicionar" data-mm="adicionar"><i data-lucide="plus"></i>Adicionar botão</button>
-            <p class="mm-limite"></p>
-          </div>
+          <div class="mm-celular-topo"><i data-lucide="message-circle"></i><span class="mm-celular-titulo"></span></div>
+          <div class="mm-chat"></div>
         </div>
       </div>
       <div class="mm-avisos" aria-live="polite"></div>
@@ -193,73 +372,174 @@ export function abrirModalMenu(transitionId, actionId) {
     </div>`;
 
   const $m = (sel) => fundo.querySelector(sel);
+  const houveMudanca = () => assinaturaDe(modelo) !== assinaturaOriginal || textoParaMensagem !== null || absorver;
 
-  const desenharBotoes = () => {
-    $m('.mm-botoes').innerHTML = modelo.buttons.map((b, i) => renderBotao(b, i, modelo.buttons.length)).join('');
+  const desenharConteudo = () => {
+    fundo.querySelectorAll('.mm-tipo').forEach((b) => {
+      const ativo = b.dataset.kind === modelo.kind;
+      b.classList.toggle('mm-tipo-ativo', ativo);
+      b.setAttribute('aria-selected', String(ativo));
+    });
+    $m('.mm-celular-titulo').textContent = modelo.kind === 'webchat' ? 'Pré-visualização do WebChat' : 'Pré-visualização do WhatsApp';
+    $m('.mm-celular').classList.toggle('mm-celular-webchat', modelo.kind === 'webchat');
+    $m('.mm-chat').innerHTML =
+      modelo.kind === 'whatsapp_button' ? conteudoBotoes(modelo)
+        : modelo.kind === 'whatsapp_list' ? conteudoLista(modelo)
+          : conteudoWebchat(modelo, textoAnterior);
     criarIcones();
-  };
-  const atualizarEstado = () => {
-    $m('.mm-contador').textContent = `${modelo.body.length}/${LIMITE.body}`;
-    const cheio = modelo.buttons.length >= WHATSAPP_BUTTON_MAX;
-    $m('.mm-adicionar').disabled = cheio;
-    $m('.mm-limite').textContent = `${modelo.buttons.length}/${WHATSAPP_BUTTON_MAX} botões — limite do WhatsApp`;
-    $m('.mm-avisos').innerHTML = avisosDoModelo(modelo).map((a) => `<p>${escapeHtml(a)}</p>`).join('');
+    atualizarAvisos();
   };
 
+  const atualizarAvisos = () => {
+    const contador = $m('.mm-contador');
+    if (contador) contador.textContent = `${modelo.body.length}/${LIMITE.body}`;
+    const avisos = avisosDoModelo(modelo).map((a) => `<p>${escapeHtml(a)}</p>`);
+    if (textoParaMensagem !== null) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, o texto do menu (cabeçalho, mensagem e rodapé) vira uma ação "Mensagem" logo antes deste menu: o WebChat não tem esse campo.</p>`);
+    if (absorver) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, a ação "Mensagem" anterior vira a mensagem deste menu e é removida.</p>`);
+    $m('.mm-avisos').innerHTML = avisos.join('');
+  };
+
+  // ---- troca de tipo
+  const aplicarTroca = (novoKind, itens) => {
+    if (novoKind === 'webchat') {
+      textoWhatsappAntesDoWebchat = { header: modelo.header, body: modelo.body, footer: modelo.footer, button: modelo.button };
+      if (tipoOriginal === 'webchat') {
+        // voltou ao tipo original: nada a separar nem absorver
+        textoParaMensagem = null;
+        absorver = false;
+      } else {
+        const texto = mensagemPerdidaWebchat(modelo);
+        textoParaMensagem = texto ? texto : null;
+      }
+      modelo = converterModeloMenu(modelo, 'webchat', itens);
+    } else if (modelo.kind === 'webchat') {
+      const convertido = converterModeloMenu(modelo, novoKind, itens);
+      if (tipoOriginal !== 'webchat' && textoWhatsappAntesDoWebchat) {
+        Object.assign(convertido, textoWhatsappAntesDoWebchat);
+        textoParaMensagem = null;
+      } else if (tipoOriginal === 'webchat' && textoAnterior !== null) {
+        convertido.body = textoAnterior;
+        absorver = true;
+      }
+      modelo = convertido;
+    } else {
+      modelo = converterModeloMenu(modelo, novoKind, itens);
+    }
+    trocaPendente = null;
+    $m('.mm-troca').classList.add('hidden');
+    desenharConteudo();
+  };
+
+  const pedirTroca = (novoKind) => {
+    if (novoKind === modelo.kind) return;
+    const itens = extrairItensMenu(modelo);
+    const limite = limiteParaTipoMenu(novoKind);
+    if (itens.length <= limite) return aplicarTroca(novoKind, itens);
+    trocaPendente = { kind: novoKind, itensCabem: itens.slice(0, limite), itensRemovidos: itens.slice(limite) };
+    const rotulo = TIPOS.find((t) => t.kind === novoKind).label;
+    const n = trocaPendente.itensRemovidos.length;
+    $m('.mm-troca').innerHTML = `
+      <p>Mudar para <strong>${escapeHtml(rotulo)}</strong> descarta ${n} ${n === 1 ? 'opção' : 'opções'} (limite do WhatsApp):
+      ${trocaPendente.itensRemovidos.map((i) => `<em>${escapeHtml(i.title || '(sem texto)')}</em>`).join(', ')}.</p>
+      <div><button type="button" class="fx-btn-secundario" data-mm="cancelar-troca">Manter como está</button>
+      <button type="button" class="fx-btn-primario mm-btn-perigo" data-mm="confirmar-troca">Mudar mesmo assim</button></div>`;
+    $m('.mm-troca').classList.remove('hidden');
+  };
+
+  // ---- fechar / salvar
   const fechar = () => fundo.remove();
   const pedirCancelar = () => {
-    if (assinatura() === assinaturaOriginal) return fechar();
+    if (!houveMudanca()) return fechar();
     $m('.mm-descartar').classList.remove('hidden');
     $m('.mm-acoes').classList.add('hidden');
     $m('[data-mm="voltar"]').focus();
   };
   const salvar = () => {
-    if (assinatura() !== assinaturaOriginal) {
-      const alvo = (state.botCarregado?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
-      if (alvo) {
-        // ID vazio -> gerado do texto (idFinal); ID preenchido fica como está.
-        const final = { ...modelo, buttons: modelo.buttons.map((b) => ({ ...b, id: idFinal(b) })) };
-        alvo.ACTION_DATA = { ...alvo.ACTION_DATA, [CAMPO]: atualizarMenuPreservando(raw, final) };
-        rerenderTransicao(state.botCarregado, transitionId);
-        mostrarToast('Menu atualizado. Lembre de salvar o bot.');
-      }
+    if (!houveMudanca()) return fechar();
+    const alvo = (state.botCarregado?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
+    if (!alvo) return fechar();
+    const json = atualizarMenuPreservando(raw, comIdsFinais(modelo));
+    const dados = { ...alvo.ACTION_DATA, [CAMPO]: json };
+    const b = state.botCarregado;
+    if (modelo.kind === 'webchat' && textoParaMensagem !== null) {
+      dividirMensagemDoMenu(b, transitionId, actionId, textoParaMensagem, dados);
+      reabrirPreservandoExpansao(b);
+      mostrarToast('Menu atualizado; o texto virou uma ação "Mensagem" antes dele. Lembre de salvar o bot.');
+    } else if (modelo.kind !== 'webchat' && absorver) {
+      absorverMensagemAnterior(b, transitionId, actionId, dados);
+      reabrirPreservandoExpansao(b);
+      mostrarToast('Menu atualizado; a ação "Mensagem" anterior foi incorporada. Lembre de salvar o bot.');
+    } else {
+      alvo.ACTION_DATA = dados;
+      rerenderTransicao(b, transitionId);
+      mostrarToast('Menu atualizado. Lembre de salvar o bot.');
     }
     fechar();
   };
 
+  // ---- eventos
   fundo.addEventListener('input', (e) => {
     const el = e.target;
-    const campo = el.dataset.campo;
-    if (!campo) return;
-    const botao = el.closest('.mm-botao');
-    if (botao) {
-      const b = modelo.buttons[+botao.dataset.i];
-      b[campo] = el.value;
-      if (campo === 'title') botao.querySelector('[data-campo="id"]').placeholder = idDoTexto(el.value) || 'gerado do texto';
+    const caminho = el.dataset.caminho;
+    if (!caminho) return;
+    setPath(modelo, caminho, el.value);
+    // ID/valor vazio mostra, em cinza, o que será gerado do texto
+    const m = /^(.*)\.(title|text)$/.exec(caminho);
+    if (m) {
+      const irmao = fundo.querySelector(`[data-caminho="${m[1]}.${m[2] === 'text' ? 'value' : 'id'}"]`);
+      if (irmao) irmao.placeholder = idDoTexto(el.value) || 'gerado do texto';
     }
-    else modelo[campo] = el.value;
-    atualizarEstado();
+    atualizarAvisos();
   });
 
   fundo.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-mm]');
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
     const acaoMm = btn.dataset.mm;
-    if (acaoMm === 'cancelar') pedirCancelar();
-    else if (acaoMm === 'voltar') {
-      $m('.mm-descartar').classList.add('hidden');
-      $m('.mm-acoes').classList.remove('hidden');
-    } else if (acaoMm === 'descartar') fechar();
-    else if (acaoMm === 'salvar') salvar();
-    else if (acaoMm === 'adicionar' && modelo.buttons.length < WHATSAPP_BUTTON_MAX) {
-      modelo.buttons.push({ id: '', title: '' });
-      desenharBotoes();
-      atualizarEstado();
-      fundo.querySelectorAll('.mm-botao-titulo')[modelo.buttons.length - 1].focus();
-    } else if (acaoMm === 'remover' && modelo.buttons.length > 1) {
-      modelo.buttons.splice(+btn.dataset.i, 1);
-      desenharBotoes();
-      atualizarEstado();
+    const focarUltimo = (sel) => { const els = fundo.querySelectorAll(sel); if (els.length) els[els.length - 1].focus(); };
+    switch (acaoMm) {
+      case 'cancelar': pedirCancelar(); break;
+      case 'voltar':
+        $m('.mm-descartar').classList.add('hidden');
+        $m('.mm-acoes').classList.remove('hidden');
+        break;
+      case 'descartar': fechar(); break;
+      case 'salvar': salvar(); break;
+      case 'tipo': pedirTroca(btn.dataset.kind); break;
+      case 'confirmar-troca': if (trocaPendente) aplicarTroca(trocaPendente.kind, trocaPendente.itensCabem); break;
+      case 'cancelar-troca':
+        trocaPendente = null;
+        $m('.mm-troca').classList.add('hidden');
+        break;
+      case 'adicionar-botao':
+        if (modelo.buttons.length < WHATSAPP_BUTTON_MAX) { modelo.buttons.push({ id: '', title: '' }); desenharConteudo(); focarUltimo('.mm-botao-titulo'); }
+        break;
+      case 'remover-botao': modelo.buttons.splice(+btn.dataset.i, 1); desenharConteudo(); break;
+      case 'adicionar-linha':
+        if (countListRows(modelo) < WHATSAPP_LIST_MAX_ROWS) {
+          modelo.sections[+btn.dataset.si].rows.push({ id: '', title: '', description: '' });
+          desenharConteudo();
+          fundo.querySelectorAll('.mm-secao')[+btn.dataset.si].querySelectorAll('.mm-linha-titulo').forEach((el, i, l) => { if (i === l.length - 1) el.focus(); });
+        }
+        break;
+      case 'remover-linha': {
+        const secao = modelo.sections[+btn.dataset.si];
+        secao.rows.splice(+btn.dataset.ri, 1);
+        if (!secao.rows.length && modelo.sections.length > 1) modelo.sections.splice(+btn.dataset.si, 1);
+        desenharConteudo();
+        break;
+      }
+      case 'adicionar-secao':
+        if (countListRows(modelo) < WHATSAPP_LIST_MAX_ROWS) {
+          modelo.sections.push({ title: '', rows: [{ id: '', title: '', description: '' }] });
+          desenharConteudo();
+          focarUltimo('.mm-secao-titulo');
+        }
+        break;
+      case 'remover-secao': modelo.sections.splice(+btn.dataset.si, 1); desenharConteudo(); break;
+      case 'adicionar-opcao': modelo.options.push({ text: '', value: '' }); desenharConteudo(); focarUltimo('.mm-botao-titulo'); break;
+      case 'remover-opcao': modelo.options.splice(+btn.dataset.i, 1); desenharConteudo(); break;
+      default: break;
     }
   });
 
@@ -272,8 +552,8 @@ export function abrirModalMenu(transitionId, actionId) {
   });
 
   montagem.appendChild(fundo);
-  desenharBotoes();
-  atualizarEstado();
+  desenharConteudo();
   criarIcones();
-  $m('.mm-body').focus();
+  const primeiro = $m('.mm-body') || $m('.mm-botao-titulo');
+  if (primeiro) primeiro.focus();
 }
