@@ -367,7 +367,8 @@ export function renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, 
     <div class="estado-row border-t" data-transition-id="${escapeHtml(t.ID)}">
       <div class="transicao-barra">
         <span class="transicao-drag-handle shrink-0" draggable="true" title="Arraste para reordenar"><i data-lucide="grip-vertical" class="w-3.5 h-3.5 pointer-events-none"></i></span>
-        <input type="number" class="transicao-numero-input shrink-0 obd-badge-solid text-xs font-bold rounded px-1 py-1.5 border-0" min="0" max="${totalTransicoes - 1}" value="${escapeHtml(t.PRIORITY)}" data-action="mover-transicao" data-transition-id="${escapeHtml(t.ID)}" title="Digite a posição desejada (0 a ${totalTransicoes - 1}) e aperte Enter">
+        <span class="transicao-rotulo">Transição</span>
+        <input type="number" class="transicao-numero-input transicao-numero-badge shrink-0" min="0" max="${totalTransicoes - 1}" value="${escapeHtml(t.PRIORITY)}" data-action="mover-transicao" data-transition-id="${escapeHtml(t.ID)}" title="Digite a posição desejada (0 a ${totalTransicoes - 1}) e aperte Enter">
         <span class="transicao-resumo">${resumoTransicao(condicoes.length, acoes.length)}</span>
         <button type="button" class="transicao-barra-btn obd-btn-warn" data-action="duplicate-transicao" data-transition-id="${escapeHtml(t.ID)}" title="Duplicar esta transição (condições + ações)"><i data-lucide="copy"></i></button>
         <button type="button" class="transicao-barra-btn obd-btn-danger" data-action="delete-transicao" data-transition-id="${escapeHtml(t.ID)}" title="Excluir esta transição (condições + ações)"><i data-lucide="trash-2"></i></button>

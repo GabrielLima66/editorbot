@@ -117,6 +117,7 @@ Um script (Playwright + Chrome, mesmo padrão da paridade do fluxograma) abre o 
   - o lápis é um botão (`data-action="focar-nome-estado"`) que foca e seleciona o nome sem alternar o estado.
 
   Verificado no navegador: clique no espaço vazio abre/fecha, o lápis foca sem alternar e renomear com Enter mantém o estado como estava. O nome passou a ocupar ~160 px de um header de ~1260 px.
+- **Número da transição diferente do número do estado.** Os dois usavam o mesmo selo laranja sólido e se confundiam. O estado mantém o selo laranja. A transição passa a ter o rótulo "TRANSIÇÃO" e o número com contorno roxo e fundo suave (`.transicao-numero-badge`, tokens de acento, nos dois temas). O valor continua sendo a PRIORITY real (começa em 0), e o campo continua sendo o de reordenar: verificado que digitar outra posição + Enter reordena e renumera.
 - As capturas de referência do escuro foram regeneradas com esse visual novo (mudança intencional).
 
 ## Questões em aberto

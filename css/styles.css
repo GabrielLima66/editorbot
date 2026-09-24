@@ -801,3 +801,25 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 }
 #bot-view-overlay .transicao-barra-btn svg { width: 0.875rem; height: 0.875rem; }
 #bot-view-overlay .transicao-corpo { padding: 0.875rem 1rem 1rem; }
+
+/* Número da transição: outra "família" visual que o do estado (selo laranja
+   sólido), pra não confundir os dois. Contorno roxo + fundo suave, com o
+   rótulo "Transição" antes. O valor continua a PRIORITY real (começa em 0). */
+#bot-view-overlay .transicao-rotulo {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+#bot-view-overlay .transicao-numero-badge {
+  height: 1.625rem;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--fx-acento-hover-bg);
+  border: 1px solid var(--fx-acento-borda);
+  border-radius: 0.375rem;
+}
+#bot-view-overlay .transicao-numero-badge:focus { outline: none; box-shadow: 0 0 0 2px var(--foco-anel); }
