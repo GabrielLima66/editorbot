@@ -51,7 +51,18 @@ O botão **"Gerar fluxograma"** no rodapé do editor gera o mesmo fluxograma que
 *   `npm run paridade:visual` (e `PARIDADE_FORMATO=svg npm run paridade:visual`): compara, pixel a pixel e num Chrome real, o fluxograma da extensão com o do build real do desktop.
 *   `fluxograma/ORIGEM.md`: commit do Fluxo BOT espelhado (`7c9c976`) e o que fazer quando o desktop mudar.
 
-## 6. Como Distribuir e Instalar a Extensão
+## 6. Tema Claro — v0.5.0
+
+O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão) e claro. Especificação e decisões: `SPEC-tema-claro.md`.
+
+**Como funciona:**
+*   Todas as cores do editor são **tokens** (variáveis CSS de papel) em `css/styles.css`, definidos em `:host, :root` com os valores do tema escuro. O tema claro só redefine os valores em `:host([data-tema="claro"])`. **Cor nova no editor deve sempre usar um token**, nunca um valor fixo, senão ela fica igual nos dois temas.
+*   O atributo `data-tema="claro"` vai no host do Shadow DOM (`#orpen-editor-bot-host`), aplicado por `orpen-bridge.js` **antes** de desenhar. Por isso editor, pendências, diálogo e toasts mudam juntos e não há flash.
+*   A escolha fica em `localStorage['editorbot:tema']` na página da Orpen, sem permissão nova no manifest.
+
+**Para quem desenvolve** (a partir de `fluxograma/`): `node scripts/capturasTema.mjs --tema escuro --saida ref` tira capturas de referência do editor (página standalone, Chrome real). Depois de uma mudança, `node scripts/capturasTema.mjs --tema escuro --comparar ref` diz se algo mudou pixel a pixel; `--tema claro` gera a prévia do claro. Saída em `tests/tema_out/`, fora do git.
+
+## 7. Como Distribuir e Instalar a Extensão
 
 Todo esse sistema roda 100% no navegador (client-side), com assets (Tailwind CSS, Lucide icons, renderizador do fluxograma) servidos localmente.
 Para distribuir:

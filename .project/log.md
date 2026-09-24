@@ -4,10 +4,9 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)" **concluída**: v0.4.0 (fases 0 a 4), 24/09/2026
-- **Última Tarefa Concluída:** Fase 4: goldens re-rodados (144 testes), paridade visual 24/24 em PNG e SVG, comparação com o `01.png` do app desktop real (só anti-aliasing), teste manual da Fase 3 feito pelo usuário na bot.php, versão 0.4.0, CHANGELOG, DOCUMENTACAO_EXTENSAO.md (seção 5) e zip de distribuição
-- **Próxima Tarefa em Aberto:** Push para o remoto (aguardando confirmação do usuário). Itens de regressão não verificados explicitamente, todos em código não alterado: pendências após salvar, console sem erros novos, Network sem carregar `vendor/fluxograma/` antes do clique. Travadinha breve durante a captura: comportamento conhecido, investigar só se incomodar
-- **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Correspondência de IDs de fila, bot externo e calendário com os cadastros validada com bots reais.
+- **Fase Atual:** Tema claro entregue na **v0.5.0** (24/09/2026), junto com ajustes de UX no editor
+- **Última Tarefa Concluída:** Tema claro alternável (sol/lua, padrão escuro), cores em tokens (escuro idêntico por captura), barra da transição, nome do estado como título editável, número da transição distinto do estado. CHANGELOG, DOCUMENTACAO (seção 6) e zip
+- **Próxima Tarefa em Aberto:** Validar na Orpen os ajustes de UX de 24/09 (barra da transição, nome do estado, numeração), que só foram verificados na página standalone. O push é feito pelo usuário (o modo automático do Claude Code bloqueia push)
 
 ---
 
@@ -25,6 +24,11 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 24/09/2026 — 🏁 MARCO
+
+v0.5.0: tema claro "sem flashbang" alternável (padrão escuro) + ajustes de UX no editor pedidos durante o teste. Ajustes de UX verificados só na página standalone; teste na Orpen fica como pendência.
+
+---
 ### 24/09/2026 — 🏁 MARCO
 
 Exportar fluxograma entregue na v0.4.0. O teste manual da Fase 3 (débito de 23/09) foi feito pelo usuário na bot.php: gerar PNG/SVG, salvar antes de gerar (Cancelar/Esc/Salvar e gerar), desfazer sem aviso, bot novo desabilitado, bot externo com nome e regressão rápida. Bot salvo sem estados passou a mostrar mensagem clara.
