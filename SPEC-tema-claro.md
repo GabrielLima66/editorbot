@@ -105,6 +105,12 @@ Um script (Playwright + Chrome, mesmo padrão da paridade do fluxograma) abre o 
 1. Seu teste na `bot.php` (roteiro curto, nos dois temas).
 2. Versão 0.5.0, CHANGELOG, documentação e zip.
 
+## Ajustes de UX pedidos durante o teste (2026-09-24)
+
+- **Barra da transição.** Alça de arrastar, prioridade, duplicar e excluir saíram do canto da coluna de Condições (onde pareciam pertencer à primeira condição) para uma barra no topo de cada transição, no mesmo padrão do header do estado: alça, número e um resumo ("1 condição · 2 ações") à esquerda; duplicar e excluir à direita. A coluna de condições ganhou a largura toda. A estrutura de que o JS depende foi mantida: wrapper `.estado-row`, `data-action` dos botões e o painel de exclusão como filho direto da linha. Toda mudança dentro da transição redesenha a linha (`rerenderTransicao`), então o resumo nunca fica desatualizado. Token novo: `--transicao-barra-bg`.
+- **Estado fechado maior.** Header do estado com `padding: 1rem 1.25rem` e `min-height: 4rem` (antes `0.75rem 1rem`), e nome em `1rem` (antes `0.9375rem`).
+- As capturas de referência do escuro foram regeneradas com esse visual novo (mudança intencional).
+
 ## Questões em aberto
 
 - **Q1. Tema padrão** *(em aberto; implementado com a recomendação, escuro)*: para quem nunca escolheu, abre no **escuro** (como hoje) ou **segue o tema do sistema** (Windows claro → editor claro)? *Recomendação: escuro por padrão. Ninguém é surpreendido após a atualização, e quem quiser liga o claro uma vez.*
