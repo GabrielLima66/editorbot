@@ -711,8 +711,52 @@ export function rerenderEstado(bot, stateNumber) {
 // recriado — só seu innerHTML é substituído a cada render. Ligar isso dentro
 // de abrirBotView acumularia um listener duplicado por render (drag solto
 // disparando N vezes, painel de exclusão reagindo N vezes por clique etc.).
+// Rolagem automática durante o arrastar: o drag nativo não rola o .bv-body
+// sozinho, então sem isso não dá pra levar um estado/transição pra fora da
+// parte visível. Perto do topo/fim da área rolável (ZONA px) rola, mais
+// rápido quanto mais perto da borda. O dragover dispara continuamente
+// enquanto o mouse está sobre a página (mesmo parado), e um laço de rAF
+// suaviza; para no drop/dragend ou se o dragover parar de chegar.
+const AUTOROLAGEM_ZONA = 90;
+const AUTOROLAGEM_MAX = 22; // px por quadro
+function criarAutoRolagem(scroller) {
+  let velocidade = 0;
+  let ultimoSinal = 0;
+  let quadro = 0;
+  const passo = () => {
+    if (!velocidade || performance.now() - ultimoSinal > 150) { velocidade = 0; quadro = 0; return; }
+    scroller.scrollTop += velocidade;
+    quadro = requestAnimationFrame(passo);
+  };
+  return {
+    atualizar(clientY) {
+      const r = scroller.getBoundingClientRect();
+      const doTopo = clientY - r.top;
+      const doFim = r.bottom - clientY;
+      const forca = (d) => Math.ceil(AUTOROLAGEM_MAX * Math.min(1, (AUTOROLAGEM_ZONA - Math.max(d, 0)) / AUTOROLAGEM_ZONA));
+      velocidade = doTopo < AUTOROLAGEM_ZONA ? -forca(doTopo) : doFim < AUTOROLAGEM_ZONA ? forca(doFim) : 0;
+      ultimoSinal = performance.now();
+      if (velocidade && !quadro) quadro = requestAnimationFrame(passo);
+    },
+    parar() { velocidade = 0; },
+  };
+}
+
 export function initEstadoReorderDnD() {
   const container = $('#bv-estados');
+  const scroller = container.closest('.bv-body');
+  const autoRolagem = scroller ? criarAutoRolagem(scroller) : null;
+  let arrastando = false;
+  // No root (document ou shadow root), não só no #bv-estados: o mouse
+  // precisa poder passar por cima do cabeçalho/rodapé do painel, que é
+  // justamente onde fica a borda da área rolável.
+  const root = getRootNode();
+  root.addEventListener('dragover', (e) => {
+    if (arrastando && autoRolagem) autoRolagem.atualizar(e.clientY);
+  });
+  const fimDoArrasto = () => { arrastando = false; autoRolagem?.parar(); };
+  root.addEventListener('drop', fimDoArrasto);
+  root.addEventListener('dragend', fimDoArrasto);
 
   // dragstart/dragend delegados (bubbla, então funciona igual num clique
   // comum) — necessário porque rerenderTransicao/rerenderEstado substituem
@@ -720,6 +764,7 @@ export function initEstadoReorderDnD() {
   // render (o jeito antigo) ficaria "surdo" nesses handles recriados.
   container.addEventListener('dragstart', (e) => {
     const estadoHandle = e.target.closest('.estado-drag-handle');
+    arrastando = !!(estadoHandle || e.target.closest('.transicao-drag-handle'));
     if (estadoHandle) {
       const wrap = estadoHandle.closest('.estado-wrap');
       e.dataTransfer.effectAllowed = 'move';
