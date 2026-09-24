@@ -19,6 +19,7 @@ import {
 import { initMenuBuilders } from './menu-builder.js';
 import { initVariaveisBuilders } from './variaveis-builder.js';
 import { abrirModalMenu } from './menu-modal.js';
+import { abrirModalTratamento } from './menu-tratamento.js';
 import { mostrarResumoBot } from './upload.js';
 
 // ---------------------------------------------------------------------------
@@ -907,6 +908,9 @@ export function initAcoesDelegadas() {
     switch (btn.dataset.action) {
       case 'editar-menu':
         abrirModalMenu(btn.dataset.transitionId, btn.dataset.actionId);
+        break;
+      case 'gerar-tratamento-menu':
+        abrirModalTratamento(btn.dataset.transitionId, btn.dataset.actionId);
         break;
       case 'focar-nome-estado': {
         const campo = btn.closest('.estado-alias-wrap')?.querySelector('.estado-alias');

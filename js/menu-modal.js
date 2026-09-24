@@ -38,6 +38,7 @@ import {
   mensagemAnteriorNaTransicao,
   absorverMensagemAnterior,
 } from './bot-view-interactions.js';
+import { problemaParaGerar } from './menu-tratamento.js';
 
 const CAMPO = 'message_option_text';
 // Texto padrão do botão que abre a lista (editável; vazio grava este).
@@ -175,7 +176,16 @@ export function renderMenuResumo(model, transitionId, actionId) {
       </div>
       ${corpo}
       <div class="menu-resumo-chips">${opcoes}</div>
+      ${botaoTratamento(model, transitionId, actionId)}
     </div>`;
+}
+
+// "Gerar tratamento" (js/menu-tratamento.js): desabilitado, com o motivo no
+// tooltip, enquanto o menu não tiver opções com IDs únicos.
+function botaoTratamento(model, transitionId, actionId) {
+  const problema = problemaParaGerar(model);
+  return `
+      <button type="button" class="menu-resumo-tratamento" data-action="gerar-tratamento-menu" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}"${problema ? ` disabled title="${escapeHtml(problema)}"` : ' title="Cria o estado de controle com uma transição por opção, limite de erros e reenvio do menu"'}><i data-lucide="git-branch-plus"></i>Gerar tratamento</button>`;
 }
 
 export function renderMenuVazio(transitionId, actionId) {
