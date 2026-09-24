@@ -431,7 +431,7 @@ Cobertura de cada armadilha:
 - [x] Comparação lado a lado desktop × extensão para os 3+ bots reais, em PNG e SVG. *Feita de forma automatizada, em vez de manual: `paridade:visual` com 24 casos (6 bots reais, com e sem nomes), 0 pixel de diferença contra o build real do desktop, em PNG e SVG. Mais o `01.png` exportado pelo **app desktop real** (bot 881801), comparado com a extensão para o mesmo JSON: mesmo tamanho (8368 × 1960), diferença só de anti-aliasing (0 px com a tolerância de suavização). Os nomes não foram preenchidos na Nomenclatura do desktop, porque a extensão não usa mais esse caminho (ver D6); a comparação com nomes usa o grafo convertido por `nomesComoDadoReal`.*
 - [x] Checklist de regressão na `bot.php` real (ver abaixo o que foi e o que não foi verificado explicitamente).
 - [x] Bump de versão no `manifest.json` (0.3.4 → 0.4.0), `CHANGELOG.md`, seção nova em `DOCUMENTACAO_EXTENSAO.md` (inclui como reconstruir `vendor/fluxograma/`).
-- [ ] Gerar o zip de distribuição e conferir que `vendor/fluxograma/` está dentro.
+- [x] Gerar o zip de distribuição e conferir que `vendor/fluxograma/` está dentro: `Desktop\EDITOR_BOT-v0.4.0.zip` (30 arquivos, ~500 KB), montado com `git archive` a partir do commit, só com o que a extensão usa.
 
 **Estimativa total:** 6 a 9 dias de trabalho focado.
 
