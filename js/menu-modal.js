@@ -44,7 +44,7 @@ const CAMPO = 'message_option_text';
 const LIMITE = {
   header: 60, body: 1024, footer: 60,
   botaoTitulo: 20, botaoId: 256,
-  listaBotao: 20, secao: 24, linhaTitulo: 24, linhaDescricao: 72, linhaId: 200,
+  listaBotao: 20, linhaTitulo: 24, linhaDescricao: 72, linhaId: 200,
 };
 const TIPOS = [
   { kind: 'whatsapp_button', label: 'Botões', resumo: 'WhatsApp · Botões' },
@@ -224,25 +224,19 @@ function conteudoBotoes(m) {
     <p class="mm-limite">${m.buttons.length}/${WHATSAPP_BUTTON_MAX} botões — limite do WhatsApp</p>`;
 }
 
+// Lista: só opções, sem o conceito de seção na tela. Por baixo o JSON segue
+// com seções (o WhatsApp exige ao menos uma): opção nova entra na última,
+// e título/divisão de seções que já existiam são preservados sem aparecer.
 function conteudoLista(m) {
   const total = countListRows(m);
   const cheio = total >= WHATSAPP_LIST_MAX_ROWS;
-  const variasSecoes = m.sections.length > 1;
-  const secoes = m.sections.map((s, si) => `
-    <div class="mm-secao">
-      <div class="mm-secao-topo">
-        <input type="text" class="mm-secao-titulo" ${campo(`sections.${si}.title`, s.title, `maxlength="${LIMITE.secao}" placeholder="Título da seção${variasSecoes ? '' : ' (opcional)'}" aria-label="Título da seção ${si + 1}"`)}>
-        ${variasSecoes ? `<button type="button" class="mm-botao-remover mm-secao-remover" data-mm="remover-secao" data-si="${si}" title="Remover seção"><i data-lucide="x"></i></button>` : ''}
-      </div>
-      ${s.rows.map((r, ri) => `
+  const linhas = m.sections.map((s, si) => s.rows.map((r, ri) => `
         <div class="mm-linha">
           <input type="text" class="mm-linha-titulo" ${campo(`sections.${si}.rows.${ri}.title`, r.title, `maxlength="${LIMITE.linhaTitulo}" placeholder="Opção" aria-label="Opção"`)}>
           <input type="text" class="mm-linha-descricao" ${campo(`sections.${si}.rows.${ri}.description`, r.description, `maxlength="${LIMITE.linhaDescricao}" placeholder="Descrição (opcional)" aria-label="Descrição"`)}>
           ${campoId(`sections.${si}.rows.${ri}.id`, r.id, r.title, LIMITE.linhaId, 'ID')}
           ${total > 1 ? `<button type="button" class="mm-botao-remover" data-mm="remover-linha" data-si="${si}" data-ri="${ri}" title="Remover opção"><i data-lucide="x"></i></button>` : ''}
-        </div>`).join('')}
-      <button type="button" class="mm-adicionar mm-adicionar-leve" data-mm="adicionar-linha" data-si="${si}"${cheio ? ' disabled' : ''}><i data-lucide="plus"></i>Opção</button>
-    </div>`).join('');
+        </div>`).join('')).join('');
   const botaoLista = `
     <div class="mm-lista-botao"><i data-lucide="list"></i>
       <input type="text" ${campo('button', m.button, `maxlength="${LIMITE.listaBotao}" placeholder="Texto do botão (ex.: Ver opções)" aria-label="Texto do botão que abre a lista"`)}>
@@ -251,8 +245,8 @@ function conteudoLista(m) {
     ${bolhaWhatsapp(m, botaoLista)}
     <div class="mm-lista">
       <p class="mm-lista-rotulo">Opções da lista</p>
-      ${secoes}
-      <button type="button" class="mm-adicionar mm-adicionar-leve" data-mm="adicionar-secao"${cheio ? ' disabled' : ''}><i data-lucide="plus"></i>Seção</button>
+      ${linhas}
+      <button type="button" class="mm-adicionar mm-adicionar-leve" data-mm="adicionar-linha"${cheio ? ' disabled' : ''}><i data-lucide="plus"></i>Adicionar opção</button>
     </div>
     <p class="mm-limite">${total}/${WHATSAPP_LIST_MAX_ROWS} opções no total — limite do WhatsApp</p>`;
 }
@@ -295,7 +289,6 @@ function avisosDoModelo(m) {
     if (!linhas.length) lista.push('Adicione pelo menos uma opção.');
     if (linhas.some((r) => !r.title.trim())) lista.push('Há opção sem texto.');
     if (repetidos(linhas.map((r) => idFinal(r.id, r.title)))) lista.push('Há IDs repetidos entre as opções.');
-    if (m.sections.length > 1 && m.sections.some((s) => !s.title.trim())) lista.push('Com mais de uma seção, toda seção precisa de título.');
   }
   return lista;
 }
@@ -517,9 +510,10 @@ export function abrirModalMenu(transitionId, actionId) {
       case 'remover-botao': modelo.buttons.splice(+btn.dataset.i, 1); desenharConteudo(); break;
       case 'adicionar-linha':
         if (countListRows(modelo) < WHATSAPP_LIST_MAX_ROWS) {
-          modelo.sections[+btn.dataset.si].rows.push({ id: '', title: '', description: '' });
+          if (!modelo.sections.length) modelo.sections.push({ title: '', rows: [] });
+          modelo.sections[modelo.sections.length - 1].rows.push({ id: '', title: '', description: '' });
           desenharConteudo();
-          fundo.querySelectorAll('.mm-secao')[+btn.dataset.si].querySelectorAll('.mm-linha-titulo').forEach((el, i, l) => { if (i === l.length - 1) el.focus(); });
+          focarUltimo('.mm-linha-titulo');
         }
         break;
       case 'remover-linha': {
@@ -529,14 +523,6 @@ export function abrirModalMenu(transitionId, actionId) {
         desenharConteudo();
         break;
       }
-      case 'adicionar-secao':
-        if (countListRows(modelo) < WHATSAPP_LIST_MAX_ROWS) {
-          modelo.sections.push({ title: '', rows: [{ id: '', title: '', description: '' }] });
-          desenharConteudo();
-          focarUltimo('.mm-secao-titulo');
-        }
-        break;
-      case 'remover-secao': modelo.sections.splice(+btn.dataset.si, 1); desenharConteudo(); break;
       case 'adicionar-opcao': modelo.options.push({ text: '', value: '' }); desenharConteudo(); focarUltimo('.mm-botao-titulo'); break;
       case 'remover-opcao': modelo.options.splice(+btn.dataset.i, 1); desenharConteudo(); break;
       default: break;

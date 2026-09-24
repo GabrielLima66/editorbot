@@ -959,10 +959,6 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 .mm-bolha .mm-lista-botao input { text-align: center; font-weight: 600; font-size: 14px; color: var(--wa-botao-texto); }
 .mm-lista { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding: 10px; background: var(--wa-bolha); border-radius: 10px; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.12); }
 .mm-lista-rotulo { margin: 0; text-align: center; font-size: 12px; font-weight: 600; color: var(--wa-meta); }
-.mm-secao { display: flex; flex-direction: column; gap: 4px; }
-.mm-secao + .mm-secao { padding-top: 8px; border-top: 1px solid var(--wa-divisor); }
-.mm-secao-topo { position: relative; padding-right: 30px; }
-.mm-secao-topo .mm-secao-remover { top: 0; right: 0; }
 .mm-linha { position: relative; padding: 4px 30px 6px 0; border-bottom: 1px solid var(--wa-divisor); }
 .mm-lista input {
   width: 100%; border: 1px dashed transparent; border-radius: 6px; background: transparent;
@@ -972,7 +968,6 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 .mm-lista input:hover { border-color: var(--wa-divisor); }
 .mm-lista input:focus { border-color: var(--accent); background: var(--hover-bg); }
 .mm-lista input::placeholder { color: var(--wa-meta); font-style: italic; }
-.mm-lista .mm-secao-titulo { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--wa-meta); }
 .mm-lista .mm-linha-titulo { font-size: 14px; }
 .mm-lista .mm-linha-descricao { font-size: 12px; color: var(--wa-meta); }
 .mm-lista .mm-botao-id input { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; padding: 1px 5px; }
