@@ -856,6 +856,11 @@ export function initAcoesDelegadas() {
     if (!btn) return;
     const bot = state.botCarregado;
     switch (btn.dataset.action) {
+      case 'focar-nome-estado': {
+        const campo = btn.closest('.estado-alias-wrap')?.querySelector('.estado-alias');
+        if (campo) { campo.focus(); campo.select(); }
+        break;
+      }
       case 'duplicate-estado': {
         const novoNumero = duplicarEstado(bot, btn.dataset.state);
         reabrirPreservandoExpansao(bot, novoNumero);

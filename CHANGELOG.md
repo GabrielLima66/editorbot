@@ -1,5 +1,12 @@
 # Histórico de Versões (Changelog)
 
+## [0.5.0] - 2026-09-24
+* **Tema Claro**: Novo botão **sol/lua** no header do editor alterna entre o tema escuro e um tema claro pensado para não ofuscar: fundo cinza-lavanda (nada de branco puro nas áreas grandes), texto quase-preto, mesmo matiz roxo do escuro, página da Orpen continua escurecida por trás e a troca tem transição suave. A escolha fica salva no navegador e o editor já abre no tema escolhido, sem piscar. O padrão continua sendo o escuro. Vale para o editor, o modal de pendências, o aviso "Salvar antes de gerar?" e os toasts; a imagem exportada do fluxograma não muda (paridade com o desktop).
+* **Cores organizadas em tokens**: as 113 cores fixas do `styles.css` viraram variáveis por papel. O tema escuro ficou idêntico pixel a pixel (verificado por capturas automatizadas).
+* **Barra da transição**: alça de arrastar, prioridade, duplicar e excluir saíram do canto da coluna de Condições para uma barra no topo de cada transição, com resumo ("1 condição · 2 ações"). A coluna de condições ganhou a largura toda.
+* **Número da transição distinto do estado**: o estado mantém o selo laranja; a transição mostra "TRANSIÇÃO" com o número em contorno roxo, pra não confundir as duas numerações.
+* **Nome do estado**: vira um título com lápis (editar) e o resumo "N transições"; ocupa só o tamanho do texto, então o resto do header voltou a abrir e fechar o estado. Estados fechados ficaram um pouco mais altos.
+
 ## [0.4.0] - 2026-09-24
 * **Exportar Fluxograma (PNG/SVG)**: Novo botão **"Gerar fluxograma"** no rodapé do editor, com seletor PNG (padrão) / SVG. Gera o mesmo fluxograma que o app desktop **Fluxo BOT** exporta (Modo Cliente), sem sair da tela da Orpen: a lógica do Fluxo BOT foi portada para TypeScript e a camada de desenho é a mesma do desktop. A fidelidade é garantida por testes: o resultado bate com o do Python original em todos os bots de teste e em 6 bots reais, e as imagens saem idênticas, pixel a pixel, às do desktop (24 casos, PNG e SVG). Detalhes em `SPEC-exportar-fluxograma.md`.
 * **Nomes reais no fluxograma**: filas, bots externos e calendários aparecem com o nome cadastrado na Orpen (ex.: "Transfere para a fila [7101] Suporte"), e não só com o número. Calendário com nome sai como resolvido.

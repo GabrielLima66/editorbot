@@ -8,3 +8,4 @@ Claude outputs/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
 fluxograma/tests/visual_out/
+fluxograma/tests/tema_out/

@@ -86,6 +86,18 @@ async function extrairEsqueletoOverlay() {
     const fechar = header.querySelector('#btn-fechar-bot-view');
     const badge = header.querySelector('#bv-loading-badge');
     if (fechar && badge) header.insertBefore(badge, fechar);
+
+    // Alternar tema claro/escuro (SPEC-tema-claro.md): logo antes do
+    // "fechar". Os dois ícones ficam no DOM; o CSS mostra o do tema destino.
+    if (fechar) {
+      fechar.insertAdjacentHTML(
+        'beforebegin',
+        `<button id="btn-bv-tema" type="button" class="bv-btn-tema">
+          <i data-lucide="sun" class="bv-icone-sol"></i>
+          <i data-lucide="moon" class="bv-icone-lua"></i>
+        </button>`
+      );
+    }
   }
 
   // Botão "Salvar", só existe nesta cópia (standalone não tem servidor pra
@@ -167,6 +179,9 @@ async function montarOverlay() {
 
     host = document.createElement('div');
     host.id = HOST_ID;
+    // Tema aplicado antes de qualquer coisa ser desenhada: sem piscar o
+    // escuro antes de virar claro.
+    if (temaAtual === 'claro') host.setAttribute('data-tema', 'claro');
     document.body.appendChild(host);
     const shadowRoot = host.attachShadow({ mode: 'open' });
 
@@ -191,11 +206,58 @@ async function montarOverlay() {
     initBotViewWiring();
     ligarBotoesExtensao(shadowRoot);
     criarIcones();
+    aplicarTema(); // título/aria do botão sol/lua
 
     return shadowRoot;
   })();
 
   return montagemPromise;
+}
+
+// ---------------------------------------------------------------------------
+// Tema claro/escuro (SPEC-tema-claro.md). O atributo data-tema no host do
+// Shadow DOM troca os valores dos tokens em css/styles.css, então editor,
+// pendências, diálogo e toasts mudam juntos. A escolha fica no localStorage
+// da página (sem permissão nova no manifest). Padrão: escuro.
+// ---------------------------------------------------------------------------
+const CHAVE_TEMA = 'editorbot:tema';
+let temaAtual = lerTemaSalvo();
+
+function lerTemaSalvo() {
+  try {
+    return localStorage.getItem(CHAVE_TEMA) === 'claro' ? 'claro' : 'escuro';
+  } catch {
+    return 'escuro';
+  }
+}
+
+function aplicarTema({ animar = false } = {}) {
+  const host = document.getElementById(HOST_ID);
+  if (!host) return;
+  if (animar) {
+    host.classList.add('tema-trocando');
+    setTimeout(() => host.classList.remove('tema-trocando'), 250);
+  }
+  if (temaAtual === 'claro') host.setAttribute('data-tema', 'claro');
+  else host.removeAttribute('data-tema');
+
+  const btn = host.shadowRoot?.getElementById('btn-bv-tema');
+  if (btn) {
+    const claro = temaAtual === 'claro';
+    btn.title = claro ? 'Mudar para o tema escuro' : 'Mudar para o tema claro';
+    btn.setAttribute('aria-label', btn.title);
+    btn.setAttribute('aria-pressed', String(claro));
+  }
+}
+
+function alternarTema() {
+  temaAtual = temaAtual === 'claro' ? 'escuro' : 'claro';
+  try {
+    localStorage.setItem(CHAVE_TEMA, temaAtual);
+  } catch {
+    // sem localStorage: a troca vale só até recarregar a página
+  }
+  aplicarTema({ animar: true });
 }
 
 // Exatamente o que o "Salvar" enviaria ao servidor — comparar com a versão
@@ -223,6 +285,7 @@ function atualizarBotaoFluxograma() {
 function ligarBotoesExtensao(shadowRoot) {
   shadowRoot.getElementById('btn-bv-salvar').addEventListener('click', salvarBotNaOrpen);
   shadowRoot.getElementById('btn-bv-baixar').addEventListener('click', baixarBotJson);
+  shadowRoot.getElementById('btn-bv-tema')?.addEventListener('click', alternarTema);
 
   // Módulo carregado só no primeiro clique: quem nunca gera fluxograma não
   // paga nada (nem o iframe de vendor/fluxograma/ é criado).

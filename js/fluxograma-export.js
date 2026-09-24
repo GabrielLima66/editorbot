@@ -112,7 +112,7 @@ function mostrarGerando(gerando, texto) {
   if (spinner) spinner.classList.toggle('hidden', !gerando);
 }
 
-function confirmarSalvar() {
+export function confirmarSalvar() {
   return new Promise((resolve) => {
     const root = getRootNode();
     const montagem = root === document ? document.body : root;
