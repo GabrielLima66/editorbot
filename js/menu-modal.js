@@ -102,7 +102,7 @@ function renderBotao(b, i, total) {
     <div class="mm-botao" data-i="${i}">
       <input type="text" class="mm-botao-titulo" data-campo="title" value="${escapeHtml(b.title)}" maxlength="${LIMITE.titulo}" placeholder="Texto do botão" aria-label="Texto do botão ${i + 1}">
       <label class="mm-botao-id" title="Identificador que as condições usam pra saber qual botão o cliente escolheu">
-        ID <input type="text" data-campo="id" value="${escapeHtml(b.id)}" maxlength="${LIMITE.id}" spellcheck="false" aria-label="ID do botão ${i + 1}">
+        ID <input type="text" data-campo="id" value="${escapeHtml(b.id)}" placeholder="${escapeHtml(idDoTexto(b.title) || 'gerado do texto')}" maxlength="${LIMITE.id}" spellcheck="false" aria-label="ID do botão ${i + 1} (vazio = gerado do texto)">
       </label>
       ${total > 1 ? `<button type="button" class="mm-botao-remover" data-mm="remover" data-i="${i}" title="Remover botão"><i data-lucide="x"></i></button>` : ''}
     </div>`;
@@ -112,8 +112,8 @@ function avisosDoModelo(m) {
   const lista = [];
   if (!m.body.trim()) lista.push('A mensagem (corpo) é obrigatória no WhatsApp.');
   if (m.buttons.some((b) => !b.title.trim())) lista.push('Há botão sem texto.');
-  const ids = m.buttons.map((b) => b.id.trim());
-  if (ids.some((id) => !id)) lista.push('Há botão sem ID: as condições não vão conseguir identificá-lo.');
+  const ids = m.buttons.map(idFinal);
+  if (ids.some((id) => !id)) lista.push('Há botão sem texto e sem ID: as condições não vão conseguir identificá-lo.');
   if (new Set(ids.filter(Boolean)).size !== ids.filter(Boolean).length) lista.push('Há IDs repetidos entre os botões.');
   const titulos = m.buttons.map((b) => b.title.trim().toLowerCase()).filter(Boolean);
   if (new Set(titulos).size !== titulos.length) lista.push('Há botões com o mesmo texto.');
@@ -126,16 +126,18 @@ function idDoTexto(texto) {
   return texto.trim().replace(/\s+/g, '_');
 }
 
+// O ID é sempre editável; se ficar vazio, vale o gerado do texto.
+function idFinal(b) {
+  return b.id.trim() ? b.id : idDoTexto(b.title);
+}
+
 export function abrirModalMenu(transitionId, actionId) {
   const bot = state.botCarregado;
   const acao = (bot?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
   if (!acao) return;
   const novo = menuVazio(acao.ACTION_DATA?.[CAMPO]);
   const raw = novo ? MODELO_NOVO_JSON : acao.ACTION_DATA[CAMPO];
-  // `auto`: o ID acompanha o texto do botão. Só em botão NOVO, e só até o
-  // usuário editar o ID à mão. Botão que já existia nunca tem o ID trocado
-  // sozinho: as condições do bot usam esse ID pra saber qual foi escolhido.
-  const original = novo ? { ...defaultMenuModel('whatsapp_button'), buttons: [{ id: '', title: '', auto: true }] } : parseMenuModel(raw);
+  const original = novo ? { ...defaultMenuModel('whatsapp_button'), buttons: [{ id: '', title: '' }] } : parseMenuModel(raw);
   if (original.kind !== 'whatsapp_button') return;
 
   const modelo = JSON.parse(JSON.stringify(original));
@@ -215,7 +217,9 @@ export function abrirModalMenu(transitionId, actionId) {
     if (assinatura() !== assinaturaOriginal) {
       const alvo = (state.botCarregado?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
       if (alvo) {
-        alvo.ACTION_DATA = { ...alvo.ACTION_DATA, [CAMPO]: atualizarMenuPreservando(raw, modelo) };
+        // ID vazio -> gerado do texto (idFinal); ID preenchido fica como está.
+        const final = { ...modelo, buttons: modelo.buttons.map((b) => ({ ...b, id: idFinal(b) })) };
+        alvo.ACTION_DATA = { ...alvo.ACTION_DATA, [CAMPO]: atualizarMenuPreservando(raw, final) };
         rerenderTransicao(state.botCarregado, transitionId);
         mostrarToast('Menu atualizado. Lembre de salvar o bot.');
       }
@@ -231,11 +235,7 @@ export function abrirModalMenu(transitionId, actionId) {
     if (botao) {
       const b = modelo.buttons[+botao.dataset.i];
       b[campo] = el.value;
-      if (campo === 'id') b.auto = false;
-      else if (campo === 'title' && b.auto) {
-        b.id = idDoTexto(el.value);
-        botao.querySelector('[data-campo="id"]').value = b.id;
-      }
+      if (campo === 'title') botao.querySelector('[data-campo="id"]').placeholder = idDoTexto(el.value) || 'gerado do texto';
     }
     else modelo[campo] = el.value;
     atualizarEstado();
@@ -252,7 +252,7 @@ export function abrirModalMenu(transitionId, actionId) {
     } else if (acaoMm === 'descartar') fechar();
     else if (acaoMm === 'salvar') salvar();
     else if (acaoMm === 'adicionar' && modelo.buttons.length < WHATSAPP_BUTTON_MAX) {
-      modelo.buttons.push({ id: '', title: '', auto: true });
+      modelo.buttons.push({ id: '', title: '' });
       desenharBotoes();
       atualizarEstado();
       fundo.querySelectorAll('.mm-botao-titulo')[modelo.buttons.length - 1].focus();

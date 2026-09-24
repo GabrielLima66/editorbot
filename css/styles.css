@@ -924,6 +924,8 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 .mm-botao .mm-botao-titulo { text-align: center; font-weight: 600; font-size: 14px; color: var(--wa-botao-texto); }
 .mm-botao-id { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--wa-meta); }
 .mm-botao .mm-botao-id input { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; padding: 1px 5px; }
+/* ID vazio: o placeholder mostra o ID que será gerado do texto */
+.mm-botao .mm-botao-id input::placeholder { font-style: normal; opacity: 0.75; }
 .mm-botao-remover { position: absolute; top: 8px; right: 6px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; color: var(--wa-meta); background: transparent; cursor: pointer; }
 .mm-botao-remover:hover { background: var(--danger-ghost-hover); color: var(--danger-ghost-text); }
 .mm-botao-remover svg { width: 14px; height: 14px; }
