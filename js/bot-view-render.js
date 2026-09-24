@@ -21,7 +21,7 @@ import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
 import { criarIcones } from './dom-root.js';
 import { parseMenuModel, renderMenuBuilderShell, initMenuBuilders } from './menu-builder.js';
 import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariaveis } from './variaveis-builder.js';
-import { renderMenuResumo } from './menu-modal.js';
+import { renderMenuResumo, renderMenuVazio, menuVazio } from './menu-modal.js';
 import {
   temAmbiente, opcoesFilas, opcoesAgentes, opcoesBots, opcoesCrmStatus, opcoesSubStatus,
   opcoesEntrancesEnvio, opcoesScripts, opcoesCheckpoints, opcoesOpenAiContas,
@@ -277,6 +277,13 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       // seguem no builder de sempre até o modal cobrir esses tipos.
       if (model.kind === 'whatsapp_button') {
         corpo = renderMenuResumo(model, a.TRANSITION_ID, a.ID);
+        break;
+      }
+      // Ação nova/vazia: cartão "Criar menu" (abre o modal já em Botões).
+      // Conteúdo não reconhecido NÃO cai aqui: segue no builder antigo, pra
+      // nada ser sobrescrito.
+      if (menuVazio(d.message_option_text)) {
+        corpo = renderMenuVazio(a.TRANSITION_ID, a.ID);
         break;
       }
       const uid = 'mb' + (++state.menuBuilderSeq);

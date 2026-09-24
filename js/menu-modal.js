@@ -16,12 +16,20 @@
 import { state } from './state.js';
 import { escapeHtml, mostrarToast } from './utils.js';
 import { getRootNode, criarIcones } from './dom-root.js';
-import { parseMenuModel, WHATSAPP_BUTTON_MAX } from './menu-builder.js';
+import { parseMenuModel, defaultMenuModel, WHATSAPP_BUTTON_MAX } from './menu-builder.js';
 import { rerenderTransicao } from './bot-view-interactions.js';
 
 const CAMPO = 'message_option_text';
 // Limites da API do WhatsApp para mensagem interativa de botões.
 const LIMITE = { header: 60, body: 1024, footer: 60, titulo: 20, id: 256 };
+// Base de um menu NOVO (ação ainda vazia): mesma estrutura dos menus reais,
+// indentação de 4 espaços como a maioria deles. Cabeçalho/rodapé só entram
+// se forem preenchidos (atualizarMenuPreservando).
+const MODELO_NOVO_JSON = JSON.stringify({ interactive: { type: 'button', body: { text: '' }, action: { buttons: [] } } }, null, 4);
+
+export function menuVazio(raw) {
+  return typeof raw !== 'string' || raw.trim() === '';
+}
 
 export function ehMenuDeBotoes(raw) {
   return parseMenuModel(raw || '').kind === 'whatsapp_button';
@@ -76,6 +84,17 @@ export function renderMenuResumo(model, transitionId, actionId) {
     </div>`;
 }
 
+export function renderMenuVazio(transitionId, actionId) {
+  return `
+    <div class="menu-resumo">
+      <div class="menu-resumo-topo">
+        <span class="menu-resumo-tipo"><i data-lucide="message-square"></i>Menu</span>
+        <button type="button" class="menu-resumo-editar" data-action="editar-menu" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}"><i data-lucide="plus"></i>Criar menu</button>
+      </div>
+      <p class="menu-resumo-corpo menu-resumo-vazio">Menu ainda não configurado.</p>
+    </div>`;
+}
+
 // ---------------------------------------------------------------- modal
 
 function renderBotao(b, i, total) {
@@ -112,8 +131,9 @@ export function abrirModalMenu(transitionId, actionId) {
   const bot = state.botCarregado;
   const acao = (bot?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
   if (!acao) return;
-  const raw = acao.ACTION_DATA?.[CAMPO] || '';
-  const original = parseMenuModel(raw);
+  const novo = menuVazio(acao.ACTION_DATA?.[CAMPO]);
+  const raw = novo ? MODELO_NOVO_JSON : acao.ACTION_DATA[CAMPO];
+  const original = novo ? { ...defaultMenuModel('whatsapp_button'), buttons: [{ id: '1', title: '' }] } : parseMenuModel(raw);
   if (original.kind !== 'whatsapp_button') return;
 
   const modelo = JSON.parse(JSON.stringify(original));
@@ -130,7 +150,7 @@ export function abrirModalMenu(transitionId, actionId) {
   fundo.innerHTML = `
     <div class="mm-painel">
       <header class="mm-topo">
-        <h3 id="mm-titulo" class="mm-titulo">Editar menu</h3>
+        <h3 id="mm-titulo" class="mm-titulo">${novo ? 'Criar menu' : 'Editar menu'}</h3>
         <div class="mm-tipos" role="tablist">
           <button type="button" class="mm-tipo mm-tipo-ativo" aria-selected="true">Botões</button>
           <button type="button" class="mm-tipo" disabled title="Em breve">Lista</button>
