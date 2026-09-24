@@ -1,0 +1,92 @@
+{
+  "0": "10", "ID": "10",
+  "1": "ATENDIMENTO SIMPLES 1 NIVEL - COM VARIAVEL DE FILA", "NAME": "ATENDIMENTO SIMPLES 1 NIVEL - COM VARIAVEL DE FILA",
+  "2": "1800", "CONF_DELIVERY_TIME": "1800",
+  "3": "7002", "CONF_DELIVERY_QUEUE": "7002",
+  "4": "3", "TIME_ANSWER": "3",
+  "5": "1800", "TIMEOUT_DELAY": "1800",
+  "6": "queue", "TIMEOUT_ACTION": "queue",
+  "7": "7002", "TIMEOUT_DESTINY": "7002",
+  "8": "", "TIMEOUT_MESSAGE": "",
+
+  "BOT_STATES": [
+    { "0": "342", "ID": "342", "1": "0", "STATE_NUMBER": "0", "2": "HOME_CLASSIFICA", "ALIAS": "HOME_CLASSIFICA" },
+    { "0": "343", "ID": "343", "1": "1", "STATE_NUMBER": "1", "2": "MENU", "ALIAS": "MENU" },
+    { "0": "344", "ID": "344", "1": "2", "STATE_NUMBER": "2", "2": "CTRL_TRANSF", "ALIAS": "CTRL_TRANSF",
+      "_comentario": "Estado único de transferência, compartilhado por todas as opções do MENU. Substitui a duplicação de 'mensagem + destiny fixo' por opção do template original." }
+  ],
+
+  "BOT_TRANSITIONS": [
+    { "0": "3441", "ID": "3441", "1": "0", "STATE": "0", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "0", "PRIORITY": "0" },
+    { "0": "3442", "ID": "3442", "1": "0", "STATE": "0", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "1", "PRIORITY": "1" },
+    { "0": "3443", "ID": "3443", "1": "0", "STATE": "0", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "2", "PRIORITY": "2" },
+    { "0": "3444", "ID": "3444", "1": "0", "STATE": "0", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "3", "PRIORITY": "3" },
+
+    { "0": "3445", "ID": "3445", "1": "1", "STATE": "1", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "0", "PRIORITY": "0" },
+    { "0": "3446", "ID": "3446", "1": "1", "STATE": "1", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "1", "PRIORITY": "1" },
+    { "0": "3447", "ID": "3447", "1": "1", "STATE": "1", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "2", "PRIORITY": "2" },
+    { "0": "3448", "ID": "3448", "1": "1", "STATE": "1", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "3", "PRIORITY": "3" },
+
+    { "0": "3449", "ID": "3449", "1": "2", "STATE": "2", "2": "", "CONDITION": "", "3": "", "MESSAGE": "", "4": "", "TARGET_TYPE": "", "5": "", "TARGET": "", "6": "0", "PRIORITY": "0",
+      "_comentario": "Única transição do hub: dispara pra qualquer chegada (mensagem vazia) e transfere usando a variável {$fila} definida por quem entrou aqui." }
+  ],
+
+  "BOT_CONDITIONS": [
+    { "0": "3638", "ID": "3638", "1": "3441", "TRANSITION_ID": "3441", "2": "2", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "" } },
+    { "0": "3639", "ID": "3639", "1": "3441", "TRANSITION_ID": "3441", "2": "201", "CONDITION_TYPE": "201", "CONDITION_DATA": { "variable": "calendario_falso" } },
+
+    { "0": "3640", "ID": "3640", "1": "3442", "TRANSITION_ID": "3442", "2": "2", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "" } },
+    { "0": "3641", "ID": "3641", "1": "3442", "TRANSITION_ID": "3442", "2": "202", "CONDITION_TYPE": "202", "CONDITION_DATA": { "variable": "calendario" } },
+
+    { "0": "3642", "ID": "3642", "1": "3443", "TRANSITION_ID": "3443", "2": "2", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "" } },
+    { "0": "3643", "ID": "3643", "1": "3443", "TRANSITION_ID": "3443", "2": "10", "CONDITION_TYPE": "10", "CONDITION_DATA": { "variable": "contact" },
+      "_comentario": "Contato já tem atendente preferencial salvo (pref_agent) -> pula o menu inteiro" },
+
+    { "0": "3644", "ID": "3644", "1": "3444", "TRANSITION_ID": "3444", "2": "2", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "" },
+      "_comentario": "Catch-all de entrada: nenhuma das condições mais específicas acima bateu -> mostra o menu" },
+
+    { "0": "3645", "ID": "3645", "1": "3445", "TRANSITION_ID": "3445", "2": "1", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "Falar_com_Atendente" } },
+    { "0": "3646", "ID": "3646", "1": "3446", "TRANSITION_ID": "3446", "2": "1", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "Suporte" } },
+    { "0": "3647", "ID": "3647", "1": "3447", "TRANSITION_ID": "3447", "2": "1", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "Financeiro" } },
+    { "0": "3648", "ID": "3648", "1": "3448", "TRANSITION_ID": "3448", "2": "1", "CONDITION_TYPE": "1", "CONDITION_DATA": { "variable": "message", "value": "Outros" } },
+
+    { "0": "3649", "ID": "3649", "1": "3449", "TRANSITION_ID": "3449", "2": "2", "CONDITION_TYPE": "2", "CONDITION_DATA": { "variable": "message", "value": "" } }
+  ],
+
+  "BOT_ACTIONS": [
+    { "0": "6562", "ID": "6562", "1": "3441", "TRANSITION_ID": "3441", "2": "1", "ACTION_TYPE": "1",
+      "ACTION_DATA": { "message_text": "Bem vindo a EMPRESA_X,\n\nNosso horário de atendimento é de segunda a sexta-feira das 08:00 as 18:00.\n\nRetornaremos o seu contato em breve." } },
+    { "0": "6563", "ID": "6563", "1": "3441", "TRANSITION_ID": "3441", "2": "5", "ACTION_TYPE": "5", "ACTION_DATA": { "destiny": "7100" } },
+
+    { "0": "6564", "ID": "6564", "1": "3442", "TRANSITION_ID": "3442", "2": "1", "ACTION_TYPE": "1",
+      "ACTION_DATA": { "message_text": "Bem vindo a EMPRESA_X,\n\nNosso horário de atendimento é de segunda a sexta-feira das 08:00 as 18:00.\n\nRetornaremos o seu contato em breve." } },
+    { "0": "6565", "ID": "6565", "1": "3442", "TRANSITION_ID": "3442", "2": "5", "ACTION_TYPE": "5", "ACTION_DATA": { "destiny": "7100" } },
+
+    { "0": "6566", "ID": "6566", "1": "3443", "TRANSITION_ID": "3443", "2": "1", "ACTION_TYPE": "1",
+      "ACTION_DATA": { "message_text": "Bem vindo a EMPRESA_X,\n\nEstamos lhe transferindo para o seu atendente preferido." } },
+    { "0": "6567", "ID": "6567", "1": "3443", "TRANSITION_ID": "3443", "2": "4", "ACTION_TYPE": "4", "ACTION_DATA": { "destiny": "{$pref_agent}" },
+      "_comentario": "Transferência pra OUTRO bot/atendente. Variáveis não sobrevivem a essa troca — não depender de {$fila} do lado de lá." },
+
+    { "0": "6568", "ID": "6568", "1": "3444", "TRANSITION_ID": "3444", "2": "10", "ACTION_TYPE": "10",
+      "ACTION_DATA": { "message_option_text": "{\n  \"interactive\": {\n    \"type\": \"list\",\n    \"header\": { \"type\": \"text\", \"text\": \"\" },\n    \"body\": { \"text\": \"Olá, seja bem vindo a EMPRESA_X!\\r\\npara transferir seu atendimento para nosso time, sobre qual assunto você deseja falar?\" },\n    \"footer\": { \"text\": \"\" },\n    \"action\": {\n      \"button\": \"Opções\",\n      \"sections\": [\n        {\n          \"title\": \"Opções\",\n          \"rows\": [\n            { \"id\": \"Falar_com_Atendente\", \"title\": \"Falar com Atendente\" },\n            { \"id\": \"Suporte\", \"title\": \"Suporte\" },\n            { \"id\": \"Financeiro\", \"title\": \"Financeiro\" },\n            { \"id\": \"Outros\", \"title\": \"Outros\" }\n          ]\n        }\n      ]\n    }\n  }\n}" } },
+    { "0": "6569", "ID": "6569", "1": "3444", "TRANSITION_ID": "3444", "2": "2", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "1" } },
+
+    { "0": "6570", "ID": "6570", "1": "3445", "TRANSITION_ID": "3445", "2": "13", "ACTION_TYPE": "13", "ACTION_DATA": { "bot_variables_text": "{\"fila\":\"7001\"}" } },
+    { "0": "6571", "ID": "6571", "1": "3445", "TRANSITION_ID": "3445", "2": "1", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊" } },
+    { "0": "6572", "ID": "6572", "1": "3445", "TRANSITION_ID": "3445", "2": "2", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "2" } },
+
+    { "0": "6573", "ID": "6573", "1": "3446", "TRANSITION_ID": "3446", "2": "13", "ACTION_TYPE": "13", "ACTION_DATA": { "bot_variables_text": "{\"fila\":\"7002\"}" } },
+    { "0": "6574", "ID": "6574", "1": "3446", "TRANSITION_ID": "3446", "2": "1", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊" } },
+    { "0": "6575", "ID": "6575", "1": "3446", "TRANSITION_ID": "3446", "2": "2", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "2" } },
+
+    { "0": "6576", "ID": "6576", "1": "3447", "TRANSITION_ID": "3447", "2": "13", "ACTION_TYPE": "13", "ACTION_DATA": { "bot_variables_text": "{\"fila\":\"7004\"}" } },
+    { "0": "6577", "ID": "6577", "1": "3447", "TRANSITION_ID": "3447", "2": "1", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊" } },
+    { "0": "6578", "ID": "6578", "1": "3447", "TRANSITION_ID": "3447", "2": "2", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "2" } },
+
+    { "0": "6579", "ID": "6579", "1": "3448", "TRANSITION_ID": "3448", "2": "13", "ACTION_TYPE": "13", "ACTION_DATA": { "bot_variables_text": "{\"fila\":\"7003\"}" } },
+    { "0": "6580", "ID": "6580", "1": "3448", "TRANSITION_ID": "3448", "2": "1", "ACTION_TYPE": "1", "ACTION_DATA": { "message_text": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊" } },
+    { "0": "6581", "ID": "6581", "1": "3448", "TRANSITION_ID": "3448", "2": "2", "ACTION_TYPE": "2", "ACTION_DATA": { "destiny": "2" } },
+
+    { "0": "6582", "ID": "6582", "1": "3449", "TRANSITION_ID": "3449", "2": "5", "ACTION_TYPE": "5", "ACTION_DATA": { "destiny": "{$fila}" } }
+  ]
+}

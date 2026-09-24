@@ -12,6 +12,12 @@ export const state = {
   termoBusca: '',
   ambienteOrpen: null, // Variáveis do Main World extraídas (queues, agents, etc.)
 
+  // Exportar fluxograma (SPEC-exportar-fluxograma.md). baselineSalvo é o
+  // payload de updateBot (serializado) do bot como está salvo na plataforma:
+  // se o payload atual for diferente, há alteração não salva.
+  baselineSalvo: null,
+  fluxogramaGerando: false,
+
   // Menu Builder (ACTION_TYPE 10) — ver js/menu-builder.js
   MENU_MODELS: {},
   menuBuilderSeq: 0,

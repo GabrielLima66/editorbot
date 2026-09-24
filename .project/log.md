@@ -4,9 +4,9 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)": Fase 0 (spike) concluída em 23/09/2026
-- **Última Tarefa Concluída:** Spike validado na bot.php real (iframe de extensão, variante (b) na tela com opacity 0, fonte, bot grande, nomes de fila/calendário). Resultados em SPEC-exportar-fluxograma.md → "Resultado da Fase 0"
-- **Próxima Tarefa em Aberto:** Fase 1 da SPEC-exportar-fluxograma.md: port do pipeline Python do Fluxo BOT (commit 7c9c976) para TS, com testes golden
+- **Fase Atual:** Feature "Exportar fluxograma (PNG/SVG)" **concluída**: v0.4.0 (fases 0 a 4), 24/09/2026
+- **Última Tarefa Concluída:** Fase 4: goldens re-rodados (144 testes), paridade visual 24/24 em PNG e SVG, comparação com o `01.png` do app desktop real (só anti-aliasing), teste manual da Fase 3 feito pelo usuário na bot.php, versão 0.4.0, CHANGELOG, DOCUMENTACAO_EXTENSAO.md (seção 5) e zip de distribuição
+- **Próxima Tarefa em Aberto:** Push para o remoto (aguardando confirmação do usuário). Itens de regressão não verificados explicitamente, todos em código não alterado: pendências após salvar, console sem erros novos, Network sem carregar `vendor/fluxograma/` antes do clique. Travadinha breve durante a captura: comportamento conhecido, investigar só se incomodar
 - **Decisões Críticas / Bloqueios:** Sem bloqueio. Decisões de produto P1–P4 na spec (salvar antes de gerar, nomes do ambiente, PNG+SVG, só Modo Cliente). Branch `spike/fluxograma-fase0` é descartável e não vai para o main. Correspondência de IDs de fila, bot externo e calendário com os cadastros validada com bots reais.
 
 ---
@@ -25,6 +25,36 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 24/09/2026 — 🏁 MARCO
+
+Exportar fluxograma entregue na v0.4.0. O teste manual da Fase 3 (débito de 23/09) foi feito pelo usuário na bot.php: gerar PNG/SVG, salvar antes de gerar (Cancelar/Esc/Salvar e gerar), desfazer sem aviso, bot novo desabilitado, bot externo com nome e regressão rápida. Bot salvo sem estados passou a mostrar mensagem clara.
+
+---
+### 23/09/2026 — 🟡 SUPOSIÇÃO (débito)
+
+Teste manual da Fase 3 na bot.php real adiado a pedido do usuário (fora do PC). O código está completo e coberto por testes automatizados, mas nada da integração com o editor (botão, diálogo, salvar antes, download) foi exercitado na Orpen ainda. O branch `feat/exportar-fluxograma` fica fora do main até esse teste.
+
+---
+### 23/09/2026 — 🏁 MARCO
+
+Fase 2 concluída: o renderizador da extensão gera PNG e SVG pixel a pixel idênticos aos do desktop (22 casos, incluindo 5 bots reais), verificado automaticamente contra o build real do Fluxo BOT num Chrome real.
+
+---
+### 23/09/2026 — 🔵 DECISÃO
+
+Nomes de fila/bot externo/calendário vindos do ambiente entram como dado real do nó, não como override manual ("como temos as informações corretas, não precisamos mais alterar nome de filas"). Evita também um bug do desktop, em que o override desenha fila e bot externo com os asteriscos crus.
+
+---
+### 23/09/2026 — 🏁 MARCO
+
+Fase 1 da exportação de fluxograma concluída: pipeline Python do Fluxo BOT portado para TS com paridade provada por goldens (103 testes; teste de mutação confirma que divergências sutis de strip/splitlines são pegas).
+
+---
+### 23/09/2026 — 📝 NOTA
+
+A ordem das transições muda o layout. O `getBot` da Orpen ordena (estado, prioridade, ID); o `exportBotJSON` nativo não tem ORDER BY. Comparação com o desktop deve usar o "Backup JSON" da extensão dos dois lados, não o export nativo.
+
+---
 ### 23/09/2026 — 🏁 MARCO
 
 Fase 0 da exportação de fluxograma concluída. Todas as premissas técnicas validadas na bot.php real, incluindo a correspondência de fila, bot externo e calendário com os cadastros do ambiente. Detalhes na SPEC-exportar-fluxograma.md, seção "Resultado da Fase 0".

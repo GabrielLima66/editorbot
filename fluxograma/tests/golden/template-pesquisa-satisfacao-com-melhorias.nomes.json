@@ -1,0 +1,279 @@
+{
+ "origem": {
+  "commit": "7c9c976",
+  "alteracoesLocais": false
+ },
+ "fixture": "template-pesquisa-satisfacao-com-melhorias.json",
+ "fixtureSha256": "c40128b58ac22aa2e298260ae1903f06fd1fe2aaeb84193a2dfccfbdafa61bc5",
+ "nomes": {
+  "filas": {},
+  "bots": {},
+  "calendarios": {}
+ },
+ "resultado": {
+  "nodes": [
+   {
+    "id": "1",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "RATE",
+     "referencia": "1",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "2",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "MELHORIAS",
+     "referencia": "2",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "0",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "HOME",
+     "referencia": "0",
+     "aguardaResposta": false
+    }
+   },
+   {
+    "id": "mensagem:22276",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Você tem alguma observação ou sugestão de melhorias?",
+     "referencia": "22276",
+     "mensagem": "Você tem alguma observação ou sugestão de melhorias?"
+    }
+   },
+   {
+    "id": "mensagem:22278",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Seu atendimento foi finalizado.",
+     "referencia": "22278",
+     "mensagem": "Seu atendimento foi finalizado."
+    }
+   },
+   {
+    "id": "encerrado",
+    "type": "encerrado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "encerrado",
+     "rotulo": "*Encerra o atendimento*",
+     "referencia": ""
+    }
+   },
+   {
+    "id": "mensagem:22280",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Seu atendimento foi finalizado.",
+     "referencia": "22280",
+     "mensagem": "Seu atendimento foi finalizado."
+    }
+   },
+   {
+    "id": "mensagem:22283",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Seu atendimento foi finalizado.",
+     "referencia": "22283",
+     "mensagem": "Seu atendimento foi finalizado."
+    }
+   },
+   {
+    "id": "mensagem:22273",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Por favor, avalie o atendimento recebido pela nossa inteligência artificial digitando uma das opções abaixo ou digite não, para finalizar.\n\nO que você achou do seu atendimento?",
+     "referencia": "22273",
+     "mensagem": "Por favor, avalie o atendimento recebido pela nossa inteligência artificial digitando uma das opções abaixo ou digite não, para finalizar.\n\nO que você achou do seu atendimento?"
+    }
+   },
+   {
+    "id": "condicao:11697",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: contém \"Não (+5 variações)\"",
+     "referencia": "11697",
+     "naoResolvida": true
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "e:11696:22276:1-mensagem:22276",
+    "source": "1",
+    "target": "mensagem:22276",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11696",
+     "acaoId": "22276",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:11696:22277:mensagem:22276-2",
+    "source": "mensagem:22276",
+    "target": "2",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11696",
+     "acaoId": "22277",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:11697::1-condicao:11697",
+    "source": "1",
+    "target": "condicao:11697",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11697",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:11697:22278:condicao:11697-mensagem:22278",
+    "source": "condicao:11697",
+    "target": "mensagem:22278",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11697",
+     "acaoId": "22278",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:11697::mensagem:22278-encerrado",
+    "source": "mensagem:22278",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11697",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:11698:22280:1-mensagem:22280",
+    "source": "1",
+    "target": "mensagem:22280",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11698",
+     "acaoId": "22280",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:11698::mensagem:22280-encerrado",
+    "source": "mensagem:22280",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11698",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:11699:22283:2-mensagem:22283",
+    "source": "2",
+    "target": "mensagem:22283",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11699",
+     "acaoId": "22283",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:11699::mensagem:22283-encerrado",
+    "source": "mensagem:22283",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11699",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:11695:22273:0-mensagem:22273",
+    "source": "0",
+    "target": "mensagem:22273",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11695",
+     "acaoId": "22273",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:11695:22274:mensagem:22273-1",
+    "source": "mensagem:22273",
+    "target": "1",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "11695",
+     "acaoId": "22274",
+     "estadoOrigemId": "0"
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,1276 @@
+{
+ "origem": {
+  "commit": "7c9c976",
+  "alteracoesLocais": false
+ },
+ "fixture": "bot_suporte_financeiro_ouvidoria_v2.json",
+ "fixtureSha256": "d0d88d7e79d26c1b60fb28bce3b0c55e32231d39ebec4905c1ce5f226e4a4fd6",
+ "resultado": {
+  "nodes": [
+   {
+    "id": "0",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "HOME",
+     "referencia": "0",
+     "aguardaResposta": false
+    }
+   },
+   {
+    "id": "1",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "MENU_PRINCIPAL",
+     "referencia": "1",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "2",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "SUPORTE",
+     "referencia": "2",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "3",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "FINANCEIRO",
+     "referencia": "3",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "4",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "OUVIDORIA",
+     "referencia": "4",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "5",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "SUPORTE_SISTEMAS",
+     "referencia": "5",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "mensagem:900",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Olá! Bem-vindo ao atendimento da nossa empresa. Sobre qual assunto você deseja falar hoje?",
+     "referencia": "900",
+     "mensagem": "Olá! Bem-vindo ao atendimento da nossa empresa. Sobre qual assunto você deseja falar hoje?",
+     "opcoesMenu": [
+      "Suporte Técnico",
+      "Financeiro",
+      "Ouvidoria"
+     ]
+    }
+   },
+   {
+    "id": "mensagem:902",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Certo, vamos te ajudar com o suporte. O que está acontecendo?",
+     "referencia": "902",
+     "mensagem": "Certo, vamos te ajudar com o suporte. O que está acontecendo?",
+     "opcoesMenu": [
+      "Sem conexão/internet",
+      "Erro em um sistema"
+     ]
+    }
+   },
+   {
+    "id": "mensagem:904",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Você está no setor Financeiro. Como podemos ajudar?",
+     "referencia": "904",
+     "mensagem": "Você está no setor Financeiro. Como podemos ajudar?",
+     "opcoesMenu": [
+      "2ª via boleto",
+      "Negociar dívida"
+     ]
+    }
+   },
+   {
+    "id": "mensagem:906",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Você acessou a Ouvidoria. Sua opinião é muito importante para nós.",
+     "referencia": "906",
+     "mensagem": "Você acessou a Ouvidoria. Sua opinião é muito importante para nós.",
+     "opcoesMenu": [
+      "Registrar reclamação",
+      "Elogio ou sugestão"
+     ]
+    }
+   },
+   {
+    "id": "mensagem:912",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "912",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "fila:7001",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7001*",
+     "referencia": "7001"
+    }
+   },
+   {
+    "id": "mensagem:914",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Entendi. Para que eu possa te direcionar ao especialista correto, selecione na lista abaixo qual sistema está apresentando falha:",
+     "referencia": "914",
+     "mensagem": "Entendi. Para que eu possa te direcionar ao especialista correto, selecione na lista abaixo qual sistema está apresentando falha:",
+     "opcoesMenu": [
+      "ERP - Módulo Vendas",
+      "ERP - Módulo Estoque",
+      "Painel do Cliente (Web)",
+      "App Mobile (Android)",
+      "Aplicativo Mobile (iOS)",
+      "Integração de API",
+      "Servidor de E-mail",
+      "Outros Sistemas"
+     ]
+    }
+   },
+   {
+    "id": "mensagem:920",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "920",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "fila:7003",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7003*",
+     "referencia": "7003"
+    }
+   },
+   {
+    "id": "mensagem:922",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "922",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "fila:7004",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7004*",
+     "referencia": "7004"
+    }
+   },
+   {
+    "id": "mensagem:928",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "928",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "fila:7005",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7005*",
+     "referencia": "7005"
+    }
+   },
+   {
+    "id": "mensagem:930",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "930",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "fila:7006",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7006*",
+     "referencia": "7006"
+    }
+   },
+   {
+    "id": "mensagem:937",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "937",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "fila:7002",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7002*",
+     "referencia": "7002"
+    }
+   },
+   {
+    "id": "mensagem:940",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "940",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "mensagem:943",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "943",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "mensagem:946",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "946",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "mensagem:949",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "949",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "mensagem:952",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "952",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "mensagem:955",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "955",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "mensagem:958",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito! Estamos te transferindo para o setor responsável.",
+     "referencia": "958",
+     "mensagem": "Perfeito! Estamos te transferindo para o setor responsável."
+    }
+   },
+   {
+    "id": "condicao:101",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Suporte Técnico\"",
+     "referencia": "101",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:102",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Financeiro\"",
+     "referencia": "102",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:103",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Ouvidoria\"",
+     "referencia": "103",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:105",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Sem conexão/internet\"",
+     "referencia": "105",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:106",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Erro em um sistema\"",
+     "referencia": "106",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:108",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"2ª via boleto\"",
+     "referencia": "108",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:109",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Negociar dívida\"",
+     "referencia": "109",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:111",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Registrar reclamação\"",
+     "referencia": "111",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:112",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Elogio ou sugestão\"",
+     "referencia": "112",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:114",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"ERP - Módulo Vendas\"",
+     "referencia": "114",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:115",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"ERP - Módulo Estoque\"",
+     "referencia": "115",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:116",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Painel do Cliente (Web)\"",
+     "referencia": "116",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:117",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"App Mobile (Android)\"",
+     "referencia": "117",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:118",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Aplicativo Mobile (iOS)\"",
+     "referencia": "118",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:119",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Integração de API\"",
+     "referencia": "119",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:120",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Servidor de E-mail\"",
+     "referencia": "120",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:121",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Outros Sistemas\"",
+     "referencia": "121",
+     "naoResolvida": false
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "e:100:900:0-mensagem:900",
+    "source": "0",
+    "target": "mensagem:900",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "100",
+     "acaoId": "900",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:100:901:mensagem:900-1",
+    "source": "mensagem:900",
+    "target": "1",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "100",
+     "acaoId": "901",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:101::1-condicao:101",
+    "source": "1",
+    "target": "condicao:101",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "101",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:101:902:condicao:101-mensagem:902",
+    "source": "condicao:101",
+    "target": "mensagem:902",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "101",
+     "acaoId": "902",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:101:903:mensagem:902-2",
+    "source": "mensagem:902",
+    "target": "2",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "101",
+     "acaoId": "903",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:102::1-condicao:102",
+    "source": "1",
+    "target": "condicao:102",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "102",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:102:904:condicao:102-mensagem:904",
+    "source": "condicao:102",
+    "target": "mensagem:904",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "102",
+     "acaoId": "904",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:102:905:mensagem:904-3",
+    "source": "mensagem:904",
+    "target": "3",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "102",
+     "acaoId": "905",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:103::1-condicao:103",
+    "source": "1",
+    "target": "condicao:103",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "103",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:103:906:condicao:103-mensagem:906",
+    "source": "condicao:103",
+    "target": "mensagem:906",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "103",
+     "acaoId": "906",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:103:907:mensagem:906-4",
+    "source": "mensagem:906",
+    "target": "4",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "103",
+     "acaoId": "907",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:105::2-condicao:105",
+    "source": "2",
+    "target": "condicao:105",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "105",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:105:912:condicao:105-mensagem:912",
+    "source": "condicao:105",
+    "target": "mensagem:912",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "105",
+     "acaoId": "912",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:105:913:mensagem:912-fila:7001",
+    "source": "mensagem:912",
+    "target": "fila:7001",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "105",
+     "acaoId": "913",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:106::2-condicao:106",
+    "source": "2",
+    "target": "condicao:106",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "106",
+     "acaoId": "",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:106:914:condicao:106-mensagem:914",
+    "source": "condicao:106",
+    "target": "mensagem:914",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "106",
+     "acaoId": "914",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:106:915:mensagem:914-5",
+    "source": "mensagem:914",
+    "target": "5",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "106",
+     "acaoId": "915",
+     "estadoOrigemId": "2"
+    }
+   },
+   {
+    "id": "e:108::3-condicao:108",
+    "source": "3",
+    "target": "condicao:108",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "108",
+     "acaoId": "",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:108:920:condicao:108-mensagem:920",
+    "source": "condicao:108",
+    "target": "mensagem:920",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "108",
+     "acaoId": "920",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:108:921:mensagem:920-fila:7003",
+    "source": "mensagem:920",
+    "target": "fila:7003",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "108",
+     "acaoId": "921",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:109::3-condicao:109",
+    "source": "3",
+    "target": "condicao:109",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "109",
+     "acaoId": "",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:109:922:condicao:109-mensagem:922",
+    "source": "condicao:109",
+    "target": "mensagem:922",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "109",
+     "acaoId": "922",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:109:923:mensagem:922-fila:7004",
+    "source": "mensagem:922",
+    "target": "fila:7004",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "109",
+     "acaoId": "923",
+     "estadoOrigemId": "3"
+    }
+   },
+   {
+    "id": "e:111::4-condicao:111",
+    "source": "4",
+    "target": "condicao:111",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "111",
+     "acaoId": "",
+     "estadoOrigemId": "4"
+    }
+   },
+   {
+    "id": "e:111:928:condicao:111-mensagem:928",
+    "source": "condicao:111",
+    "target": "mensagem:928",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "111",
+     "acaoId": "928",
+     "estadoOrigemId": "4"
+    }
+   },
+   {
+    "id": "e:111:929:mensagem:928-fila:7005",
+    "source": "mensagem:928",
+    "target": "fila:7005",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "111",
+     "acaoId": "929",
+     "estadoOrigemId": "4"
+    }
+   },
+   {
+    "id": "e:112::4-condicao:112",
+    "source": "4",
+    "target": "condicao:112",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "112",
+     "acaoId": "",
+     "estadoOrigemId": "4"
+    }
+   },
+   {
+    "id": "e:112:930:condicao:112-mensagem:930",
+    "source": "condicao:112",
+    "target": "mensagem:930",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "112",
+     "acaoId": "930",
+     "estadoOrigemId": "4"
+    }
+   },
+   {
+    "id": "e:112:931:mensagem:930-fila:7006",
+    "source": "mensagem:930",
+    "target": "fila:7006",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "112",
+     "acaoId": "931",
+     "estadoOrigemId": "4"
+    }
+   },
+   {
+    "id": "e:114::5-condicao:114",
+    "source": "5",
+    "target": "condicao:114",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "114",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:114:937:condicao:114-mensagem:937",
+    "source": "condicao:114",
+    "target": "mensagem:937",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "114",
+     "acaoId": "937",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:114:938:mensagem:937-fila:7002",
+    "source": "mensagem:937",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "114",
+     "acaoId": "938",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:115::5-condicao:115",
+    "source": "5",
+    "target": "condicao:115",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "115",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:115:940:condicao:115-mensagem:940",
+    "source": "condicao:115",
+    "target": "mensagem:940",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "115",
+     "acaoId": "940",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:115:941:mensagem:940-fila:7002",
+    "source": "mensagem:940",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "115",
+     "acaoId": "941",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:116::5-condicao:116",
+    "source": "5",
+    "target": "condicao:116",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "116",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:116:943:condicao:116-mensagem:943",
+    "source": "condicao:116",
+    "target": "mensagem:943",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "116",
+     "acaoId": "943",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:116:944:mensagem:943-fila:7002",
+    "source": "mensagem:943",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "116",
+     "acaoId": "944",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:117::5-condicao:117",
+    "source": "5",
+    "target": "condicao:117",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "117",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:117:946:condicao:117-mensagem:946",
+    "source": "condicao:117",
+    "target": "mensagem:946",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "117",
+     "acaoId": "946",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:117:947:mensagem:946-fila:7002",
+    "source": "mensagem:946",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "117",
+     "acaoId": "947",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:118::5-condicao:118",
+    "source": "5",
+    "target": "condicao:118",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "118",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:118:949:condicao:118-mensagem:949",
+    "source": "condicao:118",
+    "target": "mensagem:949",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "118",
+     "acaoId": "949",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:118:950:mensagem:949-fila:7002",
+    "source": "mensagem:949",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "118",
+     "acaoId": "950",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:119::5-condicao:119",
+    "source": "5",
+    "target": "condicao:119",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "119",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:119:952:condicao:119-mensagem:952",
+    "source": "condicao:119",
+    "target": "mensagem:952",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "119",
+     "acaoId": "952",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:119:953:mensagem:952-fila:7002",
+    "source": "mensagem:952",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "119",
+     "acaoId": "953",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:120::5-condicao:120",
+    "source": "5",
+    "target": "condicao:120",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "120",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:120:955:condicao:120-mensagem:955",
+    "source": "condicao:120",
+    "target": "mensagem:955",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "120",
+     "acaoId": "955",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:120:956:mensagem:955-fila:7002",
+    "source": "mensagem:955",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "120",
+     "acaoId": "956",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:121::5-condicao:121",
+    "source": "5",
+    "target": "condicao:121",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "121",
+     "acaoId": "",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:121:958:condicao:121-mensagem:958",
+    "source": "condicao:121",
+    "target": "mensagem:958",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "121",
+     "acaoId": "958",
+     "estadoOrigemId": "5"
+    }
+   },
+   {
+    "id": "e:121:959:mensagem:958-fila:7002",
+    "source": "mensagem:958",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "121",
+     "acaoId": "959",
+     "estadoOrigemId": "5"
+    }
+   }
+  ]
+ }
+}

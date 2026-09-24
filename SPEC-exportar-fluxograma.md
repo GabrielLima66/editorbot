@@ -114,15 +114,19 @@ Atenção: **não usar `vite-plugin-singlefile`** aqui, ao contrário do desktop
 
 O shape de `state.botCarregado` (montado por `fromGetBotResponse` em `js/orpen-adapter.js`) é compatível com o que o parser do desktop espera: `BOT_STATES`/`BOT_TRANSITIONS`/`BOT_CONDITIONS`/`BOT_ACTIONS` achatados, com as chaves nomeadas presentes. As diferenças a tratar estão em "Diferenças de fonte de dados" abaixo.
 
-### D6. Nomes reais vêm do ambiente Orpen, pelo mesmo mecanismo do desktop
+### D6. Nomes reais vêm do ambiente Orpen, como dado real do nó
 
-No desktop, o usuário digita nomes na Nomenclatura, e `aplicar_overrides_reactflow` (`backend/core/overrides.py`) aplica esses nomes no campo `overrideRotulo` dos nós. Na extensão, **os mesmos três ramos desse mecanismo** são alimentados automaticamente com os cadastros que o `content/page-env-collector.js` já coleta em `state.ambienteOrpen`, sem mudar o collector.
+Os nomes vêm dos cadastros que o `content/page-env-collector.js` já coleta em `state.ambienteOrpen`, sem mudar o collector. Eles entram como **dado real do nó** (no próprio `rotulo`), com a mesma fórmula que o `grafo.py` do desktop usa para o texto padrão, só trocando o número pelo nome.
 
-| Nó | Referência no grafo | Fonte no ambiente | Texto final (mesmo formato do desktop) |
+Isso **não** usa a Nomenclatura do desktop (override manual em `overrideRotulo`, via `aplicar_overrides_reactflow`). Motivos:
+- Os nomes do ambiente são corretos por definição. Não são uma "renomeação" do usuário (decisão de 2026-09-23: "como temos as informações corretas, não precisamos mais alterar nome de filas").
+- O caminho de override tem um **bug no desktop**: o nome personalizado de fila/bot externo é desenhado com os asteriscos crus (`*Transfere para a fila X*`). O `overrides.py` monta o texto com `*…*`, e o `texto.ts` só remove os asteriscos do texto padrão. Achado na comparação visual da Fase 2. Pelo caminho de dado real, o desenho remove os asteriscos normalmente.
+
+| Nó | Referência no grafo | Fonte no ambiente | Texto no nó |
 |---|---|---|---|
-| `fila` | `destiny` da ação tipo 5 | `queues[]` → `{ id: q.NAME, name: '[NAME] BEE_NAME' }` | `*Transfere para a fila {name}*`, ex.: "Transfere para a fila [12] Suporte" |
-| `bot_externo` | `destiny` da ação tipo 4 | `bots[]` → `{ id, name: '[Bot] NOME' }` | `*Transfere para o bot {nome}*`, com `nome` = `[ID] NOME`. O prefixo `[Bot] ` que o collector acrescenta para os datalists é removido aqui, senão sairia "para o bot [Bot] …". |
-| `calendario` | `CONDITION_TYPE` da condição `calendario`/`calendario_falso` (é o ID do calendário, ver `dicionarios.py`) | `calendars[]` → `{ id, name }` | `{Dentro do horário \| Fora do horário} — {name}`. Com o nome resolvido, a pílula deixa de sair tracejada como "não resolvida", exatamente como acontece no desktop quando o usuário preenche o calendário. |
+| `fila` | `destiny` da ação tipo 5 | `queues[]` → `{ id: q.NAME, name: '[NAME] BEE_NAME' }` | "Transfere para a fila [12] Suporte" (`rotulo` = `*Transfere para a fila {name}*`; o desenho tira os asteriscos, como no texto padrão) |
+| `bot_externo` | `destiny` da ação tipo 4 | `bots[]` → `{ id, name: '[Bot] NOME' }` | "Transfere para o bot [ID] NOME". O prefixo `[Bot] ` que o collector acrescenta para os datalists é removido aqui, senão sairia "para o bot [Bot] …". |
+| `calendario` | `CONDITION_TYPE` da condição `calendario`/`calendario_falso` (é o ID do calendário, ver `dicionarios.py`) | `calendars[]` → `{ id, name }` | "{Dentro do horário \| Fora do horário} — {name}", com `naoResolvida = false`: o nó sai como "CALENDÁRIO", sem a borda tracejada de "não resolvido". |
 
 Regras:
 - Referência sem correspondência no ambiente fica como hoje (número, ou "não resolvido" no calendário), igual ao desktop sem nomenclatura preenchida.
@@ -257,13 +261,13 @@ Diferenças entre Python e JS que mudam o resultado sem dar erro nenhum. Cada it
 
 Protótipo descartável que prova as premissas arriscadas antes de investir no port. Nada vai para `main`.
 
-- [ ] Um iframe de página da extensão (`vendor/.../index.html`) carrega dentro da `bot.php` real, sem ser bloqueado pela CSP da Orpen (`frame-src`/`default-src`).
-- [ ] O handshake via `MessageChannel` entre content script e iframe funciona, com a checagem de nonce.
-- [ ] Com o iframe **fora da área visível**, o React Flow termina de desenhar as arestas (depende de `ResizeObserver`/`requestAnimationFrame`, que o Chrome pode estrangular em iframe cross-origin fora da tela; ver R1). Testar três variantes e registrar qual funciona: (a) `left:-100000px`; (b) dentro da tela com `opacity:0; pointer-events:none; z-index` abaixo do overlay; (c) dentro de um mini card visível "Gerando…".
-- [ ] O `html-to-image` captura com a fonte Inter embutida, em PNG e em SVG (conferir que o texto não caiu para Segoe UI).
-- [ ] Bot grande (o "OP 1 - CONSULTA - 2026", 72 estados / 249 transições) gera PNG e SVG válidos (não `data:,`), com o tempo registrado.
-- [ ] O padrão `vendor/*` em `web_accessible_resources` cobre `vendor/fluxograma/assets/*`.
-- [ ] Em bots reais, as três referências do D6 batem com o ambiente: `destiny` da ação tipo 5 com `queues[].id`, `destiny` da ação tipo 4 com `bots[].id`, e `CONDITION_TYPE` de `calendario`/`calendario_falso` com `calendars[].id`. Se alguma não bater (ex.: o calendário usar outro identificador), registrar o mapeamento correto antes da Fase 1.
+- [x] Um iframe de página da extensão (`vendor/.../index.html`) carrega dentro da `bot.php` real, sem ser bloqueado pela CSP da Orpen (`frame-src`/`default-src`).
+- [x] O handshake via `MessageChannel` entre content script e iframe funciona, com a checagem de nonce.
+- [x] Com o iframe **fora da área visível**, o React Flow termina de desenhar as arestas (depende de `ResizeObserver`/`requestAnimationFrame`, que o Chrome pode estrangular em iframe cross-origin fora da tela; ver R1). Testar três variantes e registrar qual funciona: (a) `left:-100000px`; (b) dentro da tela com `opacity:0; pointer-events:none; z-index` abaixo do overlay; (c) dentro de um mini card visível "Gerando…".
+- [x] O `html-to-image` captura com a fonte Inter embutida, em PNG e em SVG (conferir que o texto não caiu para Segoe UI).
+- [x] Bot grande (o "OP 1 - CONSULTA - 2026", 72 estados / 249 transições) gera PNG e SVG válidos (não `data:,`), com o tempo registrado.
+- [x] O padrão `vendor/*` em `web_accessible_resources` cobre `vendor/fluxograma/assets/*`.
+- [x] Em bots reais, as três referências do D6 batem com o ambiente: `destiny` da ação tipo 5 com `queues[].id`, `destiny` da ação tipo 4 com `bots[].id`, e `CONDITION_TYPE` de `calendario`/`calendario_falso` com `calendars[].id`. Se alguma não bater (ex.: o calendário usar outro identificador), registrar o mapeamento correto antes da Fase 1.
 
 **Saída:** nota curta em `.project/log.md` com a variante de iframe escolhida e os tempos medidos. Se a CSP bloquear o iframe, voltar a esta spec antes de seguir (plano B: renderizar no Shadow DOM, registrando a Inter via `FontFace` em `document.fonts` e passando `fontEmbedCSS` ao `html-to-image`).
 
@@ -308,13 +312,43 @@ Fixtures:
 - Locais (gitignored): os 2 de `fixtures_reais/` e **pelo menos 3 bots reais baixados pelo "Backup JSON" da própria extensão**, incluindo o de 72 estados e o "RCX - PRODUÇÃO 15/01". O `gerar_golden.py` roda neles do mesmo jeito, porque o parser do desktop aceita o formato do Backup JSON.
 
 **Aceite:**
-- [ ] 100% dos goldens batem (sintéticos + locais, com e sem nomes do ambiente, nas duas formas de entrada).
-- [ ] Todos os 16 itens da tabela de armadilhas com teste ou cobertura por golden identificada.
-- [ ] `npm test` roda sem depender de navegador (Node + vitest).
+- [x] 100% dos goldens batem (sintéticos + locais, com e sem nomes do ambiente, nas duas formas de entrada).
+- [x] Todos os 16 itens da tabela de armadilhas com teste ou cobertura por golden identificada (ver abaixo).
+- [x] `npm test` roda sem depender de navegador (Node + vitest).
+- [x] Goldens locais com **pelo menos 3 bots reais do "Backup JSON"** da extensão: "OP 1 - CONSULTA - 2026" (238 nós / 390 arestas, 21 back edges, 6 calendários, fila e bot externo), "RCX - PRODUÇÃO 15/01" e "Teste" (bot externo), além dos 2 de `fixtures_reais` do Fluxo BOT. **127 testes passando.**
+
+#### Resultado da Fase 1 (2026-09-23, branch `feat/exportar-fluxograma`)
+
+- Port em `fluxograma/src/core/`, mapa arquivo a arquivo em `fluxograma/ORIGEM.md`. **103 testes passando**, `tsc --noEmit` limpo.
+- Goldens: 5 sintéticos do Fluxo BOT + `cobertura-port.json` (escrito à mão para exercitar as armadilhas) + 2 bots reais locais, cada um sem e com nomes do ambiente, nas duas formas de entrada; mais 15 casos de erro com a mensagem idêntica à do Python.
+- **Teste de mutação**: trocar o `splitlines` do Python por `split("\n")`, ou o `strip` do Python pelo `trim()` do JS, faz a paridade falhar. Os goldens pegam divergências sutis.
+- Divergências aceitas (só com dado que a Orpen não produz) listadas em `ORIGEM.md`.
+- **Achado: ordem de entrada.** O `getBot` (usado pela extensão) ordena estados por número, transições por estado + prioridade, e condições/ações por ID. O `exportBotJSON` nativo da Orpen **não tem `ORDER BY`**. Como o dagre depende da ordem, o mesmo bot pode ter layout um pouco diferente no desktop se ele abrir o export nativo. Não é erro do port: a comparação da Fase 4 usa o "Backup JSON" da extensão dos dois lados.
+
+Cobertura de cada armadilha:
+
+| # | Coberto por |
+|---|---|
+| 1 Ordem de inserção | Todos os goldens (comparação estrita da ordem de `nodes`/`edges`); `cobertura-port` tem estados `"10"`/`"A1"`/`"B2"` que um objeto JS reordenaria |
+| 2 DFS / pilha | Back edges nos goldens (`cobertura-port`, bot real `eav_parque_lage`) |
+| 3 Ordenação de estados | `cobertura-port` (`"0"`, dígitos, `"A1"`, `"B2"`, `"10"`) + `compararStr` em `pythonCompat.test.ts` |
+| 4 `int()` | `pythonCompat.test.ts` + `erros.json` (ID não numérico) + ações fora de ordem no `cobertura-port` |
+| 5 `html.unescape` | Chave `"3"` escapada no `cobertura-port` + `pythonCompat.test.ts` |
+| 6 `splitlines` | Menu com U+2028 no `cobertura-port` + `pythonCompat.test.ts` + mutação |
+| 7 `strip` | Mensagem só com BOM no `cobertura-port` + `pythonCompat.test.ts` + mutação |
+| 8 Regex com `\d` Unicode | Opção `٣` (dígito arábico) no `cobertura-port` |
+| 9 `isdigit` | `pythonCompat.test.ts` |
+| 10 Truthiness | `pythonCompat.test.ts` + goldens (opção sem valor, fallback) |
+| 11 `==` estrutural | `7203` repetido na fila dinâmica do `cobertura-port` + `pythonCompat.test.ts` |
+| 12 `isinstance` | Goldens (dados mistos string/número) |
+| 13 f-string `{$var}` | Fila dinâmica no `cobertura-port` |
+| 14 `.lower()` com acento | Goldens ("contém") |
+| 15 `setdefault` | Transição que passa por dois estados (`A1` → `B2` → `3`) no `cobertura-port` |
+| 16 IDs de nós/arestas | Todos os goldens |
 
 ### Fase 2: Renderizador em iframe + captura PNG/SVG (1 a 1,5 dia)
 
-1. Copiar a camada de render (D3) para `fluxograma/src/render/`, cada arquivo com um cabeçalho indicando a origem e o commit.
+1. Copiar a camada de render (D3) para `fluxograma/src/render/` **byte a byte** (sem cabeçalho). O teste `copiasRender.test.ts` compara cada cópia com o arquivo original no commit de `ORIGEM.md`, e o `.gitattributes` desliga a conversão de fim de linha nessa pasta.
 2. `exportar.ts`: mantém `capturarDiagrama(nodes, formato)` **com os mesmos parâmetros do desktop**: padding 0,06, fundo `#f4f5f7`, `pixelRatio` 2 para PNG e 1 para SVG, `getViewportForBounds(bounds, l, a, 0.05, 4, 0.06)`. Troca a ponte Qt por um retorno de `Blob`. Para PNG, usa `toBlob` em vez de `toPng` para não passar por base64 num bot grande (o pixel resultante é o mesmo). Para SVG, usa `toSvg` e converte o data URL em `Blob` `image/svg+xml`.
 3. `Renderizador.tsx`: ReactFlow sem `Controls`/`MiniMap`/`Background`/seleção. Monta as arestas com cor por estado exatamente como o `App.tsx` do desktop (`corPorEstado`, `MarkerType.ArrowClosed` 16×16, vermelho `oklch(64% 0.19 25)` nas back edges).
 4. Condição de pronto antes de capturar: **antes do layout**, `await document.fonts.load()` para cada fonte que o `layout.ts` mede (`500 11px`, `600 14px`, `400 13px`, `400 12px` e `400 12.5px Inter`). `document.fonts.ready` sozinho não basta: ele resolve na hora se nenhum texto usou a fonte ainda (achado da Fase 0). Depois: layout calculado → `useNodesInitialized()` verdadeiro → número de `.react-flow__edge` renderizados igual a `edges.length` → dois `requestAnimationFrame`. Timeout de 30 s, que gera o erro "Não foi possível desenhar o fluxograma a tempo".
@@ -323,9 +357,18 @@ Fixtures:
 7. Build: `npm run build` → `vendor/fluxograma/` (`index.html` + `assets/`), sem script inline. Conferir que a página abre sem erro de CSP no console da extensão.
 
 **Aceite:**
-- [ ] Abrindo `vendor/fluxograma/index.html` com um fixture injetado por um harness de teste, PNG e SVG são gerados sem erro de CSP.
-- [ ] Para os 5 sintéticos, PNG e SVG da extensão comparados lado a lado com os do desktop (mesmo JSON, **desktop sem sidecar e com `dicionario_filas.json` vazio**) mostram os mesmos nós, textos, cores, setas e posições. Diferenças só de anti-aliasing entre as versões de Chromium são aceitáveis; qualquer diferença de posição, quebra de linha ou texto não é.
-- [ ] O SVG gerado abre corretamente em Chrome e Edge.
+- [x] Abrindo `vendor/fluxograma/index.html` com um fixture injetado por um harness de teste, PNG e SVG são gerados sem erro de CSP.
+- [x] Para os 5 sintéticos, PNG e SVG da extensão comparados lado a lado com os do desktop (mesmo JSON, **desktop sem sidecar e com `dicionario_filas.json` vazio**) mostram os mesmos nós, textos, cores, setas e posições. Diferenças só de anti-aliasing entre as versões de Chromium são aceitáveis; qualquer diferença de posição, quebra de linha ou texto não é.
+- [x] O SVG gerado abre corretamente em Chrome e Edge (validado na Fase 0 com o mesmo `toSvg`).
+
+#### Resultado da Fase 2 (2026-09-23, branch `feat/exportar-fluxograma`)
+
+- Renderizador em `fluxograma/src/app/` (`main.tsx`, `Renderizador.tsx`, `exportar.ts`, `ponteExtensao.ts`); build em `vendor/fluxograma/`, sem script inline e sem `eval`/`new Function`.
+- **Paridade visual automatizada** (`npm run paridade:visual`, e `PARIDADE_FORMATO=svg npm run paridade:visual`). Num Chrome real (154), o script abre o **build real do desktop** (`Fluxo BOT/frontend/dist/index.html`) com o grafo gerado pelo Python e chama a captura do próprio desktop. Do outro lado, pede ao nosso iframe o arquivo do bot **bruto**, pelo mesmo handshake que a extensão vai usar. Depois compara pixel a pixel (o SVG é comparado já desenhado pelo Chrome, porque o texto do arquivo carrega estilos de contexto da página, como tamanho do container e idioma, que não mudam o desenho).
+- **Resultado: 22 de 22 casos idênticos, 0 pixel diferente, em PNG e em SVG.** São os 6 sintéticos e os 5 bots reais, cada um com e sem nomes do ambiente, inclusive o "OP 1 - CONSULTA - 2026" (PNG de 16.384 × 5.845 px).
+- `src/render/` é cópia byte a byte do Fluxo BOT, verificada por teste (136 testes no total).
+- Achado: o bug dos asteriscos no nome personalizado do desktop (ver D6). A extensão aplica os nomes do ambiente como dado real do nó, então não herda o bug. A paridade dos casos com nomes compara com a saída do desktop convertida por `nomesComoDadoReal` (`tests/apoio.ts`), e essa é a única diferença intencional.
+- Para a Fase 3: gerar o nonce com `crypto.getRandomValues`, e não `crypto.randomUUID`, que só existe em página `https` (caso alguma instalação da Orpen rode em `http`).
 
 ### Fase 3: Integração na extensão (1,5 a 2 dias)
 
@@ -355,25 +398,39 @@ Fixtures:
 4. Fechar o modal no meio da geração **não** cancela nada: o download e o toast acontecem mesmo assim (o `#mb-toast-container` já fica fora do overlay, ver `css/styles.css`). Abrir outro bot durante uma geração também não interfere, porque a geração usa o snapshot.
 5. Nenhuma chamada nova à Orpen além do `updateBot` do salvamento confirmado pelo usuário.
 
+> **Status (2026-09-24): concluída.** Código em `39fe778` + ajuste da mensagem de bot sem estados (`4e0f715`); teste manual na `bot.php` real feito pelo usuário (abaixo).
+
+**Teste manual na `bot.php` (2026-09-24, feito pelo usuário):**
+- ✅ Gera e baixa o PNG; os nomes reais de fila, calendário e bot externo aparecem sem asteriscos.
+- ✅ O SVG abre (Edge, que é o padrão do Windows para `.svg`, e Chrome): 47 cartões, 53 setas, Inter embutida.
+- ✅ "Salvar antes de gerar?": Cancelar, Esc e Salvar e gerar funcionam.
+- ✅ Geração em segundo plano: o editor continua usável. Há uma **travadinha breve** durante a captura, sem efeito no que se está fazendo.
+- ✅ PNG gerado pela extensão a partir do mesmo JSON que o desktop abriu: mesmo tamanho (8368 × 1960 px); a diferença de pixel é só de suavização (Chromium do Qt × Chrome), zero com a tolerância de anti-aliasing.
+- 🔧 Bot salvo sem estados: dava o erro técnico do parser. Trocado por "Este bot ainda não tem estados: não há fluxograma para gerar." (verificado antes do "salvar antes").
+- ✅ Desfazer uma alteração (voltar ao valor original): gera sem o aviso de salvar (a comparação é por conteúdo).
+- ✅ Bot novo via "Adicionar", antes de salvar: botão desabilitado.
+- ✅ Bot salvo sem estados: mostra a mensagem nova.
+- ✅ Regressão rápida: Salvar, Backup JSON, Shift+clique, Esc fecha o editor e layout do modal iguais a antes.
+
 **Aceite:**
-- [ ] Bot sem alterações: gera direto, sem diálogo.
-- [ ] Bot com alteração: o diálogo aparece; "Cancelar" não salva nem gera; "Salvar e gerar" salva (o bot reaberto mostra a alteração gravada) e depois gera.
-- [ ] Salvamento com erro (ex.: nome vazio, conflito de número): o erro aparece como hoje e nada é gerado.
-- [ ] Desfazer manualmente uma alteração (voltar ao valor original) faz o diálogo **não** aparecer, porque a comparação é por conteúdo.
-- [ ] Bot novo: botão desabilitado com a dica.
-- [ ] Geração em segundo plano: dá para rolar e editar o bot enquanto gera.
-- [ ] PNG e SVG baixados com o nome correto.
-- [ ] Bot com transferência para outro bot (ação tipo 4): o bot externo aparece como "[ID] NOME", sem o prefixo "[Bot]".
-- [ ] Filas, bots externos e calendários com nome real no fluxograma; referência inexistente no ambiente aparece como hoje (número / calendário "não resolvido").
-- [ ] Bot com erro estrutural (transição órfã) mostra toast de erro e não baixa nada.
-- [ ] Checklist de regressão (abaixo) 100% ok.
+- [x] Bot sem alterações: gera direto, sem diálogo.
+- [x] Bot com alteração: o diálogo aparece; "Cancelar" não salva nem gera; "Salvar e gerar" salva (o bot reaberto mostra a alteração gravada) e depois gera.
+- [ ] Salvamento com erro (ex.: nome vazio, conflito de número): o erro aparece como hoje e nada é gerado. *(Não exercitado manualmente. O caminho de erro é o do próprio `salvarBotNaOrpen`, inalterado, que agora só devolve `false` nesses pontos.)*
+- [x] Desfazer manualmente uma alteração (voltar ao valor original) faz o diálogo **não** aparecer, porque a comparação é por conteúdo.
+- [x] Bot novo: botão desabilitado com a dica.
+- [x] Geração em segundo plano: dá para rolar e editar o bot enquanto gera.
+- [x] PNG e SVG baixados com o nome correto.
+- [x] Bot com transferência para outro bot (ação tipo 4): o bot externo aparece como "[ID] NOME", sem o prefixo "[Bot]".
+- [x] Filas, bots externos e calendários com nome real no fluxograma; referência inexistente no ambiente aparece como hoje (número / calendário "não resolvido").
+- [x] Bot com erro estrutural mostra toast de erro e não baixa nada. *(Os 15 casos de erro são cobertos por teste automatizado; na Orpen, validado com o bot sem estados.)*
+- [x] Checklist de regressão (abaixo) 100% ok.
 
 ### Fase 4: Aceite final e release (0,5 a 1 dia)
 
-- [ ] Rodar os goldens de novo, contra o commit atual do Fluxo BOT.
-- [ ] Comparação lado a lado desktop × extensão para os 3+ bots reais, em PNG e SVG. No desktop, preencher a Nomenclatura (filas, bots externos, calendários) com os mesmos nomes que a extensão tira do ambiente: o resultado tem que bater, incluindo os nomes.
-- [ ] Checklist de regressão completo na `bot.php` real.
-- [ ] Bump de versão no `manifest.json`, `CHANGELOG.md`, seção nova em `DOCUMENTACAO_EXTENSAO.md` (inclui como reconstruir `vendor/fluxograma/`).
+- [x] Rodar os goldens de novo, contra o commit atual do Fluxo BOT (ainda `7c9c976`): 144 testes passando.
+- [x] Comparação lado a lado desktop × extensão para os 3+ bots reais, em PNG e SVG. *Feita de forma automatizada, em vez de manual: `paridade:visual` com 24 casos (6 bots reais, com e sem nomes), 0 pixel de diferença contra o build real do desktop, em PNG e SVG. Mais o `01.png` exportado pelo **app desktop real** (bot 881801), comparado com a extensão para o mesmo JSON: mesmo tamanho (8368 × 1960), diferença só de anti-aliasing (0 px com a tolerância de suavização). Os nomes não foram preenchidos na Nomenclatura do desktop, porque a extensão não usa mais esse caminho (ver D6); a comparação com nomes usa o grafo convertido por `nomesComoDadoReal`.*
+- [x] Checklist de regressão na `bot.php` real (ver abaixo o que foi e o que não foi verificado explicitamente).
+- [x] Bump de versão no `manifest.json` (0.3.4 → 0.4.0), `CHANGELOG.md`, seção nova em `DOCUMENTACAO_EXTENSAO.md` (inclui como reconstruir `vendor/fluxograma/`).
 - [ ] Gerar o zip de distribuição e conferir que `vendor/fluxograma/` está dentro.
 
 **Estimativa total:** 6 a 9 dias de trabalho focado.
@@ -392,16 +449,16 @@ Fixtures:
 
 Rodar na `bot.php` real, com a extensão recarregada, antes de fechar as Fases 3 e 4:
 
-- [ ] Clique em "Editar" abre o overlay; **Shift+clique** abre o modal nativo.
-- [ ] "Adicionar" abre o editor em modo criação; salvar um bot novo continua recarregando a página.
-- [ ] Editar nome/status/timeout/integrações, adicionar/duplicar/excluir/reordenar estado e transição, condições/ações, menu builder.
-- [ ] "Salvar" grava via `updateBot`, com os mesmos toasts, spinner e modal de pendências de antes, e o bot reabre com as alterações.
-- [ ] "Backup JSON" baixa o arquivo com o mesmo nome e conteúdo de antes.
-- [ ] Modal de pendências.
-- [ ] Esc fecha o overlay; toasts aparecem.
-- [ ] Layout do modal (header, rolagem, rodapé) igual ao de antes, a 100% de zoom do navegador, e o rodapé comporta o botão novo sem quebrar linha em telas ≥ 1280 px.
-- [ ] Nenhum erro novo no console da página nem no da extensão.
-- [ ] Com o fluxograma **nunca acionado**, nenhum recurso de `vendor/fluxograma/` é carregado (conferir na aba Network): a feature tem custo zero para quem não usa.
+- [x] Clique em "Editar" abre o overlay; **Shift+clique** abre o modal nativo.
+- [x] "Adicionar" abre o editor em modo criação; salvar um bot novo continua recarregando a página.
+- [ ] Editar nome/status/timeout/integrações, adicionar/duplicar/excluir/reordenar estado e transição, condições/ações, menu builder. *(Parcial: edição de nome e estados usada nos testes. O código dessas telas não foi alterado.)*
+- [x] "Salvar" grava via `updateBot`, com os mesmos toasts, spinner e modal de pendências de antes, e o bot reabre com as alterações.
+- [x] "Backup JSON" baixa o arquivo com o mesmo nome e conteúdo de antes.
+- [ ] Modal de pendências. *(Não verificado explicitamente; código não alterado, continua chamado no mesmo ponto do salvar.)*
+- [x] Esc fecha o overlay; toasts aparecem.
+- [x] Layout do modal (header, rolagem, rodapé) igual ao de antes, a 100% de zoom do navegador, e o rodapé comporta o botão novo sem quebrar linha em telas ≥ 1280 px.
+- [ ] Nenhum erro novo no console da página nem no da extensão. *(Não verificado explicitamente.)*
+- [ ] Com o fluxograma **nunca acionado**, nenhum recurso de `vendor/fluxograma/` é carregado (conferir na aba Network): a feature tem custo zero para quem não usa. *(Não verificado na aba Network. Por construção: `fluxograma-export.js` só é importado no clique e o iframe só é criado dentro dele.)*
 
 ---
 

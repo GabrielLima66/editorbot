@@ -1,0 +1,4 @@
+# Fixtures e goldens sao comparados byte a byte (SHA-256) nos testes de
+# paridade do fluxograma: sem conversao de fim de linha.
+fluxograma/tests/** -text
+fluxograma/src/render/** -text

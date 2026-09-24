@@ -1,0 +1,567 @@
+{
+ "origem": {
+  "commit": "7c9c976",
+  "alteracoesLocais": false
+ },
+ "fixture": "template-sdr-1nivel-original.json",
+ "fixtureSha256": "d63619505e753e6bfbefb455a15f2e278e08c03f64fa3d23ef4c31e6c31e69c4",
+ "resultado": {
+  "nodes": [
+   {
+    "id": "0",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "HOME_CLASSIFICA",
+     "referencia": "0",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "1",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "MENU",
+     "referencia": "1",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "mensagem:6562",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Bem vindo a EMPRESA_X,\n\nNosso horário de atendimento é de segunda a sexta-feira das 08:00 as 18:00.\n\nRetornaremos o seu contato em breve.",
+     "referencia": "6562",
+     "mensagem": "Bem vindo a EMPRESA_X,\n\nNosso horário de atendimento é de segunda a sexta-feira das 08:00 as 18:00.\n\nRetornaremos o seu contato em breve."
+    }
+   },
+   {
+    "id": "fila:7100",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7100*",
+     "referencia": "7100"
+    }
+   },
+   {
+    "id": "mensagem:6564",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Bem vindo a EMPRESA_X,\n\nNosso horário de atendimento é de segunda a sexta-feira das 08:00 as 18:00.\n\nRetornaremos o seu contato em breve.",
+     "referencia": "6564",
+     "mensagem": "Bem vindo a EMPRESA_X,\n\nNosso horário de atendimento é de segunda a sexta-feira das 08:00 as 18:00.\n\nRetornaremos o seu contato em breve."
+    }
+   },
+   {
+    "id": "mensagem:6566",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Bem vindo a EMPRESA_X,\n\nEstamos lhe transferindo para o seu atendente preferido.",
+     "referencia": "6566",
+     "mensagem": "Bem vindo a EMPRESA_X,\n\nEstamos lhe transferindo para o seu atendente preferido."
+    }
+   },
+   {
+    "id": "fila_dinamica:pref_agent",
+    "type": "fila_dinamica",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila_dinamica",
+     "rotulo": "*Transfere para fila dinâmica ({$pref_agent})*",
+     "referencia": "pref_agent",
+     "valoresObservados": []
+    }
+   },
+   {
+    "id": "mensagem:6568",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Olá, seja bem vindo a Empresa Wmoney Soluçoes!\r\npara transferir seu atendimento para nosso time, sobre qual assunto você deseja falar?",
+     "referencia": "6568",
+     "mensagem": "Olá, seja bem vindo a Empresa Wmoney Soluçoes!\r\npara transferir seu atendimento para nosso time, sobre qual assunto você deseja falar?",
+     "opcoesMenu": [
+      "Falar com Atendente",
+      "Suporte",
+      "Financeiro",
+      "Outros"
+     ]
+    }
+   },
+   {
+    "id": "mensagem:6570",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊",
+     "referencia": "6570",
+     "mensagem": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊"
+    }
+   },
+   {
+    "id": "fila:7001",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7001*",
+     "referencia": "7001"
+    }
+   },
+   {
+    "id": "mensagem:6572",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊",
+     "referencia": "6572",
+     "mensagem": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊"
+    }
+   },
+   {
+    "id": "fila:7002",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7002*",
+     "referencia": "7002"
+    }
+   },
+   {
+    "id": "mensagem:6574",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊",
+     "referencia": "6574",
+     "mensagem": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊"
+    }
+   },
+   {
+    "id": "fila:7004",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7004*",
+     "referencia": "7004"
+    }
+   },
+   {
+    "id": "mensagem:6576",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊",
+     "referencia": "6576",
+     "mensagem": "Perfeito. Estamos lhe transferindo para o setor desejado. 😊"
+    }
+   },
+   {
+    "id": "fila:7003",
+    "type": "fila",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "fila",
+     "rotulo": "*Transfere para a fila 7003*",
+     "referencia": "7003"
+    }
+   },
+   {
+    "id": "calendario:3441",
+    "type": "calendario",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "calendario",
+     "rotulo": "Fora do horário (calendário 201)",
+     "referencia": "201",
+     "naoResolvida": true,
+     "variavelCalendario": "calendario_falso"
+    }
+   },
+   {
+    "id": "calendario:3442",
+    "type": "calendario",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "calendario",
+     "rotulo": "Dentro do horário (calendário 202)",
+     "referencia": "202",
+     "naoResolvida": true,
+     "variavelCalendario": "calendario"
+    }
+   },
+   {
+    "id": "condicao:3445",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Falar com Atendente\"",
+     "referencia": "3445",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:3446",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Suporte\"",
+     "referencia": "3446",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:3447",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Financeiro\"",
+     "referencia": "3447",
+     "naoResolvida": false
+    }
+   },
+   {
+    "id": "condicao:3448",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: igual a \"Outros\"",
+     "referencia": "3448",
+     "naoResolvida": false
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "e:3441::0-calendario:3441",
+    "source": "0",
+    "target": "calendario:3441",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3441",
+     "acaoId": "",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3441:6562:calendario:3441-mensagem:6562",
+    "source": "calendario:3441",
+    "target": "mensagem:6562",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3441",
+     "acaoId": "6562",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3441:6563:mensagem:6562-fila:7100",
+    "source": "mensagem:6562",
+    "target": "fila:7100",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3441",
+     "acaoId": "6563",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3442::0-calendario:3442",
+    "source": "0",
+    "target": "calendario:3442",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3442",
+     "acaoId": "",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3442:6564:calendario:3442-mensagem:6564",
+    "source": "calendario:3442",
+    "target": "mensagem:6564",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3442",
+     "acaoId": "6564",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3442:6565:mensagem:6564-fila:7100",
+    "source": "mensagem:6564",
+    "target": "fila:7100",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3442",
+     "acaoId": "6565",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3443:6566:0-mensagem:6566",
+    "source": "0",
+    "target": "mensagem:6566",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3443",
+     "acaoId": "6566",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3443:6567:mensagem:6566-fila_dinamica:pref_agent",
+    "source": "mensagem:6566",
+    "target": "fila_dinamica:pref_agent",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3443",
+     "acaoId": "6567",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3444:6568:0-mensagem:6568",
+    "source": "0",
+    "target": "mensagem:6568",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3444",
+     "acaoId": "6568",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3444:6569:mensagem:6568-1",
+    "source": "mensagem:6568",
+    "target": "1",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3444",
+     "acaoId": "6569",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3445::1-condicao:3445",
+    "source": "1",
+    "target": "condicao:3445",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3445",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3445:6570:condicao:3445-mensagem:6570",
+    "source": "condicao:3445",
+    "target": "mensagem:6570",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3445",
+     "acaoId": "6570",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3445:6571:mensagem:6570-fila:7001",
+    "source": "mensagem:6570",
+    "target": "fila:7001",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3445",
+     "acaoId": "6571",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3446::1-condicao:3446",
+    "source": "1",
+    "target": "condicao:3446",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3446",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3446:6572:condicao:3446-mensagem:6572",
+    "source": "condicao:3446",
+    "target": "mensagem:6572",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3446",
+     "acaoId": "6572",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3446:6573:mensagem:6572-fila:7002",
+    "source": "mensagem:6572",
+    "target": "fila:7002",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3446",
+     "acaoId": "6573",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3447::1-condicao:3447",
+    "source": "1",
+    "target": "condicao:3447",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3447",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3447:6574:condicao:3447-mensagem:6574",
+    "source": "condicao:3447",
+    "target": "mensagem:6574",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3447",
+     "acaoId": "6574",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3447:6575:mensagem:6574-fila:7004",
+    "source": "mensagem:6574",
+    "target": "fila:7004",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3447",
+     "acaoId": "6575",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3448::1-condicao:3448",
+    "source": "1",
+    "target": "condicao:3448",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3448",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3448:6576:condicao:3448-mensagem:6576",
+    "source": "condicao:3448",
+    "target": "mensagem:6576",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3448",
+     "acaoId": "6576",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3448:6577:mensagem:6576-fila:7003",
+    "source": "mensagem:6576",
+    "target": "fila:7003",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3448",
+     "acaoId": "6577",
+     "estadoOrigemId": "1"
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,229 @@
+{
+ "origem": {
+  "commit": "7c9c976",
+  "alteracoesLocais": false
+ },
+ "fixture": "template-pesquisa-satisfacao-simples.json",
+ "fixtureSha256": "a95961f49b2c4f4315abe0cd1672f60c1adbc6765843687433f3a305d6ceba9c",
+ "nomes": {
+  "filas": {},
+  "bots": {},
+  "calendarios": {}
+ },
+ "resultado": {
+  "nodes": [
+   {
+    "id": "0",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "HOME",
+     "referencia": "0",
+     "aguardaResposta": false
+    }
+   },
+   {
+    "id": "1",
+    "type": "estado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "estado",
+     "rotulo": "RATE",
+     "referencia": "1",
+     "aguardaResposta": true
+    }
+   },
+   {
+    "id": "mensagem:6586",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Participe da nossa pesquisa de satisfação e contribua para melhorarmos cada vez mais o nosso atendimento!😀\n\nO que você achou do seu atendimento?",
+     "referencia": "6586",
+     "mensagem": "Participe da nossa pesquisa de satisfação e contribua para melhorarmos cada vez mais o nosso atendimento!😀\n\nO que você achou do seu atendimento?"
+    }
+   },
+   {
+    "id": "mensagem:6589",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Seu atendimento foi finalizado.",
+     "referencia": "6589",
+     "mensagem": "Seu atendimento foi finalizado."
+    }
+   },
+   {
+    "id": "encerrado",
+    "type": "encerrado",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "encerrado",
+     "rotulo": "*Encerra o atendimento*",
+     "referencia": ""
+    }
+   },
+   {
+    "id": "mensagem:6591",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Seu atendimento foi finalizado.",
+     "referencia": "6591",
+     "mensagem": "Seu atendimento foi finalizado."
+    }
+   },
+   {
+    "id": "mensagem:6593",
+    "type": "mensagem",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "mensagem",
+     "rotulo": "Seu atendimento foi finalizado.",
+     "referencia": "6593",
+     "mensagem": "Seu atendimento foi finalizado."
+    }
+   },
+   {
+    "id": "condicao:3454",
+    "type": "condicao",
+    "position": {
+     "x": 0,
+     "y": 0
+    },
+    "data": {
+     "tipo": "condicao",
+     "rotulo": "Mensagem: contém \"Não (+5 variações)\"",
+     "referencia": "3454",
+     "naoResolvida": true
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "e:3452:6586:0-mensagem:6586",
+    "source": "0",
+    "target": "mensagem:6586",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3452",
+     "acaoId": "6586",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3452:6587:mensagem:6586-1",
+    "source": "mensagem:6586",
+    "target": "1",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3452",
+     "acaoId": "6587",
+     "estadoOrigemId": "0"
+    }
+   },
+   {
+    "id": "e:3453:6589:1-mensagem:6589",
+    "source": "1",
+    "target": "mensagem:6589",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3453",
+     "acaoId": "6589",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3453::mensagem:6589-encerrado",
+    "source": "mensagem:6589",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3453",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3454::1-condicao:3454",
+    "source": "1",
+    "target": "condicao:3454",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3454",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3454:6591:condicao:3454-mensagem:6591",
+    "source": "condicao:3454",
+    "target": "mensagem:6591",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3454",
+     "acaoId": "6591",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3454::mensagem:6591-encerrado",
+    "source": "mensagem:6591",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3454",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3455:6593:1-mensagem:6593",
+    "source": "1",
+    "target": "mensagem:6593",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3455",
+     "acaoId": "6593",
+     "estadoOrigemId": "1"
+    }
+   },
+   {
+    "id": "e:3455::mensagem:6593-encerrado",
+    "source": "mensagem:6593",
+    "target": "encerrado",
+    "data": {
+     "isBackEdge": false,
+     "transicaoId": "3455",
+     "acaoId": "",
+     "estadoOrigemId": "1"
+    }
+   }
+  ]
+ }
+}

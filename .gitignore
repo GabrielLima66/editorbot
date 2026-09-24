@@ -1,4 +1,5 @@
 node_modules/
+fluxograma/tests/golden_local/
 .DS_Store
 *.zip
 *.backup.html
@@ -6,3 +7,4 @@ node_modules/
 Claude outputs/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+fluxograma/tests/visual_out/
