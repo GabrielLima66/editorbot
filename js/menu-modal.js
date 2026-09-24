@@ -153,7 +153,7 @@ export function renderMenuResumo(model, transitionId, actionId) {
   let corpo = '';
   let opcoes = '';
   if (model.kind === 'webchat') {
-    corpo = '<p class="menu-resumo-corpo menu-resumo-vazio">A pergunta vem da ação "Mensagem" anterior.</p>';
+    corpo = '<p class="menu-resumo-corpo menu-resumo-vazio">Texto na ação "Mensagem" acima.</p>';
     opcoes = chips(model.options.map((o) => o.text), 'Nenhuma opção');
   } else {
     const texto = (model.body || '').replace(/\s+/g, ' ').trim();
@@ -251,10 +251,15 @@ function conteudoLista(m) {
     <p class="mm-limite">${total}/${WHATSAPP_LIST_MAX_ROWS} opções no total — limite do WhatsApp</p>`;
 }
 
-function conteudoWebchat(m, textoAnterior) {
-  const anterior = textoAnterior !== null
-    ? `<div class="mm-bolha mm-bolha-leitura"><p class="mm-bolha-origem">Ação "Mensagem" anterior</p><p class="mm-bolha-texto">${escapeHtml(textoAnterior || '(vazia)')}</p></div>`
-    : '<p class="mm-dica">Não há ação "Mensagem" antes deste menu: o cliente verá só as opções.</p>';
+// WebChat não tem texto no JSON do menu: o texto é a ação "Mensagem" logo
+// antes dele. No modal ele aparece como campo normal da bolha; o Salvar
+// grava na "Mensagem" existente ou cria uma (dividirMensagemDoMenu).
+function conteudoWebchat(m, texto) {
+  const anterior = `
+    <div class="mm-bolha">
+      <textarea class="mm-body" data-webchat-texto rows="4" placeholder="Mensagem que o cliente vai receber antes das opções" aria-label="Mensagem">${escapeHtml(texto)}</textarea>
+      <div class="mm-bolha-meta"><span>Vai numa ação "Mensagem" antes do menu</span><span>08:00</span></div>
+    </div>`;
   const opcoes = m.options.map((o, i) => `
     <div class="mm-botao">
       <input type="text" class="mm-botao-titulo" ${campo(`options.${i}.text`, o.text, 'placeholder="Texto da opção" aria-label="Texto da opção"')}>
@@ -321,11 +326,15 @@ export function abrirModalMenu(transitionId, actionId) {
   const textoAnterior = mensagemAnteriorNaTransicao(bot, transitionId, actionId);
   let modelo = JSON.parse(JSON.stringify(original));
   const assinaturaOriginal = assinaturaDe(modelo);
-  // Estado das trocas de tipo (só viram mudança no bot ao Salvar):
-  let textoParaMensagem = null; // WhatsApp -> WebChat: vira ação "Mensagem"
-  let absorver = false; // WebChat -> WhatsApp: "Mensagem" anterior vira o corpo
-  let textoWhatsappAntesDoWebchat = null; // pra voltar ao WhatsApp sem perder
+  // WebChat: o texto é o da ação "Mensagem" anterior (se houver).
+  const textoOriginalWebchat = tipoOriginal === 'webchat' ? (textoAnterior ?? '') : '';
+  let textoWebchat = textoOriginalWebchat;
+  // Ao ir pro WebChat guarda header/body/footer/botão pra voltar sem perder,
+  // se o texto não tiver sido editado no meio do caminho.
+  let textoWhatsappAntesDoWebchat = null;
   let trocaPendente = null; // { kind, itensCabem, itensRemovidos }
+  const vaiAbsorver = () => modelo.kind !== 'webchat' && tipoOriginal === 'webchat' && textoAnterior !== null;
+  const vaiUsarMensagemExistente = () => tipoOriginal === 'webchat' && textoAnterior !== null;
 
   const root = getRootNode();
   const montagem = root === document ? document.body : root;
@@ -365,7 +374,7 @@ export function abrirModalMenu(transitionId, actionId) {
     </div>`;
 
   const $m = (sel) => fundo.querySelector(sel);
-  const houveMudanca = () => assinaturaDe(modelo) !== assinaturaOriginal || textoParaMensagem !== null || absorver;
+  const houveMudanca = () => assinaturaDe(modelo) !== assinaturaOriginal || (modelo.kind === 'webchat' && textoWebchat !== textoOriginalWebchat);
 
   const desenharConteudo = () => {
     fundo.querySelectorAll('.mm-tipo').forEach((b) => {
@@ -378,41 +387,34 @@ export function abrirModalMenu(transitionId, actionId) {
     $m('.mm-chat').innerHTML =
       modelo.kind === 'whatsapp_button' ? conteudoBotoes(modelo)
         : modelo.kind === 'whatsapp_list' ? conteudoLista(modelo)
-          : conteudoWebchat(modelo, textoAnterior);
+          : conteudoWebchat(modelo, textoWebchat);
     criarIcones();
     atualizarAvisos();
   };
 
   const atualizarAvisos = () => {
     const contador = $m('.mm-contador');
-    if (contador) contador.textContent = `${modelo.body.length}/${LIMITE.body}`;
+    if (contador && modelo.kind !== 'webchat') contador.textContent = `${modelo.body.length}/${LIMITE.body}`;
     const avisos = avisosDoModelo(modelo).map((a) => `<p>${escapeHtml(a)}</p>`);
-    if (textoParaMensagem !== null) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, o texto do menu (cabeçalho, mensagem e rodapé) vira uma ação "Mensagem" logo antes deste menu: o WebChat não tem esse campo.</p>`);
-    if (absorver) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, a ação "Mensagem" anterior vira a mensagem deste menu e é removida.</p>`);
+    if (modelo.kind === 'webchat' && !vaiUsarMensagemExistente() && textoWebchat.trim()) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, este texto vira uma ação "Mensagem" logo antes do menu (é assim que o WebChat funciona).</p>`);
+    if (vaiAbsorver()) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, a ação "Mensagem" anterior vira a mensagem deste menu e é removida.</p>`);
     $m('.mm-avisos').innerHTML = avisos.join('');
   };
 
   // ---- troca de tipo
   const aplicarTroca = (novoKind, itens) => {
     if (novoKind === 'webchat') {
-      textoWhatsappAntesDoWebchat = { header: modelo.header, body: modelo.body, footer: modelo.footer, button: modelo.button };
-      if (tipoOriginal === 'webchat') {
-        // voltou ao tipo original: nada a separar nem absorver
-        textoParaMensagem = null;
-        absorver = false;
-      } else {
-        const texto = mensagemPerdidaWebchat(modelo);
-        textoParaMensagem = texto ? texto : null;
-      }
+      textoWebchat = mensagemPerdidaWebchat(modelo);
+      textoWhatsappAntesDoWebchat = { header: modelo.header, body: modelo.body, footer: modelo.footer, button: modelo.button, gerado: textoWebchat };
       modelo = converterModeloMenu(modelo, 'webchat', itens);
     } else if (modelo.kind === 'webchat') {
       const convertido = converterModeloMenu(modelo, novoKind, itens);
-      if (tipoOriginal !== 'webchat' && textoWhatsappAntesDoWebchat) {
-        Object.assign(convertido, textoWhatsappAntesDoWebchat);
-        textoParaMensagem = null;
-      } else if (tipoOriginal === 'webchat' && textoAnterior !== null) {
-        convertido.body = textoAnterior;
-        absorver = true;
+      const salvo = textoWhatsappAntesDoWebchat;
+      if (salvo && salvo.gerado === textoWebchat) {
+        Object.assign(convertido, { header: salvo.header, body: salvo.body, footer: salvo.footer, button: salvo.button });
+      } else {
+        convertido.body = textoWebchat;
+        if (salvo) convertido.button = salvo.button;
       }
       modelo = convertido;
     } else {
@@ -451,21 +453,36 @@ export function abrirModalMenu(transitionId, actionId) {
     if (!houveMudanca()) return fechar();
     const alvo = (state.botCarregado?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
     if (!alvo) return fechar();
-    const json = atualizarMenuPreservando(raw, comIdsFinais(modelo));
-    const dados = { ...alvo.ACTION_DATA, [CAMPO]: json };
     const b = state.botCarregado;
-    if (modelo.kind === 'webchat' && textoParaMensagem !== null) {
-      dividirMensagemDoMenu(b, transitionId, actionId, textoParaMensagem, dados);
-      reabrirPreservandoExpansao(b);
-      mostrarToast('Menu atualizado; o texto virou uma ação "Mensagem" antes dele. Lembre de salvar o bot.');
-    } else if (modelo.kind !== 'webchat' && absorver) {
-      absorverMensagemAnterior(b, transitionId, actionId, dados);
+    const menuMudou = assinaturaDe(modelo) !== assinaturaOriginal;
+    const json = menuMudou ? atualizarMenuPreservando(raw, comIdsFinais(modelo)) : raw;
+    // Edição no próprio objeto: as chaves espelho ("0", "1"...) apontam pra ele.
+    const gravarNoLugar = () => {
+      if (menuMudou) alvo.ACTION_DATA[CAMPO] = json;
+      rerenderTransicao(b, transitionId);
+      mostrarToast('Menu atualizado. Lembre de salvar o bot.');
+    };
+    if (modelo.kind === 'webchat') {
+      const daTransicao = b.BOT_ACTIONS.filter((a) => a.TRANSITION_ID === transitionId).sort((x, y) => parseInt(x.ID, 10) - parseInt(y.ID, 10));
+      const idx = daTransicao.findIndex((a) => a.ID === actionId);
+      const anterior = idx > 0 && daTransicao[idx - 1].ACTION_TYPE === '1' ? daTransicao[idx - 1] : null;
+      if (vaiUsarMensagemExistente() && anterior) {
+        if (!anterior.ACTION_DATA) anterior.ACTION_DATA = {};
+        if ((anterior.ACTION_DATA.message_text || '') !== textoWebchat) anterior.ACTION_DATA.message_text = textoWebchat;
+        gravarNoLugar();
+      } else if (textoWebchat.trim()) {
+        dividirMensagemDoMenu(b, transitionId, actionId, textoWebchat, { ...alvo.ACTION_DATA, [CAMPO]: json });
+        reabrirPreservandoExpansao(b);
+        mostrarToast('Menu atualizado; o texto virou uma ação "Mensagem" antes dele. Lembre de salvar o bot.');
+      } else {
+        gravarNoLugar();
+      }
+    } else if (vaiAbsorver()) {
+      absorverMensagemAnterior(b, transitionId, actionId, { ...alvo.ACTION_DATA, [CAMPO]: json });
       reabrirPreservandoExpansao(b);
       mostrarToast('Menu atualizado; a ação "Mensagem" anterior foi incorporada. Lembre de salvar o bot.');
     } else {
-      alvo.ACTION_DATA = dados;
-      rerenderTransicao(b, transitionId);
-      mostrarToast('Menu atualizado. Lembre de salvar o bot.');
+      gravarNoLugar();
     }
     fechar();
   };
@@ -473,6 +490,11 @@ export function abrirModalMenu(transitionId, actionId) {
   // ---- eventos
   fundo.addEventListener('input', (e) => {
     const el = e.target;
+    if (el.hasAttribute('data-webchat-texto')) {
+      textoWebchat = el.value;
+      atualizarAvisos();
+      return;
+    }
     const caminho = el.dataset.caminho;
     if (!caminho) return;
     setPath(modelo, caminho, el.value);
