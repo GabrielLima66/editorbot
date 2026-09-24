@@ -109,6 +109,14 @@ Um script (Playwright + Chrome, mesmo padrão da paridade do fluxograma) abre o 
 
 - **Barra da transição.** Alça de arrastar, prioridade, duplicar e excluir saíram do canto da coluna de Condições (onde pareciam pertencer à primeira condição) para uma barra no topo de cada transição, no mesmo padrão do header do estado: alça, número e um resumo ("1 condição · 2 ações") à esquerda; duplicar e excluir à direita. A coluna de condições ganhou a largura toda. A estrutura de que o JS depende foi mantida: wrapper `.estado-row`, `data-action` dos botões e o painel de exclusão como filho direto da linha. Toda mudança dentro da transição redesenha a linha (`rerenderTransicao`), então o resumo nunca fica desatualizado. Token novo: `--transicao-barra-bg`.
 - **Estado fechado maior.** Header do estado com `padding: 1rem 1.25rem` e `min-height: 4rem` (antes `0.75rem 1rem`), e nome em `1rem` (antes `0.9375rem`).
+- **Nome do estado.** Antes era um input transparente, com `flex-1`, que ocupava quase todo o header. Como clique em input não abre nem fecha o estado, isso tirava a área de clique do header. Agora:
+  - em repouso é um título (semibold), com um lápis apagado indicando que dá pra editar e o resumo "N transições" ao lado;
+  - no hover acende um fundo sutil e o lápis;
+  - no foco vira campo (fundo, borda e anel de foco);
+  - a largura acompanha o texto (`field-sizing: content`, mínimo 6rem, máximo `min(28rem, 55%)`), e um espaçador flexível deixa o resto do header livre pra abrir/fechar;
+  - o lápis é um botão (`data-action="focar-nome-estado"`) que foca e seleciona o nome sem alternar o estado.
+
+  Verificado no navegador: clique no espaço vazio abre/fecha, o lápis foca sem alternar e renomear com Enter mantém o estado como estava. O nome passou a ocupar ~160 px de um header de ~1260 px.
 - As capturas de referência do escuro foram regeneradas com esse visual novo (mudança intencional).
 
 ## Questões em aberto

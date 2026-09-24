@@ -393,7 +393,12 @@ export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao,
       <div class="estado-header flex items-center gap-3 px-4 py-3 cursor-pointer select-none">
         <span class="estado-drag-handle shrink-0" draggable="true" title="Arraste para reordenar"><i data-lucide="grip-vertical" class="w-4 h-4 pointer-events-none"></i></span>
         <input type="number" class="estado-numero-input shrink-0 obd-badge-solid text-xs font-bold rounded px-1 py-1.5 border-0" min="0" max="${totalEstados - 1}" value="${escapeHtml(estado.STATE_NUMBER)}" data-action="mover-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Digite a posição desejada (0 a ${totalEstados - 1}) e aperte Enter">
-        <input type="text" class="estado-alias flex-1 text-sm rounded-lg px-3 py-1.5 truncate border-0 outline-none focus:ring-2 focus:ring-[var(--accent)]" value="${escapeHtml(estado.ALIAS)}" data-action="renomear-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Nome do estado">
+        <span class="estado-alias-wrap">
+          <input type="text" class="estado-alias" value="${escapeHtml(estado.ALIAS)}" placeholder="Sem nome" data-action="renomear-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Nome do estado (clique para renomear)">
+          <button type="button" class="estado-alias-lapis" data-action="focar-nome-estado" tabindex="-1" title="Renomear estado"><i data-lucide="pencil"></i></button>
+        </span>
+        <span class="estado-resumo">${transicoes.length === 0 ? 'sem transições' : `${transicoes.length} ${transicoes.length === 1 ? 'transição' : 'transições'}`}</span>
+        <span class="estado-header-espaco" aria-hidden="true"></span>
         <button class="w-8 h-8 rounded-lg bg-[var(--success)] text-white flex items-center justify-center shrink-0 opacity-70" disabled title="Elemento decorativo (réplica visual do ORPEN) — sem campo correspondente no JSON"><i data-lucide="check" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-warn flex items-center justify-center shrink-0 transition-colors" data-action="duplicate-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Duplicar estado (com todas as transições, condições e ações)"><i data-lucide="copy" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-danger flex items-center justify-center shrink-0 transition-colors" data-action="delete-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Excluir estado"><i data-lucide="trash-2" class="w-4 h-4"></i></button>

@@ -366,8 +366,65 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 /* ---- Fontes e estados ---- */
 #bot-view-overlay .estado-col-title { color: var(--text-muted); font-size: 0.875rem; font-weight: 600; }
 #bot-view-overlay .estado-empty { color: var(--text-faint); font-size: 0.8125rem; }
-#bot-view-overlay .estado-alias { font-size: 1rem; font-weight: 500; background: transparent; color: var(--text); }
-#bot-view-overlay .estado-alias:focus { outline: none; }
+/* Nome do estado: em repouso é um título (semibold, sem caixa), com um lápis
+   apagado dizendo que dá pra editar; hover acende o fundo e o lápis; foco
+   vira campo de verdade. A largura acompanha o texto (field-sizing), com
+   mínimo e máximo: o resto do header fica livre pra abrir/fechar o estado
+   (clique em input não alterna, ver bot-view-interactions.js). */
+#bot-view-overlay .estado-alias-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  max-width: min(28rem, 55%);
+  padding-right: 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  transition: background-color 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+#bot-view-overlay .estado-alias {
+  field-sizing: content;
+  min-width: 6rem;
+  max-width: 100%;
+  padding: 0.3rem 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: none;
+  text-overflow: ellipsis;
+}
+#bot-view-overlay .estado-alias::placeholder { color: var(--text-faint); font-weight: 500; }
+#bot-view-overlay .estado-alias-lapis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 0.375rem;
+  color: var(--text-faint);
+  background: transparent;
+  opacity: 0.45;
+  transition: opacity 0.12s, color 0.12s;
+}
+#bot-view-overlay .estado-alias-lapis svg { width: 0.875rem; height: 0.875rem; }
+#bot-view-overlay .estado-alias-wrap:hover { background: var(--hover-bg); }
+#bot-view-overlay .estado-alias-wrap:hover .estado-alias-lapis { opacity: 1; color: var(--text-muted); }
+#bot-view-overlay .estado-alias-wrap:focus-within {
+  background: var(--obd-surface);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--foco-anel);
+}
+#bot-view-overlay .estado-alias-wrap:focus-within .estado-alias-lapis { opacity: 0; }
+#bot-view-overlay .estado-resumo {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+#bot-view-overlay .estado-header-espaco { flex: 1; align-self: stretch; }
 #bot-view-overlay .condicao-item, #bot-view-overlay .acao-item { font-size: 0.875rem; }
 #bot-view-overlay select.field-view { color-scheme: var(--esquema); cursor: pointer; }
 #bot-view-overlay .textarea-view { resize: vertical; font-family: inherit; }
