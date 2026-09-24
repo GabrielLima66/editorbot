@@ -4,9 +4,9 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Tema claro entregue na **v0.5.0** (24/09/2026), junto com ajustes de UX no editor
-- **Última Tarefa Concluída:** Tema claro alternável (sol/lua, padrão escuro), cores em tokens (escuro idêntico por captura), barra da transição, nome do estado como título editável, número da transição distinto do estado. CHANGELOG, DOCUMENTACAO (seção 6) e zip
-- **Próxima Tarefa em Aberto:** Nenhuma pendência técnica. O push é feito pelo usuário (o modo automático do Claude Code bloqueia push)
+- **Fase Atual:** Menu em modal e "Armazenar variável" entregues na **v0.6.0** (24/09/2026)
+- **Última Tarefa Concluída:** Modal de menu com celular simulado (Botões, Lista, WebChat), ID gerado do texto, lista sem seções com "Ver opções", WebChat com campo de texto (ação Mensagem), "Armazenar variável" em linhas, rolagem ao arrastar. CHANGELOG, DOCUMENTACAO (seção 7) e zip
+- **Próxima Tarefa em Aberto:** Nenhuma pendência técnica
 
 ---
 
@@ -24,6 +24,11 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 24/09/2026 — 🏁 MARCO
+
+v0.6.0: menu (ação 10) vira resumo + modal com celular simulado para Botões, Lista e WebChat, com fidelidade do JSON verificada em 38 menus reais; "Armazenar variável" em linhas com autocomplete; rolagem automática ao arrastar. Testado pelo usuário.
+
+---
 ### 24/09/2026 — 🏁 MARCO
 
 v0.5.0: tema claro "sem flashbang" alternável (padrão escuro) + ajustes de UX no editor pedidos durante o teste. Tudo testado pelo usuário na bot.php real: funcional.

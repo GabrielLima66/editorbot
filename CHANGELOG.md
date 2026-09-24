@@ -1,5 +1,15 @@
 # Histórico de Versões (Changelog)
 
+## [0.6.0] - 2026-09-24
+* **Menu em modal com celular simulado**: a ação de menu mostra um resumo (tipo, mensagem e opções) e o botão **"Editar menu"**, que abre um modal com um celular onde se edita o menu como o cliente vai ver. Cobre **WhatsApp Botões**, **WhatsApp Lista** e **WebChat**, com abas pra trocar de tipo. Ação de menu vazia mostra **"Criar menu"**.
+* **ID/valor gerado do texto**: o ID do botão/opção (e o valor no WebChat) pode ser editado; se ficar vazio, é gerado do texto com espaços trocados por `_` ("Falar com atendente" → `Falar_com_atendente`). O modal avisa sobre IDs repetidos, opções sem texto e mensagem vazia.
+* **Lista sem seções na tela**: a lista é só uma sequência de opções (até 10). O botão que abre a lista vem com **"Ver opções"** por padrão, editável.
+* **WebChat com campo de texto**: o modal tem o campo da mensagem, que por baixo é a ação "Mensagem" antes do menu (é assim que o WebChat funciona): se ela já existe é editada, se não existe é criada. Trocar de WebChat para WhatsApp reincorpora esse texto ao menu.
+* **Troca de tipo segura**: se o tipo novo aceita menos opções (ex.: lista de 9 → botões), o modal lista o que será descartado e pede confirmação.
+* **Fidelidade do JSON**: salvar altera só o que foi editado; cabeçalho/rodapé vazios, títulos de seção e chaves extras que já existiam são preservados, e salvar sem mexer não grava nada. Verificado em 38 menus reais. Corrige a tela antiga de lista, que apagava cabeçalho/rodapé vazios e não gravava as edições no bot.
+* **"Armazenar variável" repaginado**: linhas `variável ← valor` com autocomplete de variáveis da Orpen, campos de retorno de scripts e variáveis já usadas no bot. O formato gravado não muda; valores que não são texto abrem no modo JSON.
+* **Rolagem ao arrastar**: arrastando um estado ou uma transição perto do topo/fim da área, a tela rola sozinha.
+
 ## [0.5.0] - 2026-09-24
 * **Tema Claro**: Novo botão **sol/lua** no header do editor alterna entre o tema escuro e um tema claro pensado para não ofuscar: fundo cinza-lavanda (nada de branco puro nas áreas grandes), texto quase-preto, mesmo matiz roxo do escuro, página da Orpen continua escurecida por trás e a troca tem transição suave. A escolha fica salva no navegador e o editor já abre no tema escolhido, sem piscar. O padrão continua sendo o escuro. Vale para o editor, o modal de pendências, o aviso "Salvar antes de gerar?" e os toasts; a imagem exportada do fluxograma não muda (paridade com o desktop).
 * **Cores organizadas em tokens**: as 113 cores fixas do `styles.css` viraram variáveis por papel. O tema escuro ficou idêntico pixel a pixel (verificado por capturas automatizadas).
