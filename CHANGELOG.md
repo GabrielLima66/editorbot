@@ -1,5 +1,13 @@
 # Histórico de Versões (Changelog)
 
+## [0.4.0] - 2026-09-24
+* **Exportar Fluxograma (PNG/SVG)**: Novo botão **"Gerar fluxograma"** no rodapé do editor, com seletor PNG (padrão) / SVG. Gera o mesmo fluxograma que o app desktop **Fluxo BOT** exporta (Modo Cliente), sem sair da tela da Orpen: a lógica do Fluxo BOT foi portada para TypeScript e a camada de desenho é a mesma do desktop. A fidelidade é garantida por testes: o resultado bate com o do Python original em todos os bots de teste e em 6 bots reais, e as imagens saem idênticas, pixel a pixel, às do desktop (24 casos, PNG e SVG). Detalhes em `SPEC-exportar-fluxograma.md`.
+* **Nomes reais no fluxograma**: filas, bots externos e calendários aparecem com o nome cadastrado na Orpen (ex.: "Transfere para a fila [7101] Suporte"), e não só com o número. Calendário com nome sai como resolvido.
+* **Sempre o bot salvo**: se houver alteração não salva, o editor avisa ("Salvar antes de gerar?") e, com o aceite, salva pelo mesmo caminho do botão "Salvar" antes de gerar. Desfazer uma alteração (voltar ao valor original) não conta como alteração.
+* **Geração em segundo plano**: o editor continua usável enquanto o fluxograma é gerado; o arquivo é baixado automaticamente e um aviso informa quando está pronto (ou o motivo, se falhar). Fechar o modal não cancela a geração.
+* Bot novo ainda não salvo fica com o botão desabilitado; bot salvo sem estados mostra "Este bot ainda não tem estados".
+* O botão "Salvar" continua se comportando exatamente igual (passou apenas a informar internamente se o salvamento deu certo).
+
 ## [0.3.4] - 2026-09-22
 * **Corrigido "círculo branco" no badge de ID/nome do header**: o badge `#ID — nome` ao lado de "Editar Bot" usava classes Tailwind de valor arbitrário (`bg-[#231F2E]`, `border-[var(--obd-border)]`, `px-2.5` etc.) montadas via `innerHTML` em runtime (`orpen-bridge.js`) — como o `vendor/tailwind.css` é um build estático que só gera classes vistas em build-time, nenhuma dessas existia no CSS final. Sobrava só um contorno fino em `currentColor` (quase branco) sem fundo/padding. Substituído por uma classe própria (`.bv-badge-header-id` em `css/styles.css`, sempre carregada) com o estilo pretendido.
 

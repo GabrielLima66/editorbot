@@ -35,11 +35,27 @@ Na interface anterior, a opção **"Sempre verdadeiro (else)"** aparecia dispon�
 **O Problema**: Uma investigação aprofundada na engine PHP (`Bot.class.php`) revelou que isso só funciona para variáveis genéricas (como `message`). Variáveis especializadas (como `calendario`, `entrance_type`, `agent_on_queue`, etc.) são processadas *antes* no PHP e retornam prematuramente falha ao receber `0` como ID.
 **A Solução**: A função de construção do dropdown (`buildOperatorOptions` no arquivo `js/bot-view-render.js`) foi adaptada. Foi criada uma constante `KINDS_COM_SEMPRE_VERDADEIRO` contendo estritamente os tipos de variáveis que suportam `case 0` com sucesso (texto livre, contato, contadores, opt-in, etc.). Nas demais variáveis em que causava quebra ou comportamento não suportado, a opção "Sempre verdadeiro" foi ocultada para evitar a criação de fluxos quebrados pelos administradores.
 
-## 5. Como Distribuir e Instalar a Extensão
+## 5. Exportar Fluxograma (PNG/SVG) — v0.4.0
 
-Todo esse sistema roda 100% no navegador (client-side), com assets (Tailwind CSS, Lucide icons) servidos localmente. 
+O botão **"Gerar fluxograma"** no rodapé do editor gera o mesmo fluxograma que o app desktop **Fluxo BOT** exporta (Modo Cliente), com os nomes reais de fila, bot externo e calendário vindos dos cadastros da Orpen. Especificação completa, decisões e resultados de cada fase: `SPEC-exportar-fluxograma.md`.
+
+**Como funciona:**
+*   **Sempre o bot salvo.** Antes de gerar, o editor compara o que o botão "Salvar" enviaria com a versão salva (`state.baselineSalvo`). Se houver diferença, pergunta se pode salvar e usa o próprio `salvarBotNaOrpen`.
+*   **Iframe invisível.** A geração roda numa página da própria extensão (`vendor/fluxograma/index.html`), num iframe **na tela com `opacity:0`**. Fora da tela, o Chrome congela o iframe e o desenho nunca termina. A conversa usa um `MessageChannel` entregue com nonce, então a página da Orpen não lê o arquivo gerado.
+*   **Código:** `js/fluxograma-export.js` (lado extensão, carregado só no primeiro clique) e o subprojeto `fluxograma/` (lógica portada do Fluxo BOT + renderizador), cujo build é **commitado** em `vendor/fluxograma/`. Quem só instala a extensão não precisa de npm.
+
+**Para quem desenvolve** (a partir de `fluxograma/`, com Node 24):
+*   `npm install`, depois `npm test`: paridade com o Fluxo BOT (goldens gerados pelo Python original) e demais testes.
+*   `npm run build`: tipagem + build do renderizador em `vendor/fluxograma/`. **Rode sempre depois de mexer em `fluxograma/src`**, senão a extensão continua com o build antigo.
+*   `npm run golden -- --local <pasta com Backup JSON de bots reais>`: regenera os goldens com o Python do Fluxo BOT. Os bots reais ficam em `tests/golden_local/`, fora do git.
+*   `npm run paridade:visual` (e `PARIDADE_FORMATO=svg npm run paridade:visual`): compara, pixel a pixel e num Chrome real, o fluxograma da extensão com o do build real do desktop.
+*   `fluxograma/ORIGEM.md`: commit do Fluxo BOT espelhado (`7c9c976`) e o que fazer quando o desktop mudar.
+
+## 6. Como Distribuir e Instalar a Extensão
+
+Todo esse sistema roda 100% no navegador (client-side), com assets (Tailwind CSS, Lucide icons, renderizador do fluxograma) servidos localmente.
 Para distribuir:
-1. Envie o arquivo `EDITOR_BOT.zip`.
+1. Envie o arquivo `EDITOR_BOT-v<versão>.zip`. Ele leva só o que a extensão usa: `manifest.json`, `bot_transform.html`, `content/`, `js/`, `css/`, `icons/`, `vendor/` (inclusive `vendor/fluxograma/`), `CHANGELOG.md` e esta documentação. O subprojeto `fluxograma/` (fonte, com `node_modules`) não vai.
 2. O usuário deve extrair o ZIP em uma pasta do PC.
 3. Acessar `chrome://extensions/` no Chrome/Edge.
 4. Habilitar **Modo do Desenvolvedor** (Developer mode).

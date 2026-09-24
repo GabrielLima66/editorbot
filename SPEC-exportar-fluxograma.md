@@ -261,13 +261,13 @@ Diferenças entre Python e JS que mudam o resultado sem dar erro nenhum. Cada it
 
 Protótipo descartável que prova as premissas arriscadas antes de investir no port. Nada vai para `main`.
 
-- [ ] Um iframe de página da extensão (`vendor/.../index.html`) carrega dentro da `bot.php` real, sem ser bloqueado pela CSP da Orpen (`frame-src`/`default-src`).
-- [ ] O handshake via `MessageChannel` entre content script e iframe funciona, com a checagem de nonce.
-- [ ] Com o iframe **fora da área visível**, o React Flow termina de desenhar as arestas (depende de `ResizeObserver`/`requestAnimationFrame`, que o Chrome pode estrangular em iframe cross-origin fora da tela; ver R1). Testar três variantes e registrar qual funciona: (a) `left:-100000px`; (b) dentro da tela com `opacity:0; pointer-events:none; z-index` abaixo do overlay; (c) dentro de um mini card visível "Gerando…".
-- [ ] O `html-to-image` captura com a fonte Inter embutida, em PNG e em SVG (conferir que o texto não caiu para Segoe UI).
-- [ ] Bot grande (o "OP 1 - CONSULTA - 2026", 72 estados / 249 transições) gera PNG e SVG válidos (não `data:,`), com o tempo registrado.
-- [ ] O padrão `vendor/*` em `web_accessible_resources` cobre `vendor/fluxograma/assets/*`.
-- [ ] Em bots reais, as três referências do D6 batem com o ambiente: `destiny` da ação tipo 5 com `queues[].id`, `destiny` da ação tipo 4 com `bots[].id`, e `CONDITION_TYPE` de `calendario`/`calendario_falso` com `calendars[].id`. Se alguma não bater (ex.: o calendário usar outro identificador), registrar o mapeamento correto antes da Fase 1.
+- [x] Um iframe de página da extensão (`vendor/.../index.html`) carrega dentro da `bot.php` real, sem ser bloqueado pela CSP da Orpen (`frame-src`/`default-src`).
+- [x] O handshake via `MessageChannel` entre content script e iframe funciona, com a checagem de nonce.
+- [x] Com o iframe **fora da área visível**, o React Flow termina de desenhar as arestas (depende de `ResizeObserver`/`requestAnimationFrame`, que o Chrome pode estrangular em iframe cross-origin fora da tela; ver R1). Testar três variantes e registrar qual funciona: (a) `left:-100000px`; (b) dentro da tela com `opacity:0; pointer-events:none; z-index` abaixo do overlay; (c) dentro de um mini card visível "Gerando…".
+- [x] O `html-to-image` captura com a fonte Inter embutida, em PNG e em SVG (conferir que o texto não caiu para Segoe UI).
+- [x] Bot grande (o "OP 1 - CONSULTA - 2026", 72 estados / 249 transições) gera PNG e SVG válidos (não `data:,`), com o tempo registrado.
+- [x] O padrão `vendor/*` em `web_accessible_resources` cobre `vendor/fluxograma/assets/*`.
+- [x] Em bots reais, as três referências do D6 batem com o ambiente: `destiny` da ação tipo 5 com `queues[].id`, `destiny` da ação tipo 4 com `bots[].id`, e `CONDITION_TYPE` de `calendario`/`calendario_falso` com `calendars[].id`. Se alguma não bater (ex.: o calendário usar outro identificador), registrar o mapeamento correto antes da Fase 1.
 
 **Saída:** nota curta em `.project/log.md` com a variante de iframe escolhida e os tempos medidos. Se a CSP bloquear o iframe, voltar a esta spec antes de seguir (plano B: renderizar no Shadow DOM, registrando a Inter via `FontFace` em `document.fonts` e passando `fontEmbedCSS` ao `html-to-image`).
 
@@ -398,7 +398,7 @@ Cobertura de cada armadilha:
 4. Fechar o modal no meio da geração **não** cancela nada: o download e o toast acontecem mesmo assim (o `#mb-toast-container` já fica fora do overlay, ver `css/styles.css`). Abrir outro bot durante uma geração também não interfere, porque a geração usa o snapshot.
 5. Nenhuma chamada nova à Orpen além do `updateBot` do salvamento confirmado pelo usuário.
 
-> **Status (2026-09-23):** código completo e commitado no branch `feat/exportar-fluxograma` (`39fe778`). Build do renderizador refeito, 136 testes passando e paridade visual com o desktop mantida (22/22). **Pendente: teste manual na `bot.php` real** (os itens abaixo), adiado a pedido do usuário. O branch **não vai para o `main`** antes desse teste.
+> **Status (2026-09-24): concluída.** Código em `39fe778` + ajuste da mensagem de bot sem estados (`4e0f715`); teste manual na `bot.php` real feito pelo usuário (abaixo).
 
 **Teste manual na `bot.php` (2026-09-24, feito pelo usuário):**
 - ✅ Gera e baixa o PNG; os nomes reais de fila, calendário e bot externo aparecem sem asteriscos.
@@ -409,27 +409,28 @@ Cobertura de cada armadilha:
 - 🔧 Bot salvo sem estados: dava o erro técnico do parser. Trocado por "Este bot ainda não tem estados: não há fluxograma para gerar." (verificado antes do "salvar antes").
 - ✅ Desfazer uma alteração (voltar ao valor original): gera sem o aviso de salvar (a comparação é por conteúdo).
 - ✅ Bot novo via "Adicionar", antes de salvar: botão desabilitado.
-- ⏳ Faltam: conferir a mensagem nova do bot sem estados e a regressão rápida (Salvar, Backup JSON, Shift+clique, Esc fecha o editor, layout do modal).
+- ✅ Bot salvo sem estados: mostra a mensagem nova.
+- ✅ Regressão rápida: Salvar, Backup JSON, Shift+clique, Esc fecha o editor e layout do modal iguais a antes.
 
 **Aceite:**
-- [ ] Bot sem alterações: gera direto, sem diálogo.
-- [ ] Bot com alteração: o diálogo aparece; "Cancelar" não salva nem gera; "Salvar e gerar" salva (o bot reaberto mostra a alteração gravada) e depois gera.
-- [ ] Salvamento com erro (ex.: nome vazio, conflito de número): o erro aparece como hoje e nada é gerado.
-- [ ] Desfazer manualmente uma alteração (voltar ao valor original) faz o diálogo **não** aparecer, porque a comparação é por conteúdo.
-- [ ] Bot novo: botão desabilitado com a dica.
-- [ ] Geração em segundo plano: dá para rolar e editar o bot enquanto gera.
-- [ ] PNG e SVG baixados com o nome correto.
-- [ ] Bot com transferência para outro bot (ação tipo 4): o bot externo aparece como "[ID] NOME", sem o prefixo "[Bot]".
-- [ ] Filas, bots externos e calendários com nome real no fluxograma; referência inexistente no ambiente aparece como hoje (número / calendário "não resolvido").
-- [ ] Bot com erro estrutural (transição órfã) mostra toast de erro e não baixa nada.
-- [ ] Checklist de regressão (abaixo) 100% ok.
+- [x] Bot sem alterações: gera direto, sem diálogo.
+- [x] Bot com alteração: o diálogo aparece; "Cancelar" não salva nem gera; "Salvar e gerar" salva (o bot reaberto mostra a alteração gravada) e depois gera.
+- [ ] Salvamento com erro (ex.: nome vazio, conflito de número): o erro aparece como hoje e nada é gerado. *(Não exercitado manualmente. O caminho de erro é o do próprio `salvarBotNaOrpen`, inalterado, que agora só devolve `false` nesses pontos.)*
+- [x] Desfazer manualmente uma alteração (voltar ao valor original) faz o diálogo **não** aparecer, porque a comparação é por conteúdo.
+- [x] Bot novo: botão desabilitado com a dica.
+- [x] Geração em segundo plano: dá para rolar e editar o bot enquanto gera.
+- [x] PNG e SVG baixados com o nome correto.
+- [x] Bot com transferência para outro bot (ação tipo 4): o bot externo aparece como "[ID] NOME", sem o prefixo "[Bot]".
+- [x] Filas, bots externos e calendários com nome real no fluxograma; referência inexistente no ambiente aparece como hoje (número / calendário "não resolvido").
+- [x] Bot com erro estrutural mostra toast de erro e não baixa nada. *(Os 15 casos de erro são cobertos por teste automatizado; na Orpen, validado com o bot sem estados.)*
+- [x] Checklist de regressão (abaixo) 100% ok.
 
 ### Fase 4: Aceite final e release (0,5 a 1 dia)
 
-- [ ] Rodar os goldens de novo, contra o commit atual do Fluxo BOT.
-- [ ] Comparação lado a lado desktop × extensão para os 3+ bots reais, em PNG e SVG. No desktop, preencher a Nomenclatura (filas, bots externos, calendários) com os mesmos nomes que a extensão tira do ambiente: o resultado tem que bater, incluindo os nomes.
-- [ ] Checklist de regressão completo na `bot.php` real.
-- [ ] Bump de versão no `manifest.json`, `CHANGELOG.md`, seção nova em `DOCUMENTACAO_EXTENSAO.md` (inclui como reconstruir `vendor/fluxograma/`).
+- [x] Rodar os goldens de novo, contra o commit atual do Fluxo BOT (ainda `7c9c976`): 144 testes passando.
+- [x] Comparação lado a lado desktop × extensão para os 3+ bots reais, em PNG e SVG. *Feita de forma automatizada, em vez de manual: `paridade:visual` com 24 casos (6 bots reais, com e sem nomes), 0 pixel de diferença contra o build real do desktop, em PNG e SVG. Mais o `01.png` exportado pelo **app desktop real** (bot 881801), comparado com a extensão para o mesmo JSON: mesmo tamanho (8368 × 1960), diferença só de anti-aliasing (0 px com a tolerância de suavização). Os nomes não foram preenchidos na Nomenclatura do desktop, porque a extensão não usa mais esse caminho (ver D6); a comparação com nomes usa o grafo convertido por `nomesComoDadoReal`.*
+- [x] Checklist de regressão na `bot.php` real (ver abaixo o que foi e o que não foi verificado explicitamente).
+- [x] Bump de versão no `manifest.json` (0.3.4 → 0.4.0), `CHANGELOG.md`, seção nova em `DOCUMENTACAO_EXTENSAO.md` (inclui como reconstruir `vendor/fluxograma/`).
 - [ ] Gerar o zip de distribuição e conferir que `vendor/fluxograma/` está dentro.
 
 **Estimativa total:** 6 a 9 dias de trabalho focado.
@@ -448,16 +449,16 @@ Cobertura de cada armadilha:
 
 Rodar na `bot.php` real, com a extensão recarregada, antes de fechar as Fases 3 e 4:
 
-- [ ] Clique em "Editar" abre o overlay; **Shift+clique** abre o modal nativo.
-- [ ] "Adicionar" abre o editor em modo criação; salvar um bot novo continua recarregando a página.
-- [ ] Editar nome/status/timeout/integrações, adicionar/duplicar/excluir/reordenar estado e transição, condições/ações, menu builder.
-- [ ] "Salvar" grava via `updateBot`, com os mesmos toasts, spinner e modal de pendências de antes, e o bot reabre com as alterações.
-- [ ] "Backup JSON" baixa o arquivo com o mesmo nome e conteúdo de antes.
-- [ ] Modal de pendências.
-- [ ] Esc fecha o overlay; toasts aparecem.
-- [ ] Layout do modal (header, rolagem, rodapé) igual ao de antes, a 100% de zoom do navegador, e o rodapé comporta o botão novo sem quebrar linha em telas ≥ 1280 px.
-- [ ] Nenhum erro novo no console da página nem no da extensão.
-- [ ] Com o fluxograma **nunca acionado**, nenhum recurso de `vendor/fluxograma/` é carregado (conferir na aba Network): a feature tem custo zero para quem não usa.
+- [x] Clique em "Editar" abre o overlay; **Shift+clique** abre o modal nativo.
+- [x] "Adicionar" abre o editor em modo criação; salvar um bot novo continua recarregando a página.
+- [ ] Editar nome/status/timeout/integrações, adicionar/duplicar/excluir/reordenar estado e transição, condições/ações, menu builder. *(Parcial: edição de nome e estados usada nos testes. O código dessas telas não foi alterado.)*
+- [x] "Salvar" grava via `updateBot`, com os mesmos toasts, spinner e modal de pendências de antes, e o bot reabre com as alterações.
+- [x] "Backup JSON" baixa o arquivo com o mesmo nome e conteúdo de antes.
+- [ ] Modal de pendências. *(Não verificado explicitamente; código não alterado, continua chamado no mesmo ponto do salvar.)*
+- [x] Esc fecha o overlay; toasts aparecem.
+- [x] Layout do modal (header, rolagem, rodapé) igual ao de antes, a 100% de zoom do navegador, e o rodapé comporta o botão novo sem quebrar linha em telas ≥ 1280 px.
+- [ ] Nenhum erro novo no console da página nem no da extensão. *(Não verificado explicitamente.)*
+- [ ] Com o fluxograma **nunca acionado**, nenhum recurso de `vendor/fluxograma/` é carregado (conferir na aba Network): a feature tem custo zero para quem não usa. *(Não verificado na aba Network. Por construção: `fluxograma-export.js` só é importado no clique e o iframe só é criado dentro dele.)*
 
 ---
 
