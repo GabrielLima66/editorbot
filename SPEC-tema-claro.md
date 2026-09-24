@@ -79,21 +79,27 @@ Um script (Playwright + Chrome, mesmo padrão da paridade do fluxograma) abre o 
 
 ## Fases
 
-### Fase 0: Tokens sem mudança visual (0,5–1 dia)
+### Fase 0: Tokens sem mudança visual (0,5–1 dia) ✅
 1. Script de captura do editor (`scripts/capturasTema.mjs`, reaproveitando o Playwright do `fluxograma/`), com as telas: bot carregado, estado expandido com condições e ações, menu builder aberto, alerta de exclusão, modal de pendências, diálogo e toast.
 2. Capturas de referência do tema escuro **antes** de mexer no CSS.
 3. Troca das 113 cores fixas por tokens semânticos.
 4. **Aceite:** capturas do escuro idênticas às de referência (0 pixel de diferença).
 
-### Fase 1: Paleta clara + prévia (0,5 dia)
+> **Resultado (2026-09-24, `c9ec447`):** 5 capturas do escuro com 0 pixel de diferença depois da troca por tokens. O Chrome roda com `--disable-gpu`: com GPU, a rasterização variava 1 unidade de cor em cantos arredondados entre duas execuções idênticas. Sobraram cores literais só nas classes da página standalone (`.dot-*`, `.skeleton`), fora do escopo.
+
+### Fase 1: Paleta clara + prévia (0,5 dia) 🔄 aguardando sua aprovação
 1. Valores do tema claro para todos os tokens, com `color-scheme: light` e a barra de rolagem.
 2. Capturas lado a lado (escuro × claro) das mesmas telas.
 3. **Aceite:** você aprova a prévia (ajustes de tom antes de seguir).
 
-### Fase 2: Alternância (0,5 dia)
+> **Status:** paleta aplicada em `:host([data-tema="claro"])` (valores da tabela acima, mais os tokens de papel). Prévias lado a lado em `fluxograma/tests/tema_out/previa-*.png` (fora do git; gere de novo com `node scripts/capturasTema.mjs --tema claro`). Achado na prévia: o ✓ decorativo do header do estado vinha só do `text-white` do Tailwind e sumia no claro. Virou o token `--check-decorativo` (branco no escuro, sem mudança).
+
+### Fase 2: Alternância (0,5 dia) ✅ código (teste na Orpen pendente)
 1. Botão sol/lua no header, `data-tema` no host, persistência no `localStorage`, transição de ~150 ms.
 2. Selo "Carregando…" e demais detalhes do markup.
 3. **Aceite:** alternar não fecha nem recarrega o editor e a escolha sobrevive a um F5; o escuro continua idêntico (captura).
+
+> **Status:** botão sol/lua (`#btn-bv-tema`) inserido por `orpen-bridge.js` antes do "fechar". O `data-tema` é aplicado no host **antes** de desenhar (sem piscar o escuro). Escolha salva em `localStorage['editorbot:tema']`. Transição de cor só durante a troca (classe `tema-trocando` por 250 ms). Escuro continua idêntico nas capturas; nenhuma linha removida do `orpen-bridge.js`. O botão só existe na extensão, então a alternância em si é validada no teste da Fase 3.
 
 ### Fase 3: Teste na Orpen e release (0,5 dia)
 1. Seu teste na `bot.php` (roteiro curto, nos dois temas).
@@ -101,5 +107,5 @@ Um script (Playwright + Chrome, mesmo padrão da paridade do fluxograma) abre o 
 
 ## Questões em aberto
 
-- **Q1. Tema padrão:** para quem nunca escolheu, abre no **escuro** (como hoje) ou **segue o tema do sistema** (Windows claro → editor claro)? *Recomendação: escuro por padrão. Ninguém é surpreendido após a atualização, e quem quiser liga o claro uma vez.*
-- **Q2. Opção "seguir o sistema":** além de claro/escuro, vale ter uma terceira opção que acompanha o Windows? *Recomendação: não na v1. Só claro/escuro, que é mais simples de entender.*
+- **Q1. Tema padrão** *(em aberto; implementado com a recomendação, escuro)*: para quem nunca escolheu, abre no **escuro** (como hoje) ou **segue o tema do sistema** (Windows claro → editor claro)? *Recomendação: escuro por padrão. Ninguém é surpreendido após a atualização, e quem quiser liga o claro uma vez.*
+- ~~**Q2. Opção "seguir o sistema"**~~ **Decidido (2026-09-24):** só os dois temas, alternáveis pelo usuário ("deve ser possível alterar entre os dois").

@@ -80,9 +80,96 @@
   --veu: rgba(15, 14, 30, 0.45);
   --veu-dialogo: rgba(15, 14, 30, 0.55);
   --rolagem: #d8d6e6;
+  --check-decorativo: #ffffff;
 
   font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
 }
+/* ---- Tema claro (SPEC-tema-claro.md) ----
+   Só redefine os valores dos tokens; nenhuma regra muda. "Sem flashbang":
+   nenhuma superfície grande em branco puro (painel ~92% de luminosidade,
+   cartões ~96%, campos um pouco acima), texto quase-preto arroxeado em vez
+   de preto (contraste ~13:1, não 21:1), mesmo matiz lavanda do escuro e o
+   mesmo véu escurecendo a página da Orpen por trás. O acento é um roxo um
+   pouco mais escuro que o do escuro, pra manter o contraste do texto branco
+   nos botões. :host(...) vale na extensão (Shadow DOM); :root[...] na
+   página standalone. */
+:host([data-tema="claro"]), :root[data-tema="claro"] {
+  --primary: #6D5EF5;
+  --primary-hover: #5B4BE8;
+  --accent: #6D5EF5;
+
+  --obd-bg: #ECEAF2;
+  --obd-panel: #F4F3F8;
+  --obd-surface: #FAF9FC;
+  --obd-border: #DAD7E3;
+  --obd-border-field: #C9C5D6;
+
+  --text: #25222F;
+  --text-muted: #5F5A72;
+  --text-faint: #767188;
+
+  --warn: #C8741F;
+  --warn-hover: #B4661A;
+  --danger: #D63F44;
+  --danger-hover: #BD3439;
+  --danger-ghost-hover: #F7E1E2;
+  --danger-ghost-text: #B3363B;
+  --success: #1FA97A;
+
+  --esquema: light;
+  --sobre-cor: #ffffff;
+  --hover-bg: #E2DFEA;
+  --badge-bg: #E4E1EC;
+  --foco-anel: rgba(109, 94, 245, 0.22);
+  --expandido-borda: rgba(109, 94, 245, 0.40);
+  --handle: #8E89A0;
+  --handle-hover: #3A3646;
+  --reorder-bg: #E4E1EC;
+  --reorder-bg-hover: #D7D3E2;
+  --item-bg: #F7F6FA;
+  --item-borda: #D9D6E2;
+  --item-apagar: #8E89A0;
+  --ir-estado-bg: #E4E1EC;
+  --ir-estado-texto: #4E4961;
+  --ir-estado-bg-hover: #D7D3E2;
+  --ir-estado-texto-hover: #25222F;
+  --alerta-ghost-texto: #5F5A72;
+  --alerta-ghost-hover-bg: rgba(37, 34, 47, 0.06);
+  --alerta-ghost-hover-texto: #25222F;
+  --alerta-perigo: #D12E2E;
+  --alerta-perigo-hover: #B42424;
+  --alerta-bloqueio-bg: #FBEDEE;
+  --alerta-bloqueio-borda: #EFC4C6;
+  --alerta-bloqueio-texto: #9B2C31;
+  --alerta-confirma-bg: #FCF3E6;
+  --alerta-confirma-borda: #EDD3A8;
+  --alerta-confirma-texto: #8A5A12;
+  --mb-bg: #EFEDF4;
+  --mb-borda: #DCD9E4;
+  --mb-switch-bg: #E6E3EC;
+  --mb-texto-fraco: #6F6A82;
+  --mb-texto-hover: #25222F;
+  --mb-rotulo: #6F6A82;
+  --mb-secao-bg: #F7F6FA;
+  --mb-badge-bg: #E4E1EC;
+  --mb-badge-texto: #4E4961;
+  --mb-add-borda: #C9C5D6;
+  --mb-copiar: #6F6A82;
+  --mb-copiar-hover-bg: #E4E1EC;
+  --toast-bg: #F7F6FA;
+  --toast-borda: #D6D2E0;
+  --toast-texto: #25222F;
+  --toast-sombra: rgba(37, 34, 47, 0.14);
+  --toast-icone: #16A34A;
+  --fx-acento-borda: rgba(109, 94, 245, 0.5);
+  --fx-acento-hover-bg: rgba(109, 94, 245, 0.10);
+  --fx-spinner-trilha: rgba(109, 94, 245, 0.25);
+  --dlg-sec-texto: #4E4961;
+  --dlg-sombra: rgba(37, 34, 47, 0.18);
+  --rolagem: #C9C5D6;
+  --check-decorativo: #8E89A0;
+}
+
 body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
 .surface-2\/30 { background-color: rgba(246,245,251,0.6); }
 .bg-surface-2 { background-color: var(--surface-2); }
@@ -586,3 +673,40 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 .fx-btn-primario:hover { background: var(--primary-hover); }
 .fx-btn-secundario:focus-visible,
 .fx-btn-primario:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---- Tema claro: botão de alternância e detalhes (SPEC-tema-claro.md) ---- */
+/* ✓ decorativo do header do estado: vinha só do text-white do Tailwind
+   (sumia no claro). Mesma cor no escuro, via token. */
+#bot-view-overlay .estado-header button[disabled] { color: var(--check-decorativo); }
+
+/* Botão sol/lua (inserido por orpen-bridge.js antes do "fechar"). Os dois
+   ícones existem no DOM; o CSS mostra o que representa o tema de DESTINO. */
+#bot-view-overlay .bv-btn-tema {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  color: var(--text-muted);
+  background: transparent;
+  transition: background-color 0.12s, color 0.12s;
+}
+#bot-view-overlay .bv-btn-tema:hover { background: var(--hover-bg); color: var(--text); }
+#bot-view-overlay .bv-btn-tema svg { width: 1.125rem; height: 1.125rem; }
+#bot-view-overlay .bv-header .bv-btn-tema + #btn-fechar-bot-view { margin-left: 0; }
+#bot-view-overlay .bv-icone-lua { display: none; }
+:host([data-tema="claro"]) #bot-view-overlay .bv-icone-sol,
+:root[data-tema="claro"] #bot-view-overlay .bv-icone-sol { display: none; }
+:host([data-tema="claro"]) #bot-view-overlay .bv-icone-lua,
+:root[data-tema="claro"] #bot-view-overlay .bv-icone-lua { display: block; }
+
+/* Transição de cor só DURANTE a troca (classe posta por ~250 ms): nada de
+   corte seco entre os temas, e nenhuma transição permanente mexendo em
+   arrastar/expandir no resto do tempo. */
+:host(.tema-trocando) *,
+:host(.tema-trocando) *::before,
+:host(.tema-trocando) *::after {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
