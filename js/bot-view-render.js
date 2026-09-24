@@ -20,6 +20,8 @@ import {
 import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
 import { criarIcones } from './dom-root.js';
 import { parseMenuModel, renderMenuBuilderShell, initMenuBuilders } from './menu-builder.js';
+import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariaveis } from './variaveis-builder.js';
+import { renderMenuResumo, renderMenuVazio, menuVazio, tipoDoModal } from './menu-modal.js';
 import {
   temAmbiente, opcoesFilas, opcoesAgentes, opcoesBots, opcoesCrmStatus, opcoesSubStatus,
   opcoesEntrancesEnvio, opcoesScripts, opcoesCheckpoints, opcoesOpenAiContas,
@@ -270,8 +272,20 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       corpo = campoAmbienteSelect('Checkpoint', opcoesCheckpoints, a.TRANSITION_ID, a.ID, 'check_point', d.check_point);
       break;
     case '10': {
-      const uid = 'mb' + (++state.menuBuilderSeq);
       const model = parseMenuModel(d.message_option_text || '');
+      // Botões, Lista e WebChat: resumo + modal (js/menu-modal.js).
+      if (tipoDoModal(model.kind)) {
+        corpo = renderMenuResumo(model, a.TRANSITION_ID, a.ID);
+        break;
+      }
+      // Ação nova/vazia: cartão "Criar menu" (abre o modal já em Botões).
+      // Conteúdo não reconhecido NÃO cai aqui: segue no builder antigo, pra
+      // nada ser sobrescrito.
+      if (menuVazio(d.message_option_text)) {
+        corpo = renderMenuVazio(a.TRANSITION_ID, a.ID);
+        break;
+      }
+      const uid = 'mb' + (++state.menuBuilderSeq);
       state.MENU_MODELS[uid] = model;
       corpo = renderMenuBuilderShell(uid, model, a.TRANSITION_ID, a.ID);
       break;
@@ -283,7 +297,7 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       corpo = campoAmbienteSelect('Entrada destino', opcoesEntrancesEnvio, a.TRANSITION_ID, a.ID, 'entrances', d.entrances);
       break;
     case '13':
-      corpo = campoAreaEditavel('Variáveis (JSON)', a.TRANSITION_ID, a.ID, 'bot_variables_text', d.bot_variables_text, 4, true);
+      corpo = campoBloco('Variáveis a armazenar', renderVariaveisBuilder(a.TRANSITION_ID, a.ID, d.bot_variables_text));
       break;
     case '14':
       corpo = campoAmbienteSelect('Substatus', opcoesSubStatus, a.TRANSITION_ID, a.ID, 'substatus', d.substatus);
@@ -538,6 +552,7 @@ export function abrirBotView(bot) {
     });
   }
   $('#variaveis-datalist').innerHTML = entriesToOptions(dictVariaveis).map(o => `<option value="${escapeHtml(o.label)}">`).join('');
+  atualizarDatalistsVariaveis(bot);
 
   $('#bv-numero').value = bot.ID ?? '';
   // Número (ID) só é editável na criação de um bot novo — em edição, o ID já
@@ -588,6 +603,7 @@ export function abrirBotView(bot) {
   // initAcoesDelegadas pra entender por quê isso importa agora que
   // rerenderTransicao/rerenderEstado fazem re-render parcial.
   initMenuBuilders();
+  initVariaveisBuilders();
 
   criarIcones();
   $('#bot-view-overlay').classList.remove('hidden');

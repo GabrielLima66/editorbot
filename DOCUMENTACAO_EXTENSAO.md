@@ -62,7 +62,19 @@ O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão)
 
 **Para quem desenvolve** (a partir de `fluxograma/`): `node scripts/capturasTema.mjs --tema escuro --saida ref` tira capturas de referência do editor (página standalone, Chrome real). Depois de uma mudança, `node scripts/capturasTema.mjs --tema escuro --comparar ref` diz se algo mudou pixel a pixel; `--tema claro` gera a prévia do claro. Saída em `tests/tema_out/`, fora do git.
 
-## 7. Como Distribuir e Instalar a Extensão
+## 7. Menu em Modal e "Armazenar variável" — v0.6.0
+
+**Menu (ação 10)** — `js/menu-modal.js`: a ação mostra um resumo e o botão "Editar menu", que abre o modal com celular simulado (WhatsApp Botões, WhatsApp Lista e WebChat). Conteúdo que não é reconhecido como nenhum desses continua no builder antigo (`js/menu-builder.js`), pra nada ser sobrescrito.
+*   **Fidelidade**: o Salvar edita o JSON original (`atualizarMenuPreservando`) em vez de montar um novo: só o que foi editado muda, campos opcionais só são criados se já existiam ou foram preenchidos, chaves extras e a indentação original ficam. Sem mudança, nada é gravado.
+*   **ID/valor vazio** vira o texto com espaços trocados por `_`. Botão da lista vazio grava "Ver opções".
+*   **WebChat**: o JSON do menu não tem texto; o campo de texto do modal é a ação "Mensagem" imediatamente anterior (editada no lugar, ou criada com `dividirMensagemDoMenu`). Voltar pra WhatsApp usa `absorverMensagemAnterior`.
+*   `ACTION_DATA` é editado no próprio objeto: as chaves espelho numéricas (`withMirrors`) apontam pra ele.
+
+**Armazenar variável (ação 13)** — `js/variaveis-builder.js`: linhas `variável ← valor` sobre o mesmo `bot_variables_text`, com autocomplete (variáveis da Orpen, retornos de scripts em `window.bot_variables` e variáveis usadas no bot). Só abre no modo visual quando todos os valores são texto; números, listas, JSON inválido ou chaves repetidas abrem no modo JSON.
+
+**Arrastar**: `initEstadoReorderDnD` rola o `.bv-body` quando o mouse chega a 90px do topo/fim durante o arrasto.
+
+## 8. Como Distribuir e Instalar a Extensão
 
 Todo esse sistema roda 100% no navegador (client-side), com assets (Tailwind CSS, Lucide icons, renderizador do fluxograma) servidos localmente.
 Para distribuir:
