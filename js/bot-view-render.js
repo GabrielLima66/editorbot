@@ -21,6 +21,7 @@ import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
 import { criarIcones } from './dom-root.js';
 import { parseMenuModel, renderMenuBuilderShell, initMenuBuilders } from './menu-builder.js';
 import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariaveis } from './variaveis-builder.js';
+import { renderMenuResumo } from './menu-modal.js';
 import {
   temAmbiente, opcoesFilas, opcoesAgentes, opcoesBots, opcoesCrmStatus, opcoesSubStatus,
   opcoesEntrancesEnvio, opcoesScripts, opcoesCheckpoints, opcoesOpenAiContas,
@@ -271,8 +272,14 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       corpo = campoAmbienteSelect('Checkpoint', opcoesCheckpoints, a.TRANSITION_ID, a.ID, 'check_point', d.check_point);
       break;
     case '10': {
-      const uid = 'mb' + (++state.menuBuilderSeq);
       const model = parseMenuModel(d.message_option_text || '');
+      // Menu de botões: resumo + modal (js/menu-modal.js). Lista/WebChat
+      // seguem no builder de sempre até o modal cobrir esses tipos.
+      if (model.kind === 'whatsapp_button') {
+        corpo = renderMenuResumo(model, a.TRANSITION_ID, a.ID);
+        break;
+      }
+      const uid = 'mb' + (++state.menuBuilderSeq);
       state.MENU_MODELS[uid] = model;
       corpo = renderMenuBuilderShell(uid, model, a.TRANSITION_ID, a.ID);
       break;
