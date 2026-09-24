@@ -120,11 +120,10 @@ function avisosDoModelo(m) {
   return lista;
 }
 
-function proximoId(buttons) {
-  const usados = new Set(buttons.map((b) => b.id.trim()));
-  let n = buttons.length + 1;
-  while (usados.has(String(n))) n++;
-  return String(n);
+// ID gerado a partir do texto do botão: espaços viram "_".
+// "Falar com atendente" -> "Falar_com_atendente".
+function idDoTexto(texto) {
+  return texto.trim().replace(/\s+/g, '_');
 }
 
 export function abrirModalMenu(transitionId, actionId) {
@@ -133,7 +132,10 @@ export function abrirModalMenu(transitionId, actionId) {
   if (!acao) return;
   const novo = menuVazio(acao.ACTION_DATA?.[CAMPO]);
   const raw = novo ? MODELO_NOVO_JSON : acao.ACTION_DATA[CAMPO];
-  const original = novo ? { ...defaultMenuModel('whatsapp_button'), buttons: [{ id: '1', title: '' }] } : parseMenuModel(raw);
+  // `auto`: o ID acompanha o texto do botão. Só em botão NOVO, e só até o
+  // usuário editar o ID à mão. Botão que já existia nunca tem o ID trocado
+  // sozinho: as condições do bot usam esse ID pra saber qual foi escolhido.
+  const original = novo ? { ...defaultMenuModel('whatsapp_button'), buttons: [{ id: '', title: '', auto: true }] } : parseMenuModel(raw);
   if (original.kind !== 'whatsapp_button') return;
 
   const modelo = JSON.parse(JSON.stringify(original));
@@ -226,7 +228,15 @@ export function abrirModalMenu(transitionId, actionId) {
     const campo = el.dataset.campo;
     if (!campo) return;
     const botao = el.closest('.mm-botao');
-    if (botao) modelo.buttons[+botao.dataset.i][campo] = el.value;
+    if (botao) {
+      const b = modelo.buttons[+botao.dataset.i];
+      b[campo] = el.value;
+      if (campo === 'id') b.auto = false;
+      else if (campo === 'title' && b.auto) {
+        b.id = idDoTexto(el.value);
+        botao.querySelector('[data-campo="id"]').value = b.id;
+      }
+    }
     else modelo[campo] = el.value;
     atualizarEstado();
   });
@@ -242,7 +252,7 @@ export function abrirModalMenu(transitionId, actionId) {
     } else if (acaoMm === 'descartar') fechar();
     else if (acaoMm === 'salvar') salvar();
     else if (acaoMm === 'adicionar' && modelo.buttons.length < WHATSAPP_BUTTON_MAX) {
-      modelo.buttons.push({ id: proximoId(modelo.buttons), title: '' });
+      modelo.buttons.push({ id: '', title: '', auto: true });
       desenharBotoes();
       atualizarEstado();
       fundo.querySelectorAll('.mm-botao-titulo')[modelo.buttons.length - 1].focus();
