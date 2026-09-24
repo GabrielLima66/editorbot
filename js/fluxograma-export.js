@@ -180,6 +180,13 @@ export async function gerarFluxograma({ formato, salvar, temAlteracoesNaoSalvas,
   const bot = state.botCarregado;
   if (!bot || bot._isNewBot) return;
 
+  // Bot sem estados: não há fluxograma. Checado antes de tudo (inclusive do
+  // "salvar antes") pra não aparecer o erro técnico do parser.
+  if (!(bot.BOT_STATES || []).length) {
+    mostrarToast('Este bot ainda não tem estados: não há fluxograma para gerar.');
+    return;
+  }
+
   // O fluxograma sempre representa o bot como está SALVO (decisão P1).
   if (temAlteracoesNaoSalvas()) {
     if (!(await confirmarSalvar())) return;

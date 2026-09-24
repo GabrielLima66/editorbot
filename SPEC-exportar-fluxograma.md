@@ -400,7 +400,16 @@ Cobertura de cada armadilha:
 
 > **Status (2026-09-23):** código completo e commitado no branch `feat/exportar-fluxograma` (`39fe778`). Build do renderizador refeito, 136 testes passando e paridade visual com o desktop mantida (22/22). **Pendente: teste manual na `bot.php` real** (os itens abaixo), adiado a pedido do usuário. O branch **não vai para o `main`** antes desse teste.
 
-**Aceite (pendente de teste manual):**
+**Teste manual na `bot.php` (2026-09-24, feito pelo usuário):**
+- ✅ Gera e baixa o PNG; os nomes reais de fila, calendário e bot externo aparecem sem asteriscos.
+- ✅ O SVG abre (Edge, que é o padrão do Windows para `.svg`, e Chrome): 47 cartões, 53 setas, Inter embutida.
+- ✅ "Salvar antes de gerar?": Cancelar, Esc e Salvar e gerar funcionam.
+- ✅ Geração em segundo plano: o editor continua usável. Há uma **travadinha breve** durante a captura, sem efeito no que se está fazendo.
+- ✅ PNG gerado pela extensão a partir do mesmo JSON que o desktop abriu: mesmo tamanho (8368 × 1960 px); a diferença de pixel é só de suavização (Chromium do Qt × Chrome), zero com a tolerância de anti-aliasing.
+- 🔧 Bot salvo sem estados: dava o erro técnico do parser. Trocado por "Este bot ainda não tem estados: não há fluxograma para gerar." (verificado antes do "salvar antes").
+- ⏳ Faltam: desfazer uma alteração (o aviso não pode aparecer), bot novo via "Adicionar" (botão desabilitado) e a regressão rápida.
+
+**Aceite:**
 - [ ] Bot sem alterações: gera direto, sem diálogo.
 - [ ] Bot com alteração: o diálogo aparece; "Cancelar" não salva nem gera; "Salvar e gerar" salva (o bot reaberto mostra a alteração gravada) e depois gera.
 - [ ] Salvamento com erro (ex.: nome vazio, conflito de número): o erro aparece como hoje e nada é gerado.
