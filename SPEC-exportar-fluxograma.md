@@ -407,7 +407,9 @@ Cobertura de cada armadilha:
 - ✅ Geração em segundo plano: o editor continua usável. Há uma **travadinha breve** durante a captura, sem efeito no que se está fazendo.
 - ✅ PNG gerado pela extensão a partir do mesmo JSON que o desktop abriu: mesmo tamanho (8368 × 1960 px); a diferença de pixel é só de suavização (Chromium do Qt × Chrome), zero com a tolerância de anti-aliasing.
 - 🔧 Bot salvo sem estados: dava o erro técnico do parser. Trocado por "Este bot ainda não tem estados: não há fluxograma para gerar." (verificado antes do "salvar antes").
-- ⏳ Faltam: desfazer uma alteração (o aviso não pode aparecer), bot novo via "Adicionar" (botão desabilitado) e a regressão rápida.
+- ✅ Desfazer uma alteração (voltar ao valor original): gera sem o aviso de salvar (a comparação é por conteúdo).
+- ✅ Bot novo via "Adicionar", antes de salvar: botão desabilitado.
+- ⏳ Faltam: conferir a mensagem nova do bot sem estados e a regressão rápida (Salvar, Backup JSON, Shift+clique, Esc fecha o editor, layout do modal).
 
 **Aceite:**
 - [ ] Bot sem alterações: gera direto, sem diálogo.
