@@ -40,6 +40,8 @@ import {
 } from './bot-view-interactions.js';
 
 const CAMPO = 'message_option_text';
+// Texto padrão do botão que abre a lista (editável; vazio grava este).
+const BOTAO_LISTA_PADRAO = 'Ver opções';
 // Limites da API do WhatsApp.
 const LIMITE = {
   header: 60, body: 1024, footer: 60,
@@ -239,7 +241,7 @@ function conteudoLista(m) {
         </div>`).join('')).join('');
   const botaoLista = `
     <div class="mm-lista-botao"><i data-lucide="list"></i>
-      <input type="text" ${campo('button', m.button, `maxlength="${LIMITE.listaBotao}" placeholder="Texto do botão (ex.: Ver opções)" aria-label="Texto do botão que abre a lista"`)}>
+      <input type="text" ${campo('button', m.button, `maxlength="${LIMITE.listaBotao}" placeholder="${BOTAO_LISTA_PADRAO}" aria-label="Texto do botão que abre a lista"`)}>
     </div>`;
   return `
     ${bolhaWhatsapp(m, botaoLista)}
@@ -289,7 +291,6 @@ function avisosDoModelo(m) {
     if (repetidos(m.buttons.map((b) => idFinal(b.id, b.title)))) lista.push('Há IDs repetidos entre os botões.');
     if (repetidos(m.buttons.map((b) => b.title.trim().toLowerCase()))) lista.push('Há botões com o mesmo texto.');
   } else {
-    if (!m.button.trim()) lista.push('O texto do botão que abre a lista é obrigatório.');
     const linhas = m.sections.flatMap((s) => s.rows);
     if (!linhas.length) lista.push('Adicione pelo menos uma opção.');
     if (linhas.some((r) => !r.title.trim())) lista.push('Há opção sem texto.');
@@ -302,6 +303,7 @@ function avisosDoModelo(m) {
 function comIdsFinais(m) {
   const c = JSON.parse(JSON.stringify(m));
   if (c.kind === 'whatsapp_button') c.buttons.forEach((b) => { b.id = idFinal(b.id, b.title); });
+  if (c.kind === 'whatsapp_list' && !c.button.trim()) c.button = BOTAO_LISTA_PADRAO;
   if (c.kind === 'whatsapp_list') c.sections.forEach((s) => s.rows.forEach((r) => { r.id = idFinal(r.id, r.title); }));
   if (c.kind === 'webchat') c.options.forEach((o) => { o.value = idFinal(o.value, o.text); });
   return c;
@@ -420,6 +422,7 @@ export function abrirModalMenu(transitionId, actionId) {
     } else {
       modelo = converterModeloMenu(modelo, novoKind, itens);
     }
+    if (modelo.kind === 'whatsapp_list' && !modelo.button.trim()) modelo.button = BOTAO_LISTA_PADRAO;
     trocaPendente = null;
     $m('.mm-troca').classList.add('hidden');
     desenharConteudo();
