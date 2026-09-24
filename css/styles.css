@@ -980,3 +980,38 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 .mm-dica { margin: 0 0 4px; text-align: center; font-size: 12px; color: var(--wa-meta); }
 .mm-celular-webchat .mm-celular-topo { background: var(--primary); }
 #bot-view-overlay .menu-resumo-chip-lista { color: var(--text-muted); }
+
+/* ---- "Gerar tratamento" do menu (js/menu-tratamento.js) ---- */
+#bot-view-overlay .menu-resumo-tratamento {
+  display: flex; align-items: center; justify-content: center; gap: 0.375rem; width: 100%;
+  margin-top: 0.625rem; padding: 0.35rem 0.65rem;
+  font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+  border: 1px dashed var(--mb-borda); border-radius: 0.5rem; background: transparent;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+}
+#bot-view-overlay .menu-resumo-tratamento:hover:not(:disabled) { color: var(--accent); border-color: var(--fx-acento-borda); background: var(--fx-acento-hover-bg); }
+#bot-view-overlay .menu-resumo-tratamento:disabled { opacity: 0.5; cursor: not-allowed; }
+#bot-view-overlay .menu-resumo-tratamento svg { width: 0.8125rem; height: 0.8125rem; }
+
+.mt-painel { max-width: 540px; }
+.mt-corpo { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.mt-intro { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
+.mt-aviso { margin: 0; font-size: 12px; line-height: 1.45; color: var(--alerta-confirma-texto); background: var(--alerta-confirma-bg); border: 1px solid var(--alerta-confirma-borda); border-radius: 8px; padding: 8px 10px; }
+.mt-campo { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.mt-campo > span, .mt-campo > legend { font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 0; margin-bottom: 6px; }
+.mt-campo > span { margin-bottom: 0; }
+.mt-campo-curto { width: 120px; }
+.mt-input {
+  width: 100%; font: inherit; font-size: 13px; color: var(--text);
+  background: var(--obd-surface); border: 1px solid var(--obd-border); border-radius: 8px; padding: 7px 10px; outline: none;
+}
+.mt-input:focus { border-color: var(--accent); }
+textarea.mt-input { resize: vertical; line-height: 1.4; }
+.mt-limite { gap: 8px; }
+.mt-limite .hidden, .mt-input.hidden { display: none; }
+.mt-previa { background: var(--mb-bg); border: 1px solid var(--mb-borda); border-radius: 10px; padding: 10px 12px; }
+.mt-previa-titulo { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.mt-previa-lista { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.4; color: var(--text); }
+.mt-previa-lista code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; padding: 1px 5px; border-radius: 4px; background: var(--obd-surface); border: 1px solid var(--obd-border); }
+.mt-previa-texto { color: var(--text-muted); }
+.mt-painel .mm-fechar { margin-left: auto; }
