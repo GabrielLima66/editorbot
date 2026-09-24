@@ -17,6 +17,7 @@ import {
   atualizarContadorRodape,
 } from './bot-view-render.js';
 import { initMenuBuilders } from './menu-builder.js';
+import { initVariaveisBuilders } from './variaveis-builder.js';
 import { mostrarResumoBot } from './upload.js';
 
 // ---------------------------------------------------------------------------
@@ -660,6 +661,7 @@ export function rerenderTransicao(bot, transitionId) {
   const novaLinha = temp.firstElementChild;
   linhaAtual.replaceWith(novaLinha);
   initMenuBuilders(novaLinha);
+  initVariaveisBuilders(novaLinha);
   criarIcones();
 }
 
@@ -699,6 +701,7 @@ export function rerenderEstado(bot, stateNumber) {
       novoWrap.querySelector('.estado-chevron').classList.add('rotate-180');
   }
   initMenuBuilders(novoWrap);
+  initVariaveisBuilders(novoWrap);
   atualizarContadorRodape(bot);
   criarIcones();
 }
