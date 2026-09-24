@@ -105,7 +105,7 @@ Um script (Playwright + Chrome, mesmo padrão da paridade do fluxograma) abre o 
 1. Seu teste na `bot.php` (roteiro curto, nos dois temas).
 2. Versão 0.5.0, CHANGELOG, documentação e zip.
 
-> **Resultado (2026-09-24):** o usuário validou na `bot.php` o tema claro e o botão sol/lua (captura do editor claro na Orpen). Os ajustes de UX pedidos durante o teste (barra da transição, nome do estado, numeração) foram verificados em navegador automatizado na página standalone (abrir/fechar pelo header, lápis foca sem alternar, renomear com Enter, reordenar pelo número), mas **não foram testados na Orpen antes da release**, por decisão do usuário ("pode subir"). Release: v0.5.0, zip `Desktop\EDITOR_BOT-v0.5.0.zip`.
+> **Resultado (2026-09-24):** o usuário testou tudo na `bot.php` real e está funcional: tema claro, botão sol/lua e os ajustes de UX (barra da transição, nome do estado, numeração). Antes, os ajustes também tinham sido verificados em navegador automatizado na página standalone. Release: v0.5.0, zip `Desktop\EDITOR_BOT-v0.5.0.zip`.
 
 ## Ajustes de UX pedidos durante o teste (2026-09-24)
 

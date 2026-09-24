@@ -6,7 +6,7 @@ Iniciado em: 17/09/2026, 17:18:57
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
 - **Fase Atual:** Tema claro entregue na **v0.5.0** (24/09/2026), junto com ajustes de UX no editor
 - **Última Tarefa Concluída:** Tema claro alternável (sol/lua, padrão escuro), cores em tokens (escuro idêntico por captura), barra da transição, nome do estado como título editável, número da transição distinto do estado. CHANGELOG, DOCUMENTACAO (seção 6) e zip
-- **Próxima Tarefa em Aberto:** Validar na Orpen os ajustes de UX de 24/09 (barra da transição, nome do estado, numeração), que só foram verificados na página standalone. O push é feito pelo usuário (o modo automático do Claude Code bloqueia push)
+- **Próxima Tarefa em Aberto:** Nenhuma pendência técnica. O push é feito pelo usuário (o modo automático do Claude Code bloqueia push)
 
 ---
 
@@ -26,7 +26,7 @@ Iniciado em: 17/09/2026, 17:18:57
 <!-- LOG_ENTRIES -->
 ### 24/09/2026 — 🏁 MARCO
 
-v0.5.0: tema claro "sem flashbang" alternável (padrão escuro) + ajustes de UX no editor pedidos durante o teste. Ajustes de UX verificados só na página standalone; teste na Orpen fica como pendência.
+v0.5.0: tema claro "sem flashbang" alternável (padrão escuro) + ajustes de UX no editor pedidos durante o teste. Tudo testado pelo usuário na bot.php real: funcional.
 
 ---
 ### 24/09/2026 — 🏁 MARCO
