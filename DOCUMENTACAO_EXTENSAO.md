@@ -102,6 +102,7 @@ O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão)
 5. Se a versão no rodapé não mudar, clique em ↻ no cartão da extensão em `chrome://extensions`.
 
 **Como funciona:**
+*   **Novidades** (`js/novidades.js`): a versão no rodapé é um botão que abre o `CHANGELOG.md` da própria instalação (listado em `web_accessible_resources`) num modal. O leitor de markdown é mínimo: `## [versão] - data`, itens `* `, `**negrito**` e `` `código` ``.
 *   **Aviso** (`js/atualizacao.js`): compara a versão instalada com o `manifest.json` da branch `release`, lido de `raw.githubusercontent.com`. O cache dura 1 hora quando há versão nova a avisar e 5 minutos quando não há. Sem internet, não mostra nada.
 *   **Botão "Atualizar agora":**
     *   é um link `editorbot-atualizar://atualizar`;
