@@ -4,7 +4,7 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Botão "Atualizar agora" entregue na **v0.8.1** (25/09/2026)
+- **Fase Atual:** Botão "Atualizar agora" (v0.8.1) + correção do cache do aviso (**v0.8.2**, 25/09/2026)
 - **Última Tarefa Concluída:** Aviso de versão nova (branch `release` do GitHub), Atualizar.bat e recarga automática da extensão (validada no Chrome real). Ao fechar versão: `git push origin main:release`
 - **Próxima Tarefa em Aberto:** Fase 3 do tratamento (atualizar tratamento) e Fase 2 da busca (substituir), quando pedidas
 

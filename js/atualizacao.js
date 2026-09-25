@@ -16,7 +16,11 @@ const RAMO = 'release';
 const URL_MANIFEST = `https://raw.githubusercontent.com/${REPO}/${RAMO}/manifest.json`;
 const URL_NOVIDADES = `https://github.com/${REPO}/blob/${RAMO}/CHANGELOG.md`;
 const CHAVE_CACHE = 'editorbot:versao-publicada';
-const VALIDADE_MS = 60 * 60 * 1000;
+// Com versão nova a avisar, 1 h de cache basta (o aviso já está na tela).
+// Sem versão nova, consulta de novo a cada 5 min: senão quem abriu o editor
+// pouco antes de uma publicação ficaria até 1 h sem ver o aviso.
+const VALIDADE_COM_NOVIDADE_MS = 60 * 60 * 1000;
+const VALIDADE_SEM_NOVIDADE_MS = 5 * 60 * 1000;
 
 export function compararVersoes(a, b) {
   const pa = String(a).split('.').map((n) => parseInt(n, 10) || 0);
@@ -27,10 +31,13 @@ export function compararVersoes(a, b) {
   return 0;
 }
 
-function lerCache() {
+function lerCache(versaoAtual) {
   try {
     const c = JSON.parse(localStorage.getItem(CHAVE_CACHE) || 'null');
-    if (c && Date.now() - c.quando < VALIDADE_MS) return c.versao;
+    if (!c || !c.versao) return null;
+    const novidade = versaoAtual && compararVersoes(c.versao, versaoAtual) > 0;
+    const validade = novidade ? VALIDADE_COM_NOVIDADE_MS : VALIDADE_SEM_NOVIDADE_MS;
+    if (Date.now() - c.quando < validade) return c.versao;
   } catch { /* sem storage: consulta de novo */ }
   return null;
 }
@@ -40,8 +47,8 @@ function gravarCache(versao) {
 }
 
 /** Versão publicada na branch release, ou null se não deu para saber. */
-export async function versaoPublicada() {
-  const emCache = lerCache();
+export async function versaoPublicada(versaoAtual) {
+  const emCache = lerCache(versaoAtual);
   if (emCache) return emCache;
   try {
     const r = await fetch(URL_MANIFEST, { cache: 'no-store' });
@@ -139,7 +146,7 @@ function desenharAviso(aviso, publicada, temAlteracoesNaoSalvas) {
  */
 export async function avisarSeHouverNovaVersao(raiz, versaoAtual, temAlteracoesNaoSalvas) {
   if (!versaoAtual) return;
-  const publicada = await versaoPublicada();
+  const publicada = await versaoPublicada(versaoAtual);
   if (!publicada || compararVersoes(publicada, versaoAtual) <= 0) return;
   const alvo = raiz.querySelector('#bv-versao');
   if (!alvo || raiz.querySelector('#bv-atualizacao')) return;

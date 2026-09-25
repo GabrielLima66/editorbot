@@ -102,7 +102,7 @@ O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão)
 5. Se a versão no rodapé não mudar, clique em ↻ no cartão da extensão em `chrome://extensions`.
 
 **Como funciona:**
-*   **Aviso** (`js/atualizacao.js`): compara a versão instalada com o `manifest.json` da branch `release`, lido de `raw.githubusercontent.com`, com cache de 1 hora. Sem internet, não mostra nada.
+*   **Aviso** (`js/atualizacao.js`): compara a versão instalada com o `manifest.json` da branch `release`, lido de `raw.githubusercontent.com`. O cache dura 1 hora quando há versão nova a avisar e 5 minutos quando não há. Sem internet, não mostra nada.
 *   **Botão "Atualizar agora":**
     *   é um link `editorbot-atualizar://atualizar`;
     *   o `atualizar.ps1` registra esse link toda vez que roda, em `HKCU\Software\Classes\editorbot-atualizar`, só para o usuário atual e sem administrador;
