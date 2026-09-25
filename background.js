@@ -25,7 +25,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, responder) => {
       const noDisco = m.version;
       const atualizar = comparar(noDisco, carregada) > 0;
       responder({ carregada, noDisco, atualizar });
-      if (atualizar) setTimeout(() => chrome.runtime.reload(), 200);
+      // recarregar:false = só consultar (o editor espera o usuário salvar antes).
+      if (atualizar && msg.recarregar !== false) setTimeout(() => chrome.runtime.reload(), 200);
     })
     .catch(() => responder({ carregada, noDisco: null, atualizar: false }));
   return true; // resposta assíncrona

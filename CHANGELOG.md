@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.1] - 2026-09-25
+* **Botão "Atualizar agora"** no aviso de versão nova: com um clique, abre o atualizador no Windows. Na primeira vez, o Chrome pede confirmação; marque "sempre permitir". O editor espera os arquivos novos chegarem e se recarrega sozinho, sem precisar de F5. Se houver alteração não salva, ele pede para salvar e clicar em "Concluir" antes.
+* O botão funciona depois de rodar o `Atualizar.bat` uma vez: é ele que ativa o link no Windows, só para o seu usuário e sem precisar de administrador.
+* O `Atualizar.bat` agora explica quando ainda não há versão publicada, em vez de mostrar "404".
+
 ## [0.8.0] - 2026-09-25
 * **Atualização em dois cliques**: quando sair uma versão nova, o rodapé do editor mostra "Versão X disponível: rode o Atualizar.bat", com link para as novidades. O `Atualizar.bat`, na pasta da extensão, baixa a versão nova do GitHub e troca só os arquivos da extensão. Depois é só recarregar a página da Orpen (F5): a extensão percebe os arquivos novos e se recarrega sozinha, sem passar por `chrome://extensions`. Sem internet, nada muda e nenhum aviso aparece.
 * Esta é a última versão a instalar pelo zip. A partir dela, as atualizações vêm pelo `Atualizar.bat`. Detalhes na seção 9 da `DOCUMENTACAO_EXTENSAO.md`.

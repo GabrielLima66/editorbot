@@ -158,7 +158,7 @@ async function extrairEsqueletoOverlay() {
   }
   // Versão nova publicada? Aviso ao lado do número da versão (assíncrono,
   // não atrasa a montagem; sem internet não mostra nada).
-  avisarSeHouverNovaVersao(botView, versao);
+  avisarSeHouverNovaVersao(botView, versao, temAlteracoesNaoSalvas);
 
   // O texto de #pendencias-overlay foi escrito pensando no fluxo de
   // import/export manual de JSON ("o JSON já foi baixado... depois de
