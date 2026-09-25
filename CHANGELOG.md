@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.2] - 2026-09-25
+* **Aviso de versão nova mais rápido**: o editor guardava por 1 hora a última versão lida do GitHub, então quem abria o editor pouco antes de uma publicação ficava até 1 hora sem ver o aviso. Agora, sem versão nova a avisar, ele consulta de novo a cada 5 minutos. Com versão nova a avisar, o aviso continua valendo por 1 hora.
+
 ## [0.8.1] - 2026-09-25
 * **Botão "Atualizar agora"** no aviso de versão nova: com um clique, abre o atualizador no Windows. Na primeira vez, o Chrome pede confirmação; marque "sempre permitir". O editor espera os arquivos novos chegarem e se recarrega sozinho, sem precisar de F5. Se houver alteração não salva, ele pede para salvar e clicar em "Concluir" antes.
 * O botão funciona depois de rodar o `Atualizar.bat` uma vez: é ele que ativa o link no Windows, só para o seu usuário e sem precisar de administrador.
