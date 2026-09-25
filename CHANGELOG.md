@@ -1,5 +1,9 @@
 # Histórico de Versões (Changelog)
 
+## [0.7.0] - 2026-09-25
+* **Gerar tratamento do menu**: novo botão no cartão de cada menu (Botões, Lista e WebChat) que cria o estado de controle `CTRL - <origem>` no padrão dos bots de produção. São geradas uma transição por opção (`MENSAGEM Igual a <ID>`, vazia para completar), o limite de erros (padrão 2) com a ação escolhida (mensagem + fila, finalizar, trocar de estado ou em branco) e o fallback que soma um erro e reenvia o menu (cópia do JSON; no WebChat, também a Mensagem anterior). A origem ganha "Troca Estado" para o estado novo logo depois do menu; se já houver uma, o editor avisa antes de trocar o destino. Detalhes em `SPEC-tratamento-menu.md`.
+* **Localizar no editor**: Ctrl+F ou a lupa no cabeçalho abrem um painel à direita, e o editor encolhe para dar espaço. Tem três modos separados, cada um com sua cor: textos enviados (mensagens e menus), condições (o que o cliente digita) e nomes de estados. A busca ignora acentos e maiúsculas, com opções para diferenciar maiúsculas e buscar palavra inteira. Enter/F3 e as setas navegam entre os resultados, abrindo o estado e destacando o campo. Clicar num resultado seleciona o termo dentro do campo. Os resultados se atualizam enquanto você edita, e a lupa mostra a quantidade encontrada. Detalhes em `SPEC-busca-editor.md`.
+
 ## [0.6.0] - 2026-09-24
 * **Menu em modal com celular simulado**: a ação de menu mostra um resumo (tipo, mensagem e opções) e o botão **"Editar menu"**, que abre um modal com um celular onde se edita o menu como o cliente vai ver. Cobre **WhatsApp Botões**, **WhatsApp Lista** e **WebChat**, com abas pra trocar de tipo. Ação de menu vazia mostra **"Criar menu"**.
 * **ID/valor gerado do texto**: o ID do botão/opção (e o valor no WebChat) pode ser editado; se ficar vazio, é gerado do texto com espaços trocados por `_` ("Falar com atendente" → `Falar_com_atendente`). O modal avisa sobre IDs repetidos, opções sem texto e mensagem vazia.

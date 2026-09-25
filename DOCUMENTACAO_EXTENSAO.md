@@ -74,7 +74,24 @@ O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão)
 
 **Arrastar**: `initEstadoReorderDnD` rola o `.bv-body` quando o mouse chega a 90px do topo/fim durante o arrasto.
 
-## 8. Como Distribuir e Instalar a Extensão
+## 8. Gerar Tratamento do Menu e Localizar — v0.7.0
+
+**Gerar tratamento** (`js/menu-tratamento.js`, `SPEC-tratamento-menu.md`):
+*   A partir do menu, `gerarTratamento` cria o estado `CTRL - <origem>` com:
+    *   uma transição por opção (`CONDITION_TYPE 1`, valor = ID da opção, ou o valor no WebChat);
+    *   o limite (`2` "qualquer mensagem" + `7` "erros ≥ N");
+    *   o fallback (erros +1 + cópia do menu).
+*   Os registros são criados com `nextId`/`withMirrors`, no mesmo formato do export da Orpen.
+*   A "Troca Estado" da origem é reaproveitada ou inserida logo após o menu, renumerando as ações daquela transição.
+*   Não há regra nova nas pendências. Só ações de fila ou status CRM sem destino aparecem lá, como qualquer ação incompleta.
+
+**Localizar** (`js/busca.js`, `SPEC-busca-editor.md`):
+*   Painel `#bs-painel` dentro do `#bot-view-overlay`, fora do `.bv-panel` (por isso usa px). A classe `.busca-aberta` só reduz a largura e a margem direita do painel do editor, sem mexer nas margens verticais.
+*   A busca lê `state.botCarregado`, mas o valor na tela tem prioridade, porque os campos só gravam no bot no `change`.
+*   A busca é refeita por `input`/`change` no `#bv-estados` e por um `MutationObserver` (re-render).
+*   Os modos são exclusivos: textos enviados, condições e estados.
+
+## 9. Como Distribuir e Instalar a Extensão
 
 Todo esse sistema roda 100% no navegador (client-side), com assets (Tailwind CSS, Lucide icons, renderizador do fluxograma) servidos localmente.
 Para distribuir:

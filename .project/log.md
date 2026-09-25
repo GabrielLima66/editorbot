@@ -4,9 +4,9 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Menu em modal e "Armazenar variável" entregues na **v0.6.0** (24/09/2026)
-- **Última Tarefa Concluída:** Modal de menu com celular simulado (Botões, Lista, WebChat), ID gerado do texto, lista sem seções com "Ver opções", WebChat com campo de texto (ação Mensagem), "Armazenar variável" em linhas, rolagem ao arrastar. CHANGELOG, DOCUMENTACAO (seção 7) e zip
-- **Próxima Tarefa em Aberto:** Nenhuma pendência técnica
+- **Fase Atual:** Gerar tratamento do menu e Localizar entregues na **v0.7.0** (25/09/2026)
+- **Última Tarefa Concluída:** "Gerar tratamento" (estado CTRL a partir do menu) e "Localizar" (painel lateral com modos textos/condições/estados). CHANGELOG, DOCUMENTACAO (seção 8) e zip
+- **Próxima Tarefa em Aberto:** Fase 3 do tratamento (atualizar tratamento) e Fase 2 da busca (substituir), quando pedidas
 
 ---
 
@@ -24,6 +24,11 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 25/09/2026 — 🏁 MARCO
+
+v0.7.0: "Gerar tratamento" cria o estado CTRL de um menu (opção por ID, limite de erros, reenvio do menu) e "Localizar" busca em textos enviados, condições e estados, com navegação e atualização ao vivo. Ambos testados pelo usuário na Orpen.
+
+---
 ### 24/09/2026 — 🏁 MARCO
 
 v0.6.0: menu (ação 10) vira resumo + modal com celular simulado para Botões, Lista e WebChat, com fidelidade do JSON verificada em 38 menus reais; "Armazenar variável" em linhas com autocomplete; rolagem automática ao arrastar. Testado pelo usuário.
