@@ -91,11 +91,34 @@ O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão)
 *   A busca é refeita por `input`/`change` no `#bv-estados` e por um `MutationObserver` (re-render).
 *   Os modos são exclusivos: textos enviados, condições e estados.
 
-## 9. Como Distribuir e Instalar a Extensão
+## 9. Atualização (aviso + Atualizar.bat)
+
+**Para quem usa:**
+1. Quando sai uma versão nova, o rodapé do editor mostra "Versão X disponível: rode o Atualizar.bat".
+2. Dê dois cliques no `Atualizar.bat`, na pasta da extensão. Ele baixa a versão nova do GitHub e troca só os arquivos da extensão.
+3. Recarregue a página da Orpen (F5). A extensão percebe os arquivos novos, se recarrega sozinha e recarrega a página uma vez.
+4. Se a versão no rodapé não mudar, clique em ↻ no cartão da extensão em `chrome://extensions`.
+
+**Como funciona:**
+*   **Aviso** (`js/atualizacao.js`): compara a versão instalada com o `manifest.json` da branch `release`, lido de `raw.githubusercontent.com`, com cache de 1 hora. Sem internet, não mostra nada.
+*   **`Atualizar.bat` → `atualizar.ps1`:**
+    *   baixa `archive/refs/heads/release.zip`;
+    *   espelha `content/`, `js/`, `css/`, `icons/` e `vendor/`;
+    *   copia os arquivos soltos, deixando o `manifest.json` por último;
+    *   recusa rodar numa pasta com `.git` (a de desenvolvimento);
+    *   não mexe nele mesmo (`Atualizar.bat`).
+*   **Recarga** (`background.js` + `content/bootstrap.js`): a cada carregamento da página, o content script pergunta ao service worker se o `manifest.json` do disco tem versão maior que a carregada. Se tiver, o worker chama `chrome.runtime.reload()` e a página recarrega uma vez. Uma marca no `sessionStorage` evita loop.
+
+**Para quem publica, ao fechar uma versão:**
+1. Faça o merge na `main` e atualize a versão (`manifest.json`, CHANGELOG, esta documentação).
+2. Rode `git push origin main` e depois `git push origin main:release`. **Só essa segunda linha libera o aviso e o `.bat` para os usuários.** A `main` pode ter trabalho em andamento, e a `release` só avança quando a versão é fechada.
+3. Gere o zip para quem for instalar do zero (ver seção 10).
+
+## 10. Como Distribuir e Instalar a Extensão
 
 Todo esse sistema roda 100% no navegador (client-side), com assets (Tailwind CSS, Lucide icons, renderizador do fluxograma) servidos localmente.
 Para distribuir:
-1. Envie o arquivo `EDITOR_BOT-v<versão>.zip`. Ele leva só o que a extensão usa: `manifest.json`, `bot_transform.html`, `content/`, `js/`, `css/`, `icons/`, `vendor/` (inclusive `vendor/fluxograma/`), `CHANGELOG.md` e esta documentação. O subprojeto `fluxograma/` (fonte, com `node_modules`) não vai.
+1. Envie o arquivo `EDITOR_BOT-v<versão>.zip`. Ele leva só o que a extensão usa: `manifest.json`, `bot_transform.html`, `background.js`, `content/`, `js/`, `css/`, `icons/`, `vendor/` (inclusive `vendor/fluxograma/`), `Atualizar.bat`, `atualizar.ps1`, `CHANGELOG.md` e esta documentação. Da próxima vez, o usuário atualiza pelo `Atualizar.bat` (seção 9). O subprojeto `fluxograma/` (fonte, com `node_modules`) não vai.
 2. O usuário deve extrair o ZIP em uma pasta do PC.
 3. Acessar `chrome://extensions/` no Chrome/Edge.
 4. Habilitar **Modo do Desenvolvedor** (Developer mode).
