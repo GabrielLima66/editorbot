@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.4] - 2026-09-25
+* **Tema escolhido não se perde mais**: a escolha claro/escuro ficava guardada separada em cada ambiente (cada cliente é um domínio) e podia ser apagada pela própria Orpen. Agora ela fica guardada na extensão: vale para todos os ambientes e continua valendo depois de login/logout. Quem já tinha escolhido o claro mantém a escolha. Trocar o tema numa aba muda também nas outras abertas.
+
 ## [0.8.3] - 2026-09-25
 * **Novidades sempre à mão**: a versão no rodapé do editor virou o botão **"v0.8.3 · Novidades"**. Ele abre o histórico de todas as versões dentro do próprio editor, com a versão instalada marcada. O histórico vem da própria instalação, então funciona sem internet. O link "GitHub" na janela mostra o histórico da versão publicada.
 * **"Atualizar agora" pulsando**: o botão do aviso de versão nova pulsa para chamar atenção. Ele para quando o mouse passa por cima, e fica parado para quem tem "reduzir movimento" ligado no sistema.
