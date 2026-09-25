@@ -1,5 +1,9 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.0] - 2026-09-25
+* **Atualização em dois cliques**: quando sair uma versão nova, o rodapé do editor mostra "Versão X disponível: rode o Atualizar.bat", com link para as novidades. O `Atualizar.bat`, na pasta da extensão, baixa a versão nova do GitHub e troca só os arquivos da extensão. Depois é só recarregar a página da Orpen (F5): a extensão percebe os arquivos novos e se recarrega sozinha, sem passar por `chrome://extensions`. Sem internet, nada muda e nenhum aviso aparece.
+* Esta é a última versão a instalar pelo zip. A partir dela, as atualizações vêm pelo `Atualizar.bat`. Detalhes na seção 9 da `DOCUMENTACAO_EXTENSAO.md`.
+
 ## [0.7.0] - 2026-09-25
 * **Gerar tratamento do menu**: novo botão no cartão de cada menu (Botões, Lista e WebChat) que cria o estado de controle `CTRL - <origem>` no padrão dos bots de produção. São geradas uma transição por opção (`MENSAGEM Igual a <ID>`, vazia para completar), o limite de erros (padrão 2) com a ação escolhida (mensagem + fila, finalizar, trocar de estado ou em branco) e o fallback que soma um erro e reenvia o menu (cópia do JSON; no WebChat, também a Mensagem anterior). A origem ganha "Troca Estado" para o estado novo logo depois do menu; se já houver uma, o editor avisa antes de trocar o destino. Detalhes em `SPEC-tratamento-menu.md`.
 * **Localizar no editor**: Ctrl+F ou a lupa no cabeçalho abrem um painel à direita, e o editor encolhe para dar espaço. Tem três modos separados, cada um com sua cor: textos enviados (mensagens e menus), condições (o que o cliente digita) e nomes de estados. A busca ignora acentos e maiúsculas, com opções para diferenciar maiúsculas e buscar palavra inteira. Enter/F3 e as setas navegam entre os resultados, abrindo o estado e destacando o campo. Clicar num resultado seleciona o termo dentro do campo. Os resultados se atualizam enquanto você edita, e a lupa mostra a quantidade encontrada. Detalhes em `SPEC-busca-editor.md`.

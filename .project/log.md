@@ -4,8 +4,8 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Gerar tratamento do menu e Localizar entregues na **v0.7.0** (25/09/2026)
-- **Última Tarefa Concluída:** "Gerar tratamento" (estado CTRL a partir do menu) e "Localizar" (painel lateral com modos textos/condições/estados). CHANGELOG, DOCUMENTACAO (seção 8) e zip
+- **Fase Atual:** Atualização pelo aviso + Atualizar.bat entregue na **v0.8.0** (25/09/2026)
+- **Última Tarefa Concluída:** Aviso de versão nova (branch `release` do GitHub), Atualizar.bat e recarga automática da extensão (validada no Chrome real). Ao fechar versão: `git push origin main:release`
 - **Próxima Tarefa em Aberto:** Fase 3 do tratamento (atualizar tratamento) e Fase 2 da busca (substituir), quando pedidas
 
 ---
@@ -24,6 +24,11 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 25/09/2026 — 🏁 MARCO
+
+v0.8.0: atualização em dois cliques. O editor avisa quando há versão nova na branch `release`, o `Atualizar.bat` baixa e troca os arquivos, e a extensão se recarrega sozinha no F5. O usuário validou a recarga no Chrome real, e no teste a extensão continuou ativada.
+
+---
 ### 25/09/2026 — 🏁 MARCO
 
 v0.7.0: "Gerar tratamento" cria o estado CTRL de um menu (opção por ID, limite de erros, reenvio do menu) e "Localizar" busca em textos enviados, condições e estados, com navegação e atualização ao vivo. Ambos testados pelo usuário na Orpen.
