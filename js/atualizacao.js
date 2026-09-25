@@ -2,9 +2,10 @@
 // Aviso de versão nova (DOCUMENTACAO §9). Compara a versão instalada com o
 // manifest.json da branch `release` do GitHub (repositório público; a branch
 // só avança quando uma versão é fechada) e, se houver uma mais nova, mostra
-// no rodapé do editor como atualizar: rodar o Atualizar.bat da pasta da
-// extensão. Consulta no máximo uma vez por hora (cache no localStorage da
-// página); sem internet ou com erro, simplesmente não mostra nada.
+// no rodapé do editor com o botão "Atualizar agora" (link
+// editorbot-atualizar://, registrado pelo atualizar.ps1) e observa a pasta até
+// a versão nova chegar. Consulta o GitHub no máximo uma vez por hora (cache no
+// localStorage da página); sem internet ou com erro, não mostra nada.
 // ---------------------------------------------------------------------------
 
 import { escapeHtml } from './utils.js';
@@ -53,17 +54,95 @@ export async function versaoPublicada() {
   }
 }
 
-/** Mostra o aviso ao lado da versão no rodapé, se houver versão nova. */
-export async function avisarSeHouverNovaVersao(raiz, versaoAtual) {
+const LINK_ATUALIZADOR = 'editorbot-atualizar://atualizar';
+const INTERVALO_MS = 2000;
+const LIMITE_MS = 3 * 60 * 1000;
+const DICA_APOS_MS = 20 * 1000;
+
+// Pergunta ao background.js se a pasta já tem versão mais nova que a
+// carregada. recarregar:false só consulta; true também recarrega a extensão.
+function verificarDisco(recarregar) {
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ tipo: 'editorbot:verificar-disco', recarregar }, (resp) => {
+        resolve(chrome.runtime.lastError ? null : resp);
+      });
+    } catch { resolve(null); }
+  });
+}
+
+function concluir(aviso, versao) {
+  aviso.innerHTML = `<i data-lucide="refresh-cw"></i>Versão ${escapeHtml(versao)} instalada. Recarregando…`;
+  criarIcones();
+  verificarDisco(true);
+  setTimeout(() => window.location.reload(), 1200);
+}
+
+// Depois do clique em "Atualizar agora": o link abre o atualizar.ps1 (fora do
+// Chrome) e aqui só observamos a pasta da extensão até a versão nova chegar.
+function aguardarAtualizacao(aviso, publicada, temAlteracoesNaoSalvas) {
+  const inicio = Date.now();
+  let dicaMostrada = false;
+  aviso.innerHTML = '<i data-lucide="loader-circle" class="bv-girando"></i>Atualizando… acompanhe na janela do atualizador';
+  criarIcones();
+  const passo = async () => {
+    const resp = await verificarDisco(false);
+    if (resp && resp.atualizar) {
+      if (temAlteracoesNaoSalvas && temAlteracoesNaoSalvas()) {
+        aviso.innerHTML = `<i data-lucide="check-circle"></i>Versão ${escapeHtml(resp.noDisco)} instalada. Salve o bot e clique em <button type="button" class="bv-atualizacao-btn" data-concluir>Concluir</button>`;
+        criarIcones();
+        aviso.querySelector('[data-concluir]').addEventListener('click', () => {
+          if (temAlteracoesNaoSalvas()) {
+            aviso.title = 'Ainda há alterações não salvas: salve o bot antes de concluir.';
+            aviso.classList.add('bv-atualizacao-alerta');
+            return;
+          }
+          concluir(aviso, resp.noDisco);
+        });
+        return;
+      }
+      concluir(aviso, resp.noDisco);
+      return;
+    }
+    const decorrido = Date.now() - inicio;
+    if (!dicaMostrada && decorrido > DICA_APOS_MS) {
+      dicaMostrada = true;
+      aviso.innerHTML = '<i data-lucide="loader-circle" class="bv-girando"></i>Nada aconteceu? Rode o <strong>Atualizar.bat</strong> uma vez na pasta da extensão: ele também ativa este botão.';
+      criarIcones();
+    }
+    if (decorrido > LIMITE_MS) {
+      desenharAviso(aviso, publicada, temAlteracoesNaoSalvas);
+      return;
+    }
+    setTimeout(passo, INTERVALO_MS);
+  };
+  setTimeout(passo, INTERVALO_MS);
+}
+
+function desenharAviso(aviso, publicada, temAlteracoesNaoSalvas) {
+  aviso.classList.remove('bv-atualizacao-alerta');
+  aviso.title = 'O botão abre o atualizador no Windows (o Chrome pede confirmação na primeira vez). Se nada acontecer, rode o Atualizar.bat na pasta da extensão: ele atualiza e ativa o botão.';
+  aviso.innerHTML = `
+      <i data-lucide="arrow-up-circle"></i>Versão ${escapeHtml(publicada)} disponível
+      <a class="bv-atualizacao-btn" href="${LINK_ATUALIZADOR}" data-atualizar>Atualizar agora</a>
+      <a href="${URL_NOVIDADES}" target="_blank" rel="noopener">novidades</a>`;
+  criarIcones();
+  aviso.querySelector('[data-atualizar]').addEventListener('click', () => {
+    // O href faz o Chrome abrir o atualizador; daqui em diante só observamos.
+    setTimeout(() => aguardarAtualizacao(aviso, publicada, temAlteracoesNaoSalvas), 0);
+  });
+}
+
+/**
+ * Mostra o aviso ao lado da versão no rodapé, se houver versão nova.
+ * temAlteracoesNaoSalvas: evita recarregar a página no meio de uma edição.
+ */
+export async function avisarSeHouverNovaVersao(raiz, versaoAtual, temAlteracoesNaoSalvas) {
   if (!versaoAtual) return;
   const publicada = await versaoPublicada();
   if (!publicada || compararVersoes(publicada, versaoAtual) <= 0) return;
   const alvo = raiz.querySelector('#bv-versao');
   if (!alvo || raiz.querySelector('#bv-atualizacao')) return;
-  alvo.insertAdjacentHTML('afterend', `
-    <span id="bv-atualizacao" class="bv-atualizacao" title="Para atualizar: dê dois cliques em Atualizar.bat, na pasta da extensão, e recarregue esta página (F5). Se a versão no rodapé não mudar, clique em ↻ no cartão da extensão em chrome://extensions.">
-      <i data-lucide="arrow-up-circle"></i>Versão ${escapeHtml(publicada)} disponível: rode o <strong>Atualizar.bat</strong>
-      <a href="${URL_NOVIDADES}" target="_blank" rel="noopener">novidades</a>
-    </span>`);
-  criarIcones();
+  alvo.insertAdjacentHTML('afterend', '<span id="bv-atualizacao" class="bv-atualizacao"></span>');
+  desenharAviso(raiz.querySelector('#bv-atualizacao'), publicada, temAlteracoesNaoSalvas);
 }

@@ -4,7 +4,7 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Atualização pelo aviso + Atualizar.bat entregue na **v0.8.0** (25/09/2026)
+- **Fase Atual:** Botão "Atualizar agora" entregue na **v0.8.1** (25/09/2026)
 - **Última Tarefa Concluída:** Aviso de versão nova (branch `release` do GitHub), Atualizar.bat e recarga automática da extensão (validada no Chrome real). Ao fechar versão: `git push origin main:release`
 - **Próxima Tarefa em Aberto:** Fase 3 do tratamento (atualizar tratamento) e Fase 2 da busca (substituir), quando pedidas
 
@@ -24,6 +24,11 @@ Iniciado em: 17/09/2026, 17:18:57
 ---
 
 <!-- LOG_ENTRIES -->
+### 25/09/2026 — 🏁 MARCO
+
+v0.8.1: botão "Atualizar agora" no aviso (link `editorbot-atualizar://`, registrado pelo `atualizar.ps1`). O editor observa a pasta e se recarrega sozinho, respeitando alterações não salvas. O registro e a abertura pelo link foram testados de ponta a ponta no Windows.
+
+---
 ### 25/09/2026 — 🏁 MARCO
 
 v0.8.0: atualização em dois cliques. O editor avisa quando há versão nova na branch `release`, o `Atualizar.bat` baixa e troca os arquivos, e a extensão se recarrega sozinha no F5. O usuário validou a recarga no Chrome real, e no teste a extensão continuou ativada.

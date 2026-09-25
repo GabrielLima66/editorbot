@@ -94,13 +94,22 @@ O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão)
 ## 9. Atualização (aviso + Atualizar.bat)
 
 **Para quem usa:**
-1. Quando sai uma versão nova, o rodapé do editor mostra "Versão X disponível: rode o Atualizar.bat".
-2. Dê dois cliques no `Atualizar.bat`, na pasta da extensão. Ele baixa a versão nova do GitHub e troca só os arquivos da extensão.
-3. Recarregue a página da Orpen (F5). A extensão percebe os arquivos novos, se recarrega sozinha e recarrega a página uma vez.
-4. Se a versão no rodapé não mudar, clique em ↻ no cartão da extensão em `chrome://extensions`.
+1. Quando sai uma versão nova, o rodapé do editor mostra "Versão X disponível", com o botão **Atualizar agora**.
+2. Clique no botão. Na primeira vez, o Chrome pergunta se pode abrir o atualizador: marque "sempre permitir". Abre uma janela que baixa a versão nova e fecha sozinha. O editor detecta os arquivos novos, se recarrega e recarrega a página.
+   *   Se houver alteração não salva, ele não recarrega: pede para salvar e clicar em **Concluir**.
+3. **Primeira vez:** o botão só funciona depois de rodar o `Atualizar.bat` uma vez, com dois cliques na pasta da extensão. É ele que ativa o link. Se clicar e nada acontecer por 20 segundos, o próprio aviso lembra disso.
+4. O `Atualizar.bat` continua servindo para atualizar à mão. Depois dele, dê F5 na Orpen.
+5. Se a versão no rodapé não mudar, clique em ↻ no cartão da extensão em `chrome://extensions`.
 
 **Como funciona:**
 *   **Aviso** (`js/atualizacao.js`): compara a versão instalada com o `manifest.json` da branch `release`, lido de `raw.githubusercontent.com`, com cache de 1 hora. Sem internet, não mostra nada.
+*   **Botão "Atualizar agora":**
+    *   é um link `editorbot-atualizar://atualizar`;
+    *   o `atualizar.ps1` registra esse link toda vez que roda, em `HKCU\Software\Classes\editorbot-atualizar`, só para o usuário atual e sem administrador;
+    *   o link chama o script com `-Auto`, e a janela fecha sozinha se der certo;
+    *   depois do clique, o editor consulta o background a cada 2 segundos (`recarregar:false`) até a pasta ter a versão nova, por no máximo 3 minutos;
+    *   para desativar: `atualizar.ps1 -RemoverAtalho`.
+    *   Qualquer site pode tentar abrir esse link, mas o Chrome pede confirmação por site, e o link só roda o atualizador desta pasta, que baixa do GitHub do projeto.
 *   **`Atualizar.bat` → `atualizar.ps1`:**
     *   baixa `archive/refs/heads/release.zip`;
     *   espelha `content/`, `js/`, `css/`, `icons/` e `vendor/`;

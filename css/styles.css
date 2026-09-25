@@ -1117,3 +1117,12 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 }
 #bot-view-overlay .bv-atualizacao svg { width: 0.85rem; height: 0.85rem; }
 #bot-view-overlay .bv-atualizacao a { color: inherit; text-decoration: underline; font-weight: 500; margin-left: 0.2rem; }
+#bot-view-overlay .bv-atualizacao .bv-atualizacao-btn {
+  margin-left: 0.3rem; padding: 0.05rem 0.55rem; border-radius: 9999px;
+  font-size: 0.72rem; font-weight: 700; text-decoration: none;
+  color: var(--sobre-cor); background: var(--primary); border: 0; cursor: pointer;
+}
+#bot-view-overlay .bv-atualizacao .bv-atualizacao-btn:hover { filter: brightness(1.1); }
+#bot-view-overlay .bv-atualizacao-alerta { outline: 2px solid var(--danger); }
+@keyframes bv-girar { to { transform: rotate(360deg); } }
+#bot-view-overlay .bv-atualizacao .bv-girando { animation: bv-girar 1s linear infinite; }
