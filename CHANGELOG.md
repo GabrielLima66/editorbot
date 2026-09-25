@@ -1,5 +1,9 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.3] - 2026-09-25
+* **Novidades sempre à mão**: a versão no rodapé do editor virou o botão **"v0.8.3 · Novidades"**. Ele abre o histórico de todas as versões dentro do próprio editor, com a versão instalada marcada. O histórico vem da própria instalação, então funciona sem internet. O link "GitHub" na janela mostra o histórico da versão publicada.
+* **"Atualizar agora" pulsando**: o botão do aviso de versão nova pulsa para chamar atenção. Ele para quando o mouse passa por cima, e fica parado para quem tem "reduzir movimento" ligado no sistema.
+
 ## [0.8.2] - 2026-09-25
 * **Aviso de versão nova mais rápido**: o editor guardava por 1 hora a última versão lida do GitHub, então quem abria o editor pouco antes de uma publicação ficava até 1 hora sem ver o aviso. Agora, sem versão nova a avisar, ele consulta de novo a cada 5 minutos. Com versão nova a avisar, o aviso continua valendo por 1 hora.
 

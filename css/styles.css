@@ -1126,3 +1126,48 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 #bot-view-overlay .bv-atualizacao-alerta { outline: 2px solid var(--danger); }
 @keyframes bv-girar { to { transform: rotate(360deg); } }
 #bot-view-overlay .bv-atualizacao .bv-girando { animation: bv-girar 1s linear infinite; }
+
+/* ---- Versão = botão "Novidades" no rodapé (js/novidades.js) ---- */
+#bot-view-overlay .bv-versao-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.75rem; font-weight: 500; color: var(--text-muted);
+  background: transparent; border: 1px solid var(--obd-border); border-radius: 9999px;
+  padding: 0.1rem 0.55rem; cursor: pointer; transition: color 0.12s, border-color 0.12s, background-color 0.12s;
+}
+#bot-view-overlay .bv-versao-btn:hover { color: var(--accent); border-color: var(--fx-acento-borda); background: var(--fx-acento-hover-bg); }
+#bot-view-overlay .bv-versao-btn svg { width: 0.8rem; height: 0.8rem; }
+
+/* Botão "Atualizar agora" pulsando pra chamar atenção (para no hover e com
+   "reduzir movimento" do sistema). */
+@keyframes bv-pulso {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 65%, transparent); transform: scale(1); }
+  50% { transform: scale(1.06); }
+  70% { box-shadow: 0 0 0 0.45rem color-mix(in srgb, var(--primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); }
+}
+#bot-view-overlay .bv-atualizacao [data-atualizar] { animation: bv-pulso 1.6s ease-out infinite; }
+#bot-view-overlay .bv-atualizacao [data-atualizar]:hover { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  #bot-view-overlay .bv-atualizacao [data-atualizar] { animation: none; }
+}
+
+.nv-painel { max-width: 620px; }
+.nv-painel .mm-topo { gap: 10px; }
+.nv-github { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-decoration: none; padding: 4px 8px; border-radius: 7px; }
+.nv-github:hover { color: var(--accent); background: var(--hover-bg); }
+.nv-github svg { width: 12px; height: 12px; }
+.nv-painel .mm-fechar { margin-left: 0; }
+.nv-corpo { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 20px 18px; }
+.nv-versao { padding: 12px 0; border-bottom: 1px solid var(--obd-border); }
+.nv-versao:last-child { border-bottom: 0; }
+.nv-versao h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.nv-numero { font-size: 15px; font-weight: 700; font-family: "Space Grotesk", sans-serif; color: var(--text); }
+.nv-data { font-size: 12px; color: var(--text-muted); }
+.nv-selo { font-size: 11px; font-weight: 700; color: var(--sobre-cor); background: var(--primary); border-radius: 9999px; padding: 1px 8px; }
+.nv-versao ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.nv-versao li { font-size: 13px; line-height: 1.5; color: var(--text); }
+.nv-versao li strong { font-weight: 600; }
+.nv-versao code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--obd-surface); border: 1px solid var(--obd-border); }
+.nv-antigas { margin: 14px 0 0; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.nv-vazio { color: var(--text-muted); font-size: 13px; }
+.nv-vazio a { color: var(--accent); }
