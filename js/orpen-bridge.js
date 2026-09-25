@@ -185,10 +185,11 @@ async function montarOverlay() {
       return host.shadowRoot;
     }
 
+    // Tema lido e aplicado antes de qualquer coisa ser desenhada: sem piscar
+    // o escuro antes de virar claro.
+    temaAtual = await carregarTemaSalvo();
     host = document.createElement('div');
     host.id = HOST_ID;
-    // Tema aplicado antes de qualquer coisa ser desenhada: sem piscar o
-    // escuro antes de virar claro.
     if (temaAtual === 'claro') host.setAttribute('data-tema', 'claro');
     document.body.appendChild(host);
     const shadowRoot = host.attachShadow({ mode: 'open' });
@@ -225,18 +226,50 @@ async function montarOverlay() {
 // ---------------------------------------------------------------------------
 // Tema claro/escuro (SPEC-tema-claro.md). O atributo data-tema no host do
 // Shadow DOM troca os valores dos tokens em css/styles.css, então editor,
-// pendências, diálogo e toasts mudam juntos. A escolha fica no localStorage
-// da página (sem permissão nova no manifest). Padrão: escuro.
+// pendências, diálogo e toasts mudam juntos. Padrão: escuro.
+//
+// A escolha fica no chrome.storage.local da EXTENSÃO (permissão "storage"):
+// vale para todos os ambientes (cada cliente é um domínio, e o localStorage
+// é por domínio) e a página da Orpen não consegue apagar (ela pode limpar o
+// próprio localStorage no login/logout). O localStorage continua como
+// reserva e como origem da migração de quem já tinha escolhido o tema.
 // ---------------------------------------------------------------------------
 const CHAVE_TEMA = 'editorbot:tema';
-let temaAtual = lerTemaSalvo();
+let temaAtual = lerTemaLocal() || 'escuro';
 
-function lerTemaSalvo() {
+function lerTemaLocal() {
   try {
-    return localStorage.getItem(CHAVE_TEMA) === 'claro' ? 'claro' : 'escuro';
+    const v = localStorage.getItem(CHAVE_TEMA);
+    return v === 'claro' || v === 'escuro' ? v : null;
   } catch {
-    return 'escuro';
+    return null;
   }
+}
+
+async function carregarTemaSalvo() {
+  try {
+    const salvo = (await chrome.storage.local.get(CHAVE_TEMA))[CHAVE_TEMA];
+    if (salvo === 'claro' || salvo === 'escuro') return salvo;
+    // Primeira vez com o storage da extensão: leva a escolha antiga junto.
+    const antigo = lerTemaLocal();
+    if (antigo) await chrome.storage.local.set({ [CHAVE_TEMA]: antigo });
+    return antigo || 'escuro';
+  } catch {
+    return lerTemaLocal() || 'escuro';
+  }
+}
+
+// Trocou o tema em outra aba/ambiente: acompanha aqui também.
+try {
+  chrome.storage.onChanged.addListener((mudancas, area) => {
+    const novo = area === 'local' && mudancas[CHAVE_TEMA]?.newValue;
+    if ((novo === 'claro' || novo === 'escuro') && novo !== temaAtual) {
+      temaAtual = novo;
+      aplicarTema({ animar: true });
+    }
+  });
+} catch {
+  // sem chrome.storage (contexto invalidado): segue só com o localStorage
 }
 
 function aplicarTema({ animar = false } = {}) {
@@ -260,11 +293,8 @@ function aplicarTema({ animar = false } = {}) {
 
 function alternarTema() {
   temaAtual = temaAtual === 'claro' ? 'escuro' : 'claro';
-  try {
-    localStorage.setItem(CHAVE_TEMA, temaAtual);
-  } catch {
-    // sem localStorage: a troca vale só até recarregar a página
-  }
+  try { chrome.storage.local.set({ [CHAVE_TEMA]: temaAtual }); } catch { /* contexto invalidado */ }
+  try { localStorage.setItem(CHAVE_TEMA, temaAtual); } catch { /* sem localStorage */ }
   aplicarTema({ animar: true });
 }
 

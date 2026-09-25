@@ -58,7 +58,7 @@ O botão **sol/lua** no header do editor alterna entre os temas escuro (padrão)
 **Como funciona:**
 *   Todas as cores do editor são **tokens** (variáveis CSS de papel) em `css/styles.css`, definidos em `:host, :root` com os valores do tema escuro. O tema claro só redefine os valores em `:host([data-tema="claro"])`. **Cor nova no editor deve sempre usar um token**, nunca um valor fixo, senão ela fica igual nos dois temas.
 *   O atributo `data-tema="claro"` vai no host do Shadow DOM (`#orpen-editor-bot-host`), aplicado por `orpen-bridge.js` **antes** de desenhar. Por isso editor, pendências, diálogo e toasts mudam juntos e não há flash.
-*   A escolha fica em `localStorage['editorbot:tema']` na página da Orpen, sem permissão nova no manifest.
+*   A escolha fica em `chrome.storage.local['editorbot:tema']`, com a permissão `storage`, que o Chrome concede sem pedir confirmação. Vale para todos os ambientes, porque cada cliente é um domínio, e a página não consegue apagar. O `localStorage['editorbot:tema']` continua como reserva e foi a origem da migração (v0.8.4). Trocar o tema numa aba muda nas outras via `storage.onChanged`.
 
 **Para quem desenvolve** (a partir de `fluxograma/`): `node scripts/capturasTema.mjs --tema escuro --saida ref` tira capturas de referência do editor (página standalone, Chrome real). Depois de uma mudança, `node scripts/capturasTema.mjs --tema escuro --comparar ref` diz se algo mudou pixel a pixel; `--tema claro` gera a prévia do claro. Saída em `tests/tema_out/`, fora do git.
 
