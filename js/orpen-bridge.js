@@ -27,6 +27,7 @@
 import { state } from './state.js';
 import { $, mostrarToast } from './utils.js';
 import { setRootNode, criarIcones } from './dom-root.js';
+import { avisarSeHouverNovaVersao } from './atualizacao.js';
 import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation } from './orpen-adapter.js';
 import { abrirBotView, fecharBotView } from './bot-view-render.js';
 import { initBotViewWiring, listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
@@ -141,7 +142,7 @@ async function extrairEsqueletoOverlay() {
   // quando alguém esquecer de atualizar um dos dois lugares). Ver
   // CHANGELOG.md na raiz do EDITOR_BOT para o histórico de cada versão.
   const versao = chrome?.runtime?.getManifest?.().version;
-  const versaoHtml = versao ? `<span class="text-xs text-[var(--text-faint)]" title="Versão da extensão Orpen — Editor de Bot">v${versao}</span><span class="text-[var(--text-faint)]">·</span>` : '';
+  const versaoHtml = versao ? `<span id="bv-versao" class="text-xs text-[var(--text-faint)]" title="Versão da extensão Orpen — Editor de Bot">v${versao}</span><span class="text-[var(--text-faint)]">·</span>` : '';
 
   const footerLeft = botView.querySelector('#bv-footer-left');
   if (footerLeft) {
@@ -155,6 +156,9 @@ async function extrairEsqueletoOverlay() {
       );
     }
   }
+  // Versão nova publicada? Aviso ao lado do número da versão (assíncrono,
+  // não atrasa a montagem; sem internet não mostra nada).
+  avisarSeHouverNovaVersao(botView, versao);
 
   // O texto de #pendencias-overlay foi escrito pensando no fluxo de
   // import/export manual de JSON ("o JSON já foi baixado... depois de

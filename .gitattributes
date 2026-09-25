@@ -2,3 +2,7 @@
 # paridade do fluxograma: sem conversao de fim de linha.
 fluxograma/tests/** -text
 fluxograma/src/render/** -text
+
+# Scripts do Windows precisam de CRLF (inclusive no zip baixado do GitHub).
+*.bat text eol=crlf
+*.ps1 text eol=crlf

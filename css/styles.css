@@ -1107,3 +1107,13 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 /* Destaque do campo encontrado (pisca e some). */
 @keyframes bs-pisca { 0%, 60% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
 #bot-view-overlay .bs-alvo { animation: bs-pisca 1.6s ease-out; border-radius: 0.5rem; }
+
+/* ---- Aviso de versão nova no rodapé (js/atualizacao.js) ---- */
+#bot-view-overlay .bv-atualizacao {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.75rem; font-weight: 600; color: var(--alerta-confirma-texto);
+  background: var(--alerta-confirma-bg); border: 1px solid var(--alerta-confirma-borda);
+  border-radius: 9999px; padding: 0.15rem 0.6rem; cursor: help;
+}
+#bot-view-overlay .bv-atualizacao svg { width: 0.85rem; height: 0.85rem; }
+#bot-view-overlay .bv-atualizacao a { color: inherit; text-decoration: underline; font-weight: 500; margin-left: 0.2rem; }

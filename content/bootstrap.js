@@ -27,6 +27,24 @@
 
   console.log('[EDITOR_BOT] Content script ativado nesta página.');
 
+  // Atualização (Atualizar.bat): se a pasta da extensão já tem uma versão
+  // mais nova que a carregada, o background.js recarrega a extensão e aqui
+  // a página é recarregada uma vez, pra rodar tudo na versão nova. Acontece
+  // no carregamento da página, antes de o editor ser aberto (nada a perder).
+  // A marca no sessionStorage impede loop se algo der errado.
+  try {
+    const MARCA = 'editorbot:recarregou-para';
+    chrome.runtime.sendMessage({ tipo: 'editorbot:verificar-disco' }, (resp) => {
+      if (chrome.runtime.lastError || !resp || !resp.atualizar) return;
+      if (sessionStorage.getItem(MARCA) === resp.noDisco) return;
+      sessionStorage.setItem(MARCA, resp.noDisco);
+      console.log(`[EDITOR_BOT] Versão ${resp.noDisco} encontrada na pasta (carregada: ${resp.carregada}). Recarregando.`);
+      setTimeout(() => window.location.reload(), 1000);
+    });
+  } catch (e) {
+    // Sem background (versão antiga) ou contexto invalidado: segue normal.
+  }
+
   const SELECTOR_EDITAR = 'button[onclick*="editBot("], a[onclick*="editBot("]';
   const SELECTOR_ADICIONAR = 'a[href="#addBotModal"], a[data-target="#addBotModal"], button[data-target="#addBotModal"]';
   const REGEX_ID = /editBot\(\s*(\d+)\s*\)/;
