@@ -1015,3 +1015,95 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .mt-previa-lista code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; padding: 1px 5px; border-radius: 4px; background: var(--obd-surface); border: 1px solid var(--obd-border); }
 .mt-previa-texto { color: var(--text-muted); }
 .mt-painel .mm-fechar { margin-left: auto; }
+
+/* ---- Localizar no editor (js/busca.js) ----
+   Painel encaixado à direita, FORA do .bv-panel (sem zoom): px. Com ele
+   aberto o editor encolhe e desloca pra esquerda em vez de ficar por baixo.
+   Só muda largura/margem horizontal: margin-top/bottom fixos seguem iguais
+   (ver o comentário longo do .bv-panel sobre o bug do header cortado). */
+#bot-view-overlay .bv-btn-busca {
+  margin-left: auto;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: 0.5rem;
+  color: var(--text-muted); background: transparent;
+  transition: background-color 0.12s, color 0.12s;
+}
+#bot-view-overlay .bv-btn-busca:hover, #bot-view-overlay .bv-btn-busca[aria-pressed="true"] { background: var(--hover-bg); color: var(--text); }
+#bot-view-overlay .bv-btn-busca svg { width: 1.125rem; height: 1.125rem; }
+#bot-view-overlay .bv-btn-busca[data-qtd]:not([data-qtd=""])::after {
+  content: attr(data-qtd); position: absolute; top: -0.2rem; right: -0.3rem;
+  min-width: 1rem; padding: 0 0.25rem; border-radius: 9999px;
+  font-size: 0.625rem; font-weight: 700; line-height: 1rem; text-align: center;
+  color: var(--sobre-cor); background: var(--primary);
+}
+#bot-view-overlay .bv-header .bv-btn-busca + .bv-btn-tema,
+#bot-view-overlay .bv-header .bv-btn-tema + .bv-btn-busca,
+#bot-view-overlay .bv-header .bv-btn-busca + #btn-fechar-bot-view { margin-left: 0; }
+
+#bot-view-overlay.busca-aberta .bv-panel {
+  width: calc((96vw - 380px) / 1.15) !important;
+  margin-right: calc(380px / 1.15) !important;
+}
+
+.bs-painel {
+  position: fixed; z-index: 2; top: 6vh; right: 16px; bottom: 3vh; width: 348px;
+  display: flex; flex-direction: column;
+  color: var(--text); background: var(--obd-panel);
+  border: 1px solid var(--obd-border); border-radius: 14px;
+  box-shadow: 0 16px 48px var(--dlg-sombra);
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+.bs-painel.hidden { display: none; }
+.bs-topo { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--obd-border); }
+.bs-topo > svg { width: 16px; height: 16px; color: var(--text-muted); }
+.bs-topo h3 { margin: 0; flex: 1; font-size: 14px; font-weight: 600; font-family: "Space Grotesk", sans-serif; }
+.bs-fechar { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; color: var(--text-muted); background: transparent; cursor: pointer; }
+.bs-fechar:hover { background: var(--hover-bg); color: var(--text); }
+.bs-fechar svg { width: 15px; height: 15px; }
+
+.bs-abas { display: flex; gap: 4px; margin: 12px 14px 0; padding: 3px; background: var(--mb-switch-bg); border: 1px solid var(--mb-borda); border-radius: 9px; }
+.bs-aba { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 4px; font-size: 12px; font-weight: 600; color: var(--mb-texto-fraco); background: transparent; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.bs-aba svg { width: 13px; height: 13px; }
+.bs-aba[aria-selected="true"] { color: #fff; background: var(--bs-cor); }
+/* Cor por modo: deixa explícito se o resultado é texto enviado, condição ou estado. */
+.bs-painel { --bs-cor: var(--primary); }
+.bs-painel[data-modo="condicoes"] { --bs-cor: #0E9384; }
+.bs-painel[data-modo="estados"] { --bs-cor: #D97706; }
+
+.bs-campo { display: flex; gap: 6px; margin: 10px 14px 0; }
+.bs-termo { flex: 1; min-width: 0; font: inherit; color: var(--text); background: var(--obd-surface); border: 1px solid var(--obd-border); border-radius: 8px; padding: 7px 10px; outline: none; }
+.bs-termo:focus { border-color: var(--bs-cor); }
+.bs-opcao { display: flex; align-items: center; justify-content: center; width: 32px; font-size: 12px; font-weight: 700; color: var(--text-muted); background: transparent; border: 1px solid var(--obd-border); border-radius: 8px; cursor: pointer; }
+.bs-opcao svg { width: 15px; height: 15px; }
+.bs-opcao[aria-pressed="true"] { color: var(--bs-cor); border-color: var(--bs-cor); background: var(--hover-bg); }
+
+.bs-nav { display: flex; align-items: center; gap: 4px; margin: 8px 14px; min-height: 28px; }
+.bs-contagem { flex: 1; font-size: 12px; color: var(--text-muted); }
+.bs-seta { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 7px; color: var(--text); background: transparent; border: 1px solid var(--obd-border); cursor: pointer; }
+.bs-seta:hover:not(:disabled) { background: var(--hover-bg); }
+.bs-seta:disabled { opacity: 0.4; cursor: default; }
+.bs-seta svg { width: 15px; height: 15px; }
+
+.bs-lista { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; border-top: 1px solid var(--obd-border); }
+.bs-vazio { margin: 16px 8px; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.bs-grupo ol { list-style: none; margin: 0; padding: 0; }
+.bs-grupo-titulo { display: flex; align-items: center; gap: 6px; margin: 12px 6px 4px; font-size: 12px; font-weight: 600; color: var(--text); }
+.bs-estado-num { font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 5px; color: #fff; background: #D97706; }
+.bs-grupo-qtd { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.bs-item { position: relative; display: flex; border-radius: 8px; border-left: 3px solid transparent; }
+.bs-item:hover { background: var(--hover-bg); }
+.bs-item-atual { background: var(--hover-bg); border-left-color: var(--bs-cor); }
+.bs-item-ir { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; text-align: left; background: transparent; color: inherit; cursor: pointer; }
+.bs-item-onde { font-size: 11px; font-weight: 600; color: var(--bs-cor); }
+.bs-item-trecho { font-size: 12px; line-height: 1.4; color: var(--text-muted); overflow-wrap: anywhere; }
+.bs-item-trecho mark { color: var(--text); background: color-mix(in srgb, var(--bs-cor) 30%, transparent); border-radius: 3px; padding: 0 1px; }
+.bs-abrir-menu { align-self: center; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin-right: 4px; border-radius: 6px; color: var(--text-muted); background: transparent; cursor: pointer; }
+.bs-abrir-menu:hover { color: var(--bs-cor); background: var(--obd-surface); }
+.bs-abrir-menu svg { width: 13px; height: 13px; }
+.bs-dica { margin: 0; padding: 8px 14px 10px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--obd-border); }
+
+/* Destaque do campo encontrado (pisca e some). */
+@keyframes bs-pisca { 0%, 60% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+#bot-view-overlay .bs-alvo { animation: bs-pisca 1.6s ease-out; border-radius: 0.5rem; }

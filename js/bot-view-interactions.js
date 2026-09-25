@@ -20,6 +20,7 @@ import { initMenuBuilders } from './menu-builder.js';
 import { initVariaveisBuilders } from './variaveis-builder.js';
 import { abrirModalMenu } from './menu-modal.js';
 import { abrirModalTratamento } from './menu-tratamento.js';
+import { initBusca } from './busca.js';
 import { mostrarResumoBot } from './upload.js';
 
 // ---------------------------------------------------------------------------
@@ -1361,6 +1362,7 @@ export function initBotViewWiring() {
   initBotNumeroEdit();
   initBotHeaderEdit();
   initPendenciasWiring();
+  initBusca();
 
   // Opcional: só existe no fluxo standalone (bot_transform.html completo,
   // seção #bot-summary). No modo extensão só o esqueleto de #bot-view-overlay
