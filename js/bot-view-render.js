@@ -555,11 +555,6 @@ export function abrirBotView(bot) {
   atualizarDatalistsVariaveis(bot);
 
   $('#bv-numero').value = bot.ID ?? '';
-  // Número (ID) só é editável na criação de um bot novo — em edição, o ID já
-  // é mostrado fixo no cabeçalho ("Editar Bot - #xxxxx") e não pode mudar
-  // (mudar o ID aqui criaria um bot novo em vez de atualizar o existente).
-  const numeroWrap = $('#bv-numero-wrap');
-  if (numeroWrap) numeroWrap.classList.toggle('hidden', !bot._isNewBot);
   $('#bv-nome').value = bot.NAME ?? '';
   const statusOptions = entriesToOptions(STATUS_LABELS);
   if (bot.STATUS === undefined || bot.STATUS === null) statusOptions.unshift({ value: '', label: '(não presente no JSON)' });

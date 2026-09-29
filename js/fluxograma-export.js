@@ -178,7 +178,7 @@ function cadastrosDoAmbiente() {
 export async function gerarFluxograma({ formato, salvar, temAlteracoesNaoSalvas, atualizarBotao }) {
   if (state.fluxogramaGerando) return;
   const bot = state.botCarregado;
-  if (!bot || bot._isNewBot) return;
+  if (!bot) return;
 
   // Bot sem estados: não há fluxograma. Checado antes de tudo (inclusive do
   // "salvar antes") pra não aparecer o erro técnico do parser.

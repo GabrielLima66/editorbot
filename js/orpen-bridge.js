@@ -313,11 +313,8 @@ function temAlteracoesNaoSalvas() {
 function atualizarBotaoFluxograma() {
   const btn = $('#btn-bv-fluxograma');
   if (!btn) return;
-  const novo = !!state.botCarregado?._isNewBot;
-  btn.disabled = novo || state.fluxogramaGerando;
-  btn.title = novo
-    ? 'Salve o bot pela primeira vez para gerar o fluxograma'
-    : 'Gerar o fluxograma deste bot (como está salvo na plataforma)';
+  btn.disabled = state.fluxogramaGerando;
+  btn.title = 'Gerar o fluxograma deste bot (como está salvo na plataforma)';
 }
 
 function ligarBotoesExtensao(shadowRoot) {
@@ -373,13 +370,6 @@ async function salvarBotNaOrpen() {
   const bot = state.botCarregado;
   if (!bot) return false;
 
-  if (!bot.ID || !String(bot.ID).trim()) {
-    mostrarToast('Preencha o Número do Bot (ID).');
-    const input = $('#bv-numero');
-    if (input) input.focus();
-    return false;
-  }
-
   if (!bot.NAME || !String(bot.NAME).trim()) {
     mostrarToast('Preencha o Nome do Bot.');
     const input = $('#bv-nome');
@@ -417,17 +407,14 @@ async function salvarBotNaOrpen() {
     }
 
     if (data && data.status === 'success') {
+      mostrarToast('Bot salvo com sucesso na plataforma.');
+      // Se outro bot foi aberto enquanto este salvava, o que foi gravado não
+      // é referência nem pendência dele.
+      if (state.botCarregado !== bot) return true;
       // O que acabou de ser gravado é a nova referência de "sem alterações".
       state.baselineSalvo = body;
-      mostrarToast('Bot salvo com sucesso na plataforma.');
-      if (bot._isNewBot) {
-        bot._isNewBot = false;
-        // Recarrega a página para o bot novo aparecer na listagem da Orpen
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        const pendencias = listarPendencias(bot);
-        if (pendencias.length) abrirPendenciasModal(pendencias);
-      }
+      const pendencias = listarPendencias(bot);
+      if (pendencias.length) abrirPendenciasModal(pendencias);
       return true;
     } else {
       const msg = data && data.message === 'duplicated'
@@ -456,39 +443,6 @@ async function salvarBotNaOrpen() {
 // barata depois da primeira vez); NÃO é idempotente em relação ao fetch do
 // bot — cada chamada busca a versão atual do bot no servidor.
 // ---------------------------------------------------------------------------
-export async function abrirEditorOrpenNovo(envData = null) {
-  if (envData) {
-    state.ambienteOrpen = envData;
-  }
-
-  await montarOverlay();
-
-  const overlay = $('#bot-view-overlay');
-  const badge = $('#bv-loading-badge');
-  const titulo = $('#bv-titulo-header');
-
-  overlay.classList.remove('hidden');
-  if (badge) badge.classList.add('hidden'); // Sem load de fetch
-
-  // Cria a estrutura vazia de um bot novo
-  state.botCarregado = fromGetBotResponse({
-    ID: '',
-    NAME: '',
-    STATUS: '1',
-    TIME_ANSWER: '300',
-    TIMEOUT_DELAY: '1800',
-    CONF_DELIVERY_TIME: '1800',
-    openai_accounts: state.ambienteOrpen?.openAiAccounts || []
-  });
-
-  // Flag puramente local pro UI saber como se comportar
-  state.botCarregado._isNewBot = true;
-  state.baselineSalvo = null;
-
-  abrirBotView(state.botCarregado);
-  atualizarBotaoFluxograma();
-  if (titulo) titulo.innerHTML = `Novo Bot <span class="bv-badge-header-id">Preencha os dados básicos</span>`;
-}
 export async function abrirEditorOrpen(botId, envData = null) {
   if (envData) {
     state.ambienteOrpen = envData;
