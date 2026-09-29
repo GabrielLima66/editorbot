@@ -41,9 +41,14 @@ function dataBr(iso) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
+// Cobre o intervalo em que o CHANGELOG ainda está carregando e a janela
+// ainda não existe no DOM (um segundo clique ali abriria outra).
+let abrindo = false;
+
 export async function abrirNovidades(versaoInstalada) {
   const root = getRootNode();
-  if (root.querySelector('.nv-fundo')) return;
+  if (abrindo || root.querySelector('.nv-fundo')) return;
+  abrindo = true;
   let versoes = [];
   let erro = false;
   try {
@@ -51,6 +56,8 @@ export async function abrirNovidades(versaoInstalada) {
     versoes = lerChangelog(await r.text());
   } catch {
     erro = true;
+  } finally {
+    abrindo = false;
   }
 
   const corpo = erro || !versoes.length
@@ -75,13 +82,23 @@ export async function abrirNovidades(versaoInstalada) {
       </header>
       <div class="nv-corpo">${corpo}</div>
     </div>`;
-  const fechar = () => fundo.remove();
+  // Esc escutado no document em captura, e não só na janela: se o foco sair
+  // dela (clique no texto), o Esc iria pro atalho do editor e fecharia o bot
+  // inteiro por baixo, sem checar alterações não salvas.
+  const aoTeclar = (e) => {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    e.preventDefault();
+    fechar();
+  };
+  const fechar = () => {
+    fundo.remove();
+    document.removeEventListener('keydown', aoTeclar, true);
+  };
   fundo.addEventListener('click', (e) => {
     if (e.target === fundo || e.target.closest('[data-nv="fechar"]')) fechar();
   });
-  fundo.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.stopPropagation(); fechar(); }
-  });
+  document.addEventListener('keydown', aoTeclar, true);
   (root === document ? document.body : root).appendChild(fundo);
   criarIcones();
   fundo.querySelector('[data-nv="fechar"]').focus();

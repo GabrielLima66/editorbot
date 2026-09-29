@@ -194,10 +194,8 @@ export function toUpdateBotPayload(bot) {
     timeout_queue: bot.CONF_DELIVERY_QUEUE ?? '',
     timeout_close_status: timeoutAction === 'close' ? (bot.TIMEOUT_DESTINY ?? '') : '',
     timeout_close_message: timeoutAction === 'close' ? (bot.TIMEOUT_MESSAGE ?? '') : '',
-    // Se for bot novo, manda 'duplicate' pra proteger contra sobrescrita
-    // silenciosa (ajax.php bloqueia e avisa se o ID já existir). Se for edição,
-    // manda 'edit' pra permitir sobrescrever o existente.
-    actionForm: bot._isNewBot ? 'duplicate' : 'edit',
+    // Sempre edição de um bot existente (bot novo é criado pelo modal nativo).
+    actionForm: 'edit',
     states,
   };
 }

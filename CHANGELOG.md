@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.5] - 2026-09-29
+* **Bot novo volta a ser criado pelo sistema**: o botão "Adicionar" da Orpen não abre mais o editor em modo de criação. O bot novo é criado pelo formulário normal da Orpen e depois editado aqui pelo "Editar". Isso acaba com dois problemas: um bot novo em branco travava o "Concluir" da atualização, e logo depois de salvar pela primeira vez o editor dizia que ainda havia alterações não salvas.
+* **Salvar e trocar de bot**: se outro bot for aberto antes de um salvamento terminar, o bot aberto não aparece mais como alterado e as pendências do bot anterior não abrem por cima dele.
+* **Janela de Novidades**: um clique duplo não abre mais duas janelas. O Esc fecha só a janela de Novidades, mesmo depois de clicar no texto dela; antes, ele podia fechar o editor inteiro sem avisar de alterações não salvas.
+
 ## [0.8.4] - 2026-09-25
 * **Tema escolhido não se perde mais**: a escolha claro/escuro ficava guardada separada em cada ambiente (cada cliente é um domínio) e podia ser apagada pela própria Orpen. Agora ela fica guardada na extensão: vale para todos os ambientes e continua valendo depois de login/logout. Quem já tinha escolhido o claro mantém a escolha. Trocar o tema numa aba muda também nas outras abertas.
 

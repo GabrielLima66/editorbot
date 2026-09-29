@@ -46,7 +46,6 @@
   }
 
   const SELECTOR_EDITAR = 'button[onclick*="editBot("], a[onclick*="editBot("]';
-  const SELECTOR_ADICIONAR = 'a[href="#addBotModal"], a[data-target="#addBotModal"], button[data-target="#addBotModal"]';
   const REGEX_ID = /editBot\(\s*(\d+)\s*\)/;
 
   let bridgePromise = null;
@@ -108,33 +107,6 @@
     true
   );
 
-  // Mesmo padrão do "Editar": intercepta o botão "Adicionar" (abre
-  // #addBotModal — form nativo mínimo id/nome/tempo, sem estados/transições)
-  // e abre o overlay novo já no editor completo, em modo de criação.
-  // Shift+clique preserva o modal nativo como escape hatch.
-  document.addEventListener(
-    'click',
-    function (evento) {
-      const botao = evento.target.closest(SELECTOR_ADICIONAR);
-      if (!botao) return;
-
-      if (evento.shiftKey) return;
-
-      evento.stopImmediatePropagation();
-      evento.preventDefault();
-
-      console.log('[EDITOR_BOT] Interceptado clique em Adicionar — abrindo editor em modo criação.');
-
-      const envData = lerDadosAmbiente();
-
-      carregarBridge()
-        .then((mod) => {
-          mod.abrirEditorOrpenNovo(envData);
-        })
-        .catch((err) => {
-          console.error('[EDITOR_BOT] Falha ao carregar o editor:', err);
-        });
-    },
-    true
-  );
+  // O botão "Adicionar" NÃO é interceptado: bot novo é criado pelo modal
+  // nativo da Orpen (#addBotModal) e depois editado aqui pelo "Editar".
 })();
