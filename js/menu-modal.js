@@ -19,7 +19,7 @@
 
 import { state } from './state.js';
 import { escapeHtml, mostrarToast, setPath } from './utils.js';
-import { getRootNode, criarIcones } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 import {
   parseMenuModel,
   defaultMenuModel,
@@ -455,7 +455,9 @@ export function abrirModalMenu(transitionId, actionId) {
   };
 
   // ---- fechar / salvar
-  const fechar = () => fundo.remove();
+  // Esc = cancelar, esteja o foco onde estiver (pilha de Esc, dom-root.js).
+  const soltarEsc = empilharEsc(() => pedirCancelar());
+  const fechar = () => { fundo.remove(); soltarEsc(); };
   const pedirCancelar = () => {
     if (!houveMudanca()) return fechar();
     $m('.mm-descartar').classList.remove('hidden');
@@ -562,14 +564,6 @@ export function abrirModalMenu(transitionId, actionId) {
       case 'remover-opcao': modelo.options.splice(+btn.dataset.i, 1); desenharConteudo(); break;
       default: break;
     }
-  });
-
-  // Esc = cancelar; stopPropagation pra não chegar no listener do document
-  // que fecha o editor inteiro (orpen-bridge.js).
-  fundo.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    e.stopPropagation();
-    pedirCancelar();
   });
 
   montagem.appendChild(fundo);

@@ -15,7 +15,7 @@
 
 import { state } from './state.js';
 import { $, mostrarToast } from './utils.js';
-import { getRootNode } from './dom-root.js';
+import { getRootNode, empilharEsc } from './dom-root.js';
 
 const PAGINA = chrome.runtime.getURL('vendor/fluxograma/index.html');
 const ORIGEM_EXTENSAO = new URL(chrome.runtime.getURL('')).origin;
@@ -132,21 +132,17 @@ export function confirmarSalvar() {
         </div>
       </div>`;
 
+    // Esc = cancelar, esteja o foco onde estiver (pilha de Esc, dom-root.js).
+    const soltarEsc = empilharEsc(() => fechar(false));
     const fechar = (aceitou) => {
       fundo.remove();
+      soltarEsc();
       resolve(aceitou);
     };
     fundo.addEventListener('click', (e) => {
       const acao = e.target.closest('[data-acao]')?.dataset.acao;
       if (acao) fechar(acao === 'salvar');
       else if (e.target === fundo) fechar(false);
-    });
-    // stopPropagation: o Esc não pode chegar no listener do document que
-    // fecha o editor inteiro (orpen-bridge.js).
-    fundo.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      fechar(false);
     });
 
     montagem.appendChild(fundo);

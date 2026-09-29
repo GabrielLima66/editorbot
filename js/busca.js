@@ -12,7 +12,7 @@
 
 import { state } from './state.js';
 import { escapeHtml } from './utils.js';
-import { getRootNode, criarIcones } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 import { parseMenuModel } from './menu-builder.js';
 import { VARIABLE_LABELS, TEXT_OPERATORS } from './dictionaries.js';
 import { abrirModalMenu } from './menu-modal.js';
@@ -360,9 +360,11 @@ function montarPainel() {
       if (r) { irPara(Number(alvo.dataset.bsMenu), false); abrirModalMenu(r.transicaoId, r.alvo.id); }
     }
   });
-  // Esc fecha só o painel (sem isso o listener do document fecharia o editor).
-  p.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.stopPropagation(); fecharBusca(); }
+  // Esc fecha só o painel, esteja o foco nele ou no editor (pilha de Esc,
+  // dom-root.js). O painel é montado uma vez: com ele fechado, o Esc passa.
+  empilharEsc(() => {
+    if (!busca.aberta || !visivel()) return false;
+    fecharBusca();
   });
   criarIcones();
 }

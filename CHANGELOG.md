@@ -1,5 +1,11 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.6] - 2026-09-29
+* **Salvamento conferido**: depois de salvar, o editor relê o bot na plataforma e confere se o que ficou gravado é o que foi enviado. A Orpen pode responder "sucesso" mesmo quando parte do bot não foi gravada; agora isso aparece como aviso, e o bot continua marcado como não salvo. Se a rede ou o servidor falharem no meio do salvamento, a conferência diz se o bot foi gravado ou não. Condições e ações sem tipo, que a plataforma ignora, passam a ser avisadas ao salvar.
+* **Fechar sem perder alterações**: fechar o editor pelo X, clicando fora ou com Esc agora pergunta antes quando há alterações não salvas, com as opções "Continuar editando", "Descartar" e "Salvar e fechar".
+* **Esc fecha só a janela de cima**: nas janelas de menu, tratamento, fluxograma, Novidades, pendências e no painel de busca, o Esc fecha só aquela janela, mesmo depois de clicar no texto dela. Antes, ele podia fechar o editor inteiro por baixo.
+* **Trocar de bot com segurança**: ao abrir outro bot, o anterior sai da memória na hora, então um salvamento durante o carregamento não grava edições descartadas. Se clicar em "Editar" em dois bots seguidos, vale o último.
+
 ## [0.8.5] - 2026-09-29
 * **Bot novo volta a ser criado pelo sistema**: o botão "Adicionar" da Orpen não abre mais o editor em modo de criação. O bot novo é criado pelo formulário normal da Orpen e depois editado aqui pelo "Editar". Isso acaba com dois problemas: um bot novo em branco travava o "Concluir" da atualização, e logo depois de salvar pela primeira vez o editor dizia que ainda havia alterações não salvas.
 * **Salvar e trocar de bot**: se outro bot for aberto antes de um salvamento terminar, o bot aberto não aparece mais como alterado e as pendências do bot anterior não abrem por cima dele.

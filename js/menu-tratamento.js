@@ -9,7 +9,7 @@
 
 import { state } from './state.js';
 import { escapeHtml, mostrarToast } from './utils.js';
-import { getRootNode, criarIcones } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 import { parseMenuModel } from './menu-builder.js';
 import { temAmbiente, opcoesFilas, opcoesCrmStatus } from './orpen-env.js';
 import {
@@ -287,7 +287,9 @@ export function abrirModalTratamento(transitionId, actionId) {
     desenharPrevia();
   };
 
-  const fechar = () => fundo.remove();
+  // Esc = cancelar, esteja o foco onde estiver (pilha de Esc, dom-root.js).
+  const soltarEsc = empilharEsc(() => fechar());
+  const fechar = () => { fundo.remove(); soltarEsc(); };
   const gerar = () => {
     const tipo = valor('tipo-limite').value;
     const limite = Math.max(1, parseInt(valor('limite').value, 10) || LIMITE_PADRAO);
@@ -318,11 +320,6 @@ export function abrirModalTratamento(transitionId, actionId) {
     if (!btn) return;
     if (btn.dataset.mtAcao === 'cancelar') fechar();
     if (btn.dataset.mtAcao === 'gerar') gerar();
-  });
-  fundo.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    e.stopPropagation();
-    fechar();
   });
 
   const root = getRootNode();

@@ -26,11 +26,11 @@
 
 import { state } from './state.js';
 import { $, mostrarToast } from './utils.js';
-import { setRootNode, criarIcones } from './dom-root.js';
+import { setRootNode, criarIcones, getRootNode, empilharEsc } from './dom-root.js';
 import { avisarSeHouverNovaVersao } from './atualizacao.js';
 import { abrirNovidades } from './novidades.js';
 import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation } from './orpen-adapter.js';
-import { abrirBotView, fecharBotView } from './bot-view-render.js';
+import { abrirBotView, pedirFecharBotView, definirGuardaFechar } from './bot-view-render.js';
 import { initBotViewWiring, listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
 
 const HOST_ID = 'orpen-editor-bot-host';
@@ -341,11 +341,77 @@ function ligarBotoesExtensao(shadowRoot) {
   });
 
   // Esc fecha o overlay — só faz sentido no modo extensão (injetado por
-  // cima de uma tela que já tem o próprio teclado/foco da Orpen).
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
+  // cima de uma tela que já tem o próprio teclado/foco da Orpen). Fica no
+  // fundo da pilha: janelas e painéis abertos por cima tratam o Esc antes.
+  // Com o editor escondido devolve false e o Esc segue pra página.
+  empilharEsc(() => {
     const overlay = shadowRoot.getElementById('bot-view-overlay');
-    if (overlay && !overlay.classList.contains('hidden')) fecharBotView();
+    if (!overlay || overlay.classList.contains('hidden')) return false;
+    pedirFecharBotView();
+  });
+  definirGuardaFechar(confirmarFechar);
+}
+
+// Guarda do fechamento (X, clique fora, Esc): sem alteração não salva, fecha
+// direto; com alteração, pergunta. Resolve true pra fechar.
+let confirmacaoFecharAberta = false;
+function confirmarFechar() {
+  if (!temAlteracoesNaoSalvas()) return true;
+  if (confirmacaoFecharAberta) return false;
+  confirmacaoFecharAberta = true;
+
+  return new Promise((resolve) => {
+    const root = getRootNode();
+    const fundo = document.createElement('div');
+    fundo.className = 'fx-confirmacao';
+    fundo.setAttribute('role', 'dialog');
+    fundo.setAttribute('aria-modal', 'true');
+    fundo.setAttribute('aria-labelledby', 'fc-titulo');
+    fundo.innerHTML = `
+      <div class="fx-confirmacao-painel">
+        <h3 id="fc-titulo" class="fx-confirmacao-titulo">Fechar sem salvar?</h3>
+        <p class="fx-confirmacao-texto">Este bot tem alterações que ainda não foram salvas na plataforma. Se fechar sem salvar, elas serão perdidas.</p>
+        <div class="fx-confirmacao-acoes">
+          <button type="button" data-acao="voltar" class="fx-btn-secundario">Continuar editando</button>
+          <button type="button" data-acao="descartar" class="fx-btn-secundario">Descartar</button>
+          <button type="button" data-acao="salvar" class="fx-btn-primario">Salvar e fechar</button>
+        </div>
+      </div>`;
+
+    const terminar = (fechar) => {
+      fundo.remove();
+      soltarEsc();
+      confirmacaoFecharAberta = false;
+      resolve(fechar);
+    };
+    let salvando = false;
+    const soltarEsc = empilharEsc(() => { if (!salvando) terminar(false); });
+
+    fundo.addEventListener('click', async (e) => {
+      const acao = e.target.closest('[data-acao]')?.dataset.acao;
+      if (!acao) {
+        if (e.target === fundo) terminar(false);
+        return;
+      }
+      if (acao === 'voltar') return terminar(false);
+      if (acao === 'descartar') return terminar(true);
+      // Salvar: o painel some enquanto salva, pra o botão "Salvar" do rodapé
+      // mostrar o andamento. Com erro (o toast já explica) ou com pendências
+      // abertas pelo salvamento, o editor continua aberto.
+      salvando = true;
+      fundo.remove();
+      const ok = await salvarBotNaOrpen();
+      const pendencias = $('#pendencias-overlay');
+      soltarEsc();
+      confirmacaoFecharAberta = false;
+      // Editou algo enquanto salvava? Isso não foi gravado: fica aberto.
+      const editouDurante = ok && temAlteracoesNaoSalvas();
+      if (editouDurante) mostrarToast('Houve alterações durante o salvamento. Salve de novo antes de fechar.');
+      resolve(ok && !editouDurante && (!pendencias || pendencias.classList.contains('hidden')));
+    });
+
+    (root === document ? document.body : root).appendChild(fundo);
+    fundo.querySelector('[data-acao="salvar"]').focus();
   });
 }
 
@@ -361,6 +427,74 @@ function baixarBotJson() {
   a.click();
   URL.revokeObjectURL(url);
   mostrarToast('Backup baixado: ' + nomeArquivo);
+}
+
+async function buscarBotCru(botId) {
+  const res = await fetch('ajax.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+    body: `action=getBot&id=${encodeURIComponent(botId)}`,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  let raw;
+  try {
+    raw = await res.json();
+  } catch {
+    throw new Error('Resposta do servidor não veio em JSON.');
+  }
+  if (!raw || raw.ID === undefined) {
+    throw new Error('Bot não encontrado ou resposta em formato inesperado.');
+  }
+  return raw;
+}
+
+// O "success" do updateBot não garante a gravação: Bot::update
+// (Bot.class.php:199-264) apaga estados/transições/condições/ações e
+// reinsere um a um, mas queryWithVariables não lança erro quando um INSERT
+// falha — só devolve a mensagem —, então o que falhar some e o resto recebe
+// commit, com "success" do mesmo jeito. Aqui o bot é relido e remontado no
+// mesmo payload do envio: se não bater, algo não foi gravado.
+// Condição/ação com tipo 0 (sem tipo) o servidor pula de propósito
+// (`type == 0 → continue`); elas saem do esperado e são contadas à parte.
+async function conferirGravacao(botId, payloadEnviado) {
+  let descartados = 0;
+  const semTipo = (item) => Number(item.type) === 0;
+  const esperado = {
+    ...payloadEnviado,
+    states: payloadEnviado.states.map((s) => ({
+      ...s,
+      transitions: s.transitions.map((t) => {
+        descartados += t.conditions.filter(semTipo).length + t.actions.filter(semTipo).length;
+        return {
+          ...t,
+          conditions: t.conditions.filter((c) => !semTipo(c)),
+          actions: t.actions.filter((a) => !semTipo(a)),
+        };
+      }),
+    })),
+  };
+
+  let raw;
+  try {
+    raw = await buscarBotCru(botId);
+  } catch (err) {
+    console.warn('[EDITOR_BOT] Não foi possível reler o bot para conferir o salvamento:', err);
+    return { resultado: 'sem-conferir', descartados };
+  }
+
+  const gravado = serializeBracketNotation(toUpdateBotPayload(fromGetBotResponse(raw)));
+  const enviado = serializeBracketNotation(esperado);
+  if (gravado === enviado) return { resultado: 'ok', descartados };
+
+  const partesG = gravado.split('&');
+  const partesE = enviado.split('&');
+  const i = partesE.findIndex((p, k) => p !== partesG[k]);
+  console.error('[EDITOR_BOT] Bot gravado difere do enviado. Primeira diferença:', {
+    enviado: decodeURIComponent(partesE[i] ?? '(fim)'),
+    gravado: decodeURIComponent(partesG[i] ?? '(fim)'),
+  });
+  return { resultado: 'diferente', descartados };
 }
 
 // Devolve true se o bot foi gravado, false em qualquer falha — o botão
@@ -391,38 +525,68 @@ async function salvarBotNaOrpen() {
     const payload = toUpdateBotPayload(bot);
     const body = serializeBracketNotation(payload);
 
-    const res = await fetch('ajax.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body,
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    let data;
+    // Falha de rede ou HTTP não diz se gravou: a requisição pode ter chegado
+    // e sido processada. Resposta fora de JSON (aviso/erro do PHP impresso
+    // antes do JSON) também não. Nos três casos a conferência decide.
+    let falhaEnvio = null;
+    let data = null;
     try {
-      data = await res.json();
-    } catch {
-      throw new Error('Resposta do servidor não veio em JSON — provável erro PHP (veja a aba Network).');
+      const res = await fetch('ajax.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body,
+      });
+      if (!res.ok) falhaEnvio = `HTTP ${res.status}`;
+      else {
+        try {
+          data = await res.json();
+        } catch { /* segue pra conferência */ }
+      }
+    } catch (err) {
+      falhaEnvio = err.message;
+      console.error('[EDITOR_BOT] Falha no envio do salvamento:', err);
     }
 
-    if (data && data.status === 'success') {
-      mostrarToast('Bot salvo com sucesso na plataforma.');
-      // Se outro bot foi aberto enquanto este salvava, o que foi gravado não
-      // é referência nem pendência dele.
-      if (state.botCarregado !== bot) return true;
-      // O que acabou de ser gravado é a nova referência de "sem alterações".
-      state.baselineSalvo = body;
-      const pendencias = listarPendencias(bot);
-      if (pendencias.length) abrirPendenciasModal(pendencias);
-      return true;
-    } else {
-      const msg = data && data.message === 'duplicated'
+    if (data && data.status !== 'success') {
+      const msg = data.message === 'duplicated'
         ? 'Conflito: já existe outro bot com esse número.'
-        : (data && data.message) || 'Erro ao salvar (o servidor não deu detalhes).';
+        : data.message || 'Erro ao salvar (o servidor não deu detalhes).';
       mostrarToast('Erro ao salvar: ' + msg);
       return false;
     }
+
+    label.textContent = 'Conferindo…';
+    const conferencia = await conferirGravacao(bot.ID, payload);
+    const motivo = falhaEnvio ? ` (${falhaEnvio})` : '';
+
+    if (conferencia.resultado === 'diferente') {
+      mostrarToast(falhaEnvio
+        ? `Falha ao salvar${motivo}. O bot na plataforma não é o que está no editor: salve de novo antes de fechar.`
+        : 'Atenção: a plataforma respondeu, mas o bot gravado não bate com o enviado. Não feche o editor: baixe o backup (Baixar) e salve de novo.');
+      return false;
+    }
+    if (conferencia.resultado === 'sem-conferir' && (falhaEnvio || !data)) {
+      mostrarToast(`Falha ao salvar${motivo}. Não foi possível confirmar se o bot foi gravado: salve de novo antes de fechar.`);
+      return false;
+    }
+
+    const avisos = [];
+    if (falhaEnvio) avisos.push(`A resposta do servidor falhou${motivo}, mas o bot foi conferido e está salvo.`);
+    else if (conferencia.resultado === 'sem-conferir') avisos.push('Bot salvo, mas não foi possível conferir o que ficou gravado. Para confirmar, reabra o bot.');
+    else avisos.push(conferencia.descartados ? 'Bot salvo.' : 'Bot salvo com sucesso na plataforma.');
+    if (conferencia.descartados) {
+      const n = conferencia.descartados;
+      avisos.push(`${n} ${n === 1 ? 'condição/ação sem tipo foi ignorada' : 'condições/ações sem tipo foram ignoradas'} pela plataforma e não ${n === 1 ? 'aparecerá' : 'aparecerão'} ao reabrir.`);
+    }
+    mostrarToast(avisos.join(' '));
+    // Se outro bot foi aberto enquanto este salvava, o que foi gravado não
+    // é referência nem pendência dele.
+    if (state.botCarregado !== bot) return true;
+    // O que acabou de ser gravado é a nova referência de "sem alterações".
+    state.baselineSalvo = body;
+    const pendencias = listarPendencias(bot);
+    if (pendencias.length) abrirPendenciasModal(pendencias);
+    return true;
   } catch (err) {
     mostrarToast('Falha ao salvar: ' + err.message);
     console.error('[EDITOR_BOT] Falha em salvarBotNaOrpen:', err);
@@ -443,6 +607,7 @@ async function salvarBotNaOrpen() {
 // barata depois da primeira vez); NÃO é idempotente em relação ao fetch do
 // bot — cada chamada busca a versão atual do bot no servidor.
 // ---------------------------------------------------------------------------
+let carregamentoAtual = 0;
 export async function abrirEditorOrpen(botId, envData = null) {
   if (envData) {
     state.ambienteOrpen = envData;
@@ -460,23 +625,17 @@ export async function abrirEditorOrpen(botId, envData = null) {
   if (badge) badge.classList.remove('hidden');
   if (titulo) titulo.textContent = `Carregando bot #${botId}…`;
 
-  try {
-    const res = await fetch('ajax.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: `action=getBot&id=${encodeURIComponent(botId)}`,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  // O bot anterior sai de cena já: enquanto o novo carrega, a tela ainda
+  // mostra o antigo, e um Salvar (ou "Salvar e fechar") ali gravaria edições
+  // que a pessoa descartou ao fechar.
+  state.botCarregado = null;
+  state.baselineSalvo = null;
+  const carregamento = ++carregamentoAtual;
 
-    let raw;
-    try {
-      raw = await res.json();
-    } catch {
-      throw new Error('Resposta do servidor não veio em JSON.');
-    }
-    if (!raw || raw.ID === undefined) {
-      throw new Error('Bot não encontrado ou resposta em formato inesperado.');
-    }
+  try {
+    const raw = await buscarBotCru(botId);
+    // Outro "Editar" foi clicado enquanto este carregava: vale o mais recente.
+    if (carregamento !== carregamentoAtual) return;
 
     if (raw.openai_accounts) {
       if (!state.ambienteOrpen) state.ambienteOrpen = {};
@@ -494,10 +653,11 @@ export async function abrirEditorOrpen(botId, envData = null) {
     atualizarBotaoFluxograma();
     if (titulo) titulo.innerHTML = `Editar Bot <span class="bv-badge-header-id">#${state.botCarregado.ID} — ${state.botCarregado.NAME || '(sem nome)'}</span>`;
   } catch (err) {
+    if (carregamento !== carregamentoAtual) return;
     console.error('[EDITOR_BOT] Falha ao carregar bot:', err);
     mostrarToast('Falha ao carregar bot: ' + err.message);
     overlay.classList.add('hidden');
   } finally {
-    if (badge) badge.classList.add('hidden');
+    if (badge && carregamento === carregamentoAtual) badge.classList.add('hidden');
   }
 }
