@@ -16,16 +16,21 @@ import {
   OPENAI_METHOD_LABELS,
   UPDATE_CONTACT_LABELS,
   VARIABLE_KIND,
+  GRUPOS_VARIAVEL,
+  agruparOpcoes,
 } from './dictionaries.js';
 import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
 import { criarIcones } from './dom-root.js';
+import { fecharCombobox } from './combobox.js';
 import { parseMenuModel, renderMenuBuilderShell, initMenuBuilders } from './menu-builder.js';
 import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariaveis } from './variaveis-builder.js';
 import { renderMenuResumo, renderMenuVazio, menuVazio, tipoDoModal } from './menu-modal.js';
 import {
   temAmbiente, opcoesFilas, opcoesAgentes, opcoesBots, opcoesCrmStatus, opcoesSubStatus,
   opcoesEntrancesEnvio, opcoesScripts, opcoesCheckpoints, opcoesOpenAiContas,
-  opcoesCalendarios, comValorAtual,
+  opcoesCalendarios, comValorAtual, opcoesLabels, temLabels,
+  assistentesOpenAi, opcoesAssistentesDaConta, opcoesContasComAssistentes,
+  opcoesAnexos, temAnexos,
 } from './orpen-env.js';
 
 // Kinds cuja variável cai no switch genérico de check_condition() (Bot.class.php,
@@ -46,6 +51,10 @@ const KINDS_COM_SEMPRE_VERDADEIRO = new Set(['text', 'contact', 'error_count', '
 // KINDS_COM_SEMPRE_VERDADEIRO acima) e garante que o valor atual apareça mesmo
 // se for de um cadastro externo (fila/agente/entrada/calendário) que não
 // temos aqui.
+export const IA_OPERADORES = [{ value: '1', label: 'Status da análise' }, { value: '2', label: 'Conteúdo da análise' }];
+export const IA_STATUS = [{ value: 'success', label: 'Sucesso' }, { value: 'error', label: 'Falha' }];
+export const IA_CONTEUDO = [{ value: '1', label: 'Igual a' }, { value: '2', label: 'Contém' }, { value: '3', label: 'Diferente de' }, { value: '4', label: 'Não contém' }];
+
 export function buildOperatorOptions(kind, currentValue) {
   const sempre = { value: '0', label: 'Sempre verdadeiro (else)' };
   let base;
@@ -58,7 +67,10 @@ export function buildOperatorOptions(kind, currentValue) {
     case 'entrance_type': base = entriesToOptions(ENTRANCE_TYPE_OPERATORS); break;
     case 'sender': base = entriesToOptions(SENDER_OPERATORS); break;
     case 'contact_number': base = entriesToOptions(CONTACT_NUMBER_OPERATORS); break;
-    case 'openai_status': base = [{ value: 'success', label: 'Sucesso' }, { value: 'error', label: 'Erro' }]; break;
+    // Condição de I.A. como no nativo (bot.php:3691-3717): o operador é o
+    // tipo da análise; Sucesso/Falha ou Igual a/Contém… vêm num campo abaixo.
+    case 'openai': base = IA_OPERADORES; break;
+    case 'openai_status': base = IA_STATUS; break;
     case 'openai_text': base = entriesToOptions({ '1': 'Igual a', '2': 'Contém', '3': 'Diferente de', '4': 'Não contém' }); break;
     case 'ref_calendario': base = temAmbiente() ? comValorAtual(opcoesCalendarios(), currentValue) : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]; break;
     case 'ref_fila': base = temAmbiente() ? comValorAtual(opcoesFilas(), currentValue) : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]; break;
@@ -79,23 +91,41 @@ export function buildOperatorOptions(kind, currentValue) {
 export function renderCondicao(c, indice, total) {
   const variable = c.CONDITION_DATA?.variable ?? '';
   const isAssistant = c.CONDITION_DATA && c.CONDITION_DATA.assistant_id !== undefined;
-  const kind = VARIABLE_KIND[variable] || 'text';
+  const iaStatus = isAssistant && variable === 'assistant_analysis_status';
+  const kind = isAssistant ? 'openai' : (VARIABLE_KIND[variable] || 'text');
+  const attrsCond = `data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}"`;
 
-  // Assistente OpenAI: Bot.class.php lê o "status" (success/error) de
-  // CONDITION_DATA.value e o "texto" (igual/contém/etc.) de CONDITION_DATA.type
-  // — nenhum dos dois usa a raiz CONDITION_TYPE (ver bot-engine-spec.md §1 e
-  // Bot.class.php:609-629). mudarCondicaoOperador/mudarCondicaoVariavel
-  // espelham essa mesma leitura na escrita.
-  const currentType = isAssistant
-    ? (variable === 'assistant_analysis_status' ? (c.CONDITION_DATA.value ?? '') : (c.CONDITION_DATA.type ?? ''))
-    : (c.CONDITION_TYPE ?? '');
+  // Assistente OpenAI, no formato do modal nativo (bot.php:3691-3740): a
+  // variável é o assistente ("[Conta] Assistente: Nome"), o operador é o tipo
+  // da análise (Status/Conteúdo) e o detalhe vem abaixo. check_condition lê
+  // o status de CONDITION_DATA.value e o operador de conteúdo de
+  // CONDITION_DATA.type (Bot.class.php:609-629).
+  const currentType = isAssistant ? (iaStatus ? '1' : '2') : (c.CONDITION_TYPE ?? '');
   const operatorOptions = buildOperatorOptions(kind, currentType);
+
+  // Mesmo nome da lista (nome do nativo quando há ambiente).
+  let textoVariavel = nomeVariavelCondicao(variable);
+  let assistantLine = '';
+  if (isAssistant) {
+    const idAssistente = String(c.CONDITION_DATA.assistant_id ?? '');
+    const assistente = assistentesOpenAi().find((a) => a.id === idAssistente);
+    textoVariavel = assistente ? assistente.rotulo : (idAssistente ? `Assistente ${idAssistente} (não encontrado)` : '');
+    const detalheOpcoes = iaStatus ? IA_STATUS : IA_CONTEUDO;
+    const detalheAtual = String((iaStatus ? c.CONDITION_DATA.value : c.CONDITION_DATA.type) ?? '');
+    const detalheTexto = detalheOpcoes.find((o) => o.value === detalheAtual)?.label ?? detalheAtual;
+    const listaId = `ia-detalhe-${c.ID}`;
+    assistantLine = `<div class="mb-1.5"><input type="text" list="${escapeHtml(listaId)}" class="field-view" value="${escapeHtml(detalheTexto)}" data-action="mudar-condicao-ia-detalhe" ${attrsCond}><datalist id="${escapeHtml(listaId)}">${detalheOpcoes.map((o) => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist></div>`;
+  }
 
   const valorBruto = c.CONDITION_DATA?.value ?? '';
   const valor = Array.isArray(valorBruto) ? valorBruto.join(', ') : valorBruto;
-  const assistantLine = isAssistant
-    ? `<p class="estado-empty text-xs mb-1.5">Assistente (ID): ${escapeHtml(c.CONDITION_DATA.assistant_id)}</p>`
-    : '';
+
+  const ehLabels = String(c.CONDITION_TYPE) === '18' && !isAssistant;
+  const esconderValor = iaStatus || ['openai_status', 'ref_calendario', 'ref_fila', 'ref_agente', 'ref_crm_status', 'ref_entrance', 'ref'].includes(kind);
+  const textareaHtml = `<textarea rows="2" class="textarea-view${esconderValor ? ' hidden' : ''}"${ehLabels ? ' placeholder="IDs das labels, separados por vírgula"' : ''} data-action="mudar-condicao-valor" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">${escapeHtml(valor)}</textarea>`;
+  const valorHtml = ehLabels
+    ? campoLabels(null, valorBruto, `data-alvo="condicao" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}"`, textareaHtml)
+    : textareaHtml;
 
   return `
     <div class="condicao-item">
@@ -106,12 +136,12 @@ export function renderCondicao(c, indice, total) {
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex gap-2 mb-1.5">
-            <input type="text" list="variaveis-datalist" class="field-view condicao-variavel flex-1" value="${escapeHtml(VARIABLE_LABELS[variable] || variable)}" data-action="mudar-condicao-variavel" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
+            <input type="text" list="variaveis-datalist" class="field-view condicao-variavel flex-1" value="${escapeHtml(textoVariavel)}"${isAssistant ? ' placeholder="Escolha o assistente"' : ''} data-action="mudar-condicao-variavel" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
             <input type="text" list="operador-datalist-${escapeHtml(c.ID)}" class="field-view condicao-operador flex-1" value="${escapeHtml((operatorOptions.find(o => String(o.value) === String(currentType)) || {}).label ?? '')}" data-action="mudar-condicao-operador" data-kind="${escapeHtml(kind)}" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
             <datalist id="operador-datalist-${escapeHtml(c.ID)}">${operatorOptions.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist>
           </div>
           ${assistantLine}
-          <textarea rows="2" class="textarea-view${['openai_status', 'ref_calendario', 'ref_fila', 'ref_agente', 'ref_crm_status', 'ref_entrance', 'ref'].includes(kind) ? ' hidden' : ''}" data-action="mudar-condicao-valor" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">${escapeHtml(valor)}</textarea>
+          ${valorHtml}
         </div>
         <button type="button" class="item-delete-btn shrink-0" data-action="delete-condicao" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}" title="Excluir condição"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>
       </div>
@@ -193,12 +223,135 @@ export function campoAmbienteSelect(label, optionsFn, transitionId, actionId, ca
     const selectedOpt = opcoes.find(o => String(o.value) === String(selected));
     const textoExibido = selectedOpt ? selectedOpt.label : (selected ?? '');
 
-    const datalistHtml = `<datalist id="${escapeHtml(datalistId)}">${opcoes.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist>`;
+    const datalistHtml = `<datalist id="${escapeHtml(datalistId)}">${opcoes.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}"${o.grupo ? ` data-grupo="${escapeHtml(o.grupo)}"` : ''}>`).join('')}</datalist>`;
     const inputHtml = `<input type="text" list="${escapeHtml(datalistId)}" class="field-view" value="${escapeHtml(textoExibido)}" data-action="mudar-campo-acao-ambiente-buscavel" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`;
 
     return campoBloco(label, inputHtml + datalistHtml);
   }
   return campoTextoEditavel(label + ' (ID)', transitionId, actionId, campo, selected);
+}
+
+// Labels de contato ("Possui os labels" na condição 18 e "Adicionar labels"
+// na ação 16): o motor grava/compara IDs (Bot.class.php:1015, 1518), mas a
+// pessoa escolhe pelo nome, como no select do modal nativo. Cada label
+// escolhida vira um chip com ×; o campo de busca (datalist) adiciona.
+// `alvoAttrs` identifica onde gravar (condição ou ação). Sem a lista de
+// labels (API da Orpen fora, modo avulso), cai no campo de IDs.
+// Mesmo comportamento do select2 múltiplo do modal nativo (bot.php:1136-1174):
+// o campo mostra as labels escolhidas (× remove); clicar abre a lista das que
+// faltam, com busca no topo; escolher uma adiciona e fecha. Eventos em
+// bot-view-interactions.js (abrir-labels, escolher-label, remover-label,
+// busca em data-role="labels-busca").
+export function campoLabels(rotulo, ids, alvoAttrs, fallbackHtml) {
+  if (!temLabels()) return fallbackHtml;
+  const opcoes = opcoesLabels();
+  const selecionadas = (Array.isArray(ids) ? ids : String(ids ?? '').split(',')).map((s) => String(s).trim()).filter(Boolean);
+  const nomeDe = (id) => opcoes.find((o) => o.value === id)?.label ?? `ID ${id} (não encontrada)`;
+  const chips = selecionadas.map((id) => `<span class="label-chip">${escapeHtml(nomeDe(id))}<button type="button" class="label-chip-remover" data-action="remover-label" data-label-id="${escapeHtml(id)}" ${alvoAttrs} title="Remover" aria-label="Remover ${escapeHtml(nomeDe(id))}"><i data-lucide="x" class="w-3 h-3 pointer-events-none"></i></button></span>`).join('');
+  const disponiveis = opcoes.filter((o) => !selecionadas.includes(o.value));
+  const itens = disponiveis.length
+    ? disponiveis.map((o) => `<li><button type="button" class="labels-opcao" data-action="escolher-label" data-label-id="${escapeHtml(o.value)}" data-busca="${escapeHtml(o.label.toLowerCase())}" ${alvoAttrs}>${escapeHtml(o.label)}</button></li>`).join('')
+    : '';
+  const campo = `
+    <div class="labels-campo">
+      <div class="labels-caixa field-view" data-action="abrir-labels" role="button" tabindex="0" aria-haspopup="listbox">${chips}${selecionadas.length ? '' : '<span class="labels-placeholder">Selecione as labels</span>'}</div>
+      <div class="labels-lista hidden">
+        <input type="text" class="field-view labels-busca" data-role="labels-busca" placeholder="Buscar" spellcheck="false" autocomplete="off">
+        <ul role="listbox">${itens}</ul>
+        <p class="labels-sem-resultado${disponiveis.length ? ' hidden' : ''}">Nenhum resultado</p>
+      </div>
+    </div>`;
+  return rotulo ? campoBloco(rotulo, campo) : campo;
+}
+
+// Variáveis que uma condição pode usar, como na lista do modal nativo: as
+// fixas do motor, as do ambiente (bot_variables/ctc_bot_var) e os
+// assistentes OpenAI. As genéricas assistant_analysis_* não aparecem (no
+// nativo a condição de I.A. se escolhe pelo assistente).
+//
+// Na Orpen a lista vem da própria página (bot_variables do nativo, via
+// page-env-collector.js), com os nomes e as regras de exibição do nativo
+// (bot.php:3323-3364): variáveis de script só com a ação "Executar Script"
+// daquele script no bot; as da Automação só com "Executar Automação".
+// Sem ambiente (modo avulso), usa o dicionário fixo.
+function variaveisDoAmbienteCondicao() {
+  return (state.ambienteOrpen?.variables || []).filter((v) => v && v.id && !String(v.id).startsWith('asst_'));
+}
+
+export function opcoesVariavelCondicao(bot = state.botCarregado) {
+  const doAmbiente = variaveisDoAmbienteCondicao();
+  let opcoes;
+  if (!doAmbiente.length) {
+    const fixas = { ...VARIABLE_LABELS };
+    delete fixas.assistant_analysis_status;
+    delete fixas.assistant_analysis_text;
+    opcoes = agruparOpcoes(fixas, GRUPOS_VARIAVEL);
+  } else {
+    const acoes = bot?.BOT_ACTIONS || [];
+    const temAutomacao = acoes.some((a) => String(a.ACTION_TYPE) === '22');
+    const scripts = new Set(acoes.filter((a) => String(a.ACTION_TYPE) === '7').map((a) => String(a.ACTION_DATA?.script_name ?? '')));
+    const grupoFixo = {};
+    GRUPOS_VARIAVEL.forEach(([grupo, chaves]) => chaves.forEach((k) => { grupoFixo[k] = grupo; }));
+    const fixas = [];
+    const doBot = [];
+    const deScripts = [];
+    doAmbiente.forEach((v) => {
+      const item = { value: String(v.id), label: v.name || String(v.id) };
+      if (v.parent === 'automate') {
+        if (temAutomacao) fixas.push({ ...item, grupo: 'Automação' });
+      } else if (v.parent) {
+        if (scripts.has(v.parent)) deScripts.push({ ...item, grupo: 'Scripts' });
+      } else if (VARIABLE_LABELS[v.id] !== undefined) {
+        fixas.push({ ...item, grupo: grupoFixo[v.id] || 'Outras' });
+      } else {
+        doBot.push({ ...item, grupo: 'Variáveis do bot' });
+      }
+    });
+    // Fixas na ordem dos tópicos (GRUPOS_VARIAVEL), depois as do bot e dos scripts.
+    const ordemGrupo = [...GRUPOS_VARIAVEL.map(([g]) => g), 'Outras'];
+    fixas.sort((a, b) => ordemGrupo.indexOf(a.grupo) - ordemGrupo.indexOf(b.grupo));
+    opcoes = [...fixas, ...doBot, ...deScripts];
+  }
+  assistentesOpenAi().forEach((a) => opcoes.push({ value: a.id, label: a.rotulo, grupo: 'Assistentes OpenAI', assistente: true }));
+  return opcoes;
+}
+
+// Nome da variável como aparece na lista; também para as que estão
+// escondidas agora (ex.: script removido do fluxo), para não virar código.
+export function nomeVariavelCondicao(variavel) {
+  const doAmbiente = variaveisDoAmbienteCondicao().find((v) => String(v.id) === String(variavel));
+  return doAmbiente?.name || VARIABLE_LABELS[variavel] || variavel;
+}
+
+// A lista de variáveis depende das ações do bot (scripts e Automação):
+// refeita ao abrir o bot e a cada mudança numa transição.
+export function atualizarListaVariaveisCondicao(bot = state.botCarregado) {
+  const lista = $('#variaveis-datalist');
+  if (!lista) return;
+  lista.innerHTML = opcoesVariavelCondicao(bot)
+    .map((o) => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}" data-grupo="${escapeHtml(o.grupo)}"${o.assistente ? ' data-assistente="1"' : ''}>`)
+    .join('');
+}
+
+// Ação "Enviar mensagem de áudio" (20), igual ao modal nativo
+// (bot.php:4521-4583): vozes da OpenAI agrupadas por idioma e botão para
+// ouvir o exemplo. Só o nome da voz é gravado (model_audio); o idioma serve
+// para escolher qual exemplo tocar, como no nativo.
+export const AUDIO_VOZES = ['alloy', 'echo', 'fable', 'nova', 'onyx', 'shimmer'];
+export const AUDIO_IDIOMAS = [{ rotulo: 'Português', pasta: 'pt' }, { rotulo: 'Inglês', pasta: 'us' }, { rotulo: 'Espanhol', pasta: 'es' }];
+export const AUDIO_MODELOS = [{ value: 'tts-1', label: 'TTS-1' }, { value: 'tts-1-hd', label: 'TTS-1-HD' }];
+
+function campoVozAudio(a, voz) {
+  const atual = voz || AUDIO_VOZES[0];
+  let marcada = false;
+  const grupos = AUDIO_IDIOMAS.map((idioma) => `<optgroup label="${escapeHtml(idioma.rotulo)}">${AUDIO_VOZES.map((v) => {
+    // Mesma voz aparece nos três idiomas; marca só a primeira, como o .val() do nativo.
+    const sel = !marcada && v === atual;
+    if (sel) marcada = true;
+    return `<option value="${escapeHtml(v)}" data-pasta="${escapeHtml(idioma.pasta)}"${sel ? ' selected' : ''}>${escapeHtml(v)}</option>`;
+  }).join('')}</optgroup>`).join('');
+  const extra = marcada ? '' : `<option value="${escapeHtml(atual)}" selected>${escapeHtml(atual)}</option>`;
+  return campoBloco('Voz', `<div class="flex gap-2"><select class="field-view flex-1" data-action="mudar-campo-acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}" data-campo="model_audio">${extra}${grupos}</select><button type="button" class="ir-para-estado-btn shrink-0" data-action="ouvir-voz" title="Ouvir exemplo da voz" aria-label="Ouvir exemplo da voz"><i data-lucide="play" class="w-4 h-4 pointer-events-none"></i></button></div>`);
 }
 
 // ACTION_DATA em branco pra cada tipo, usado quando o usuário troca o tipo de
@@ -224,7 +377,7 @@ export function defaultActionData(tipo) {
     case '17': return { send_file: '' };
     case '18': return { openai: 'call_assistant', openai_account: '', assistant_id: '', assistant_content: '', callback_state: '' };
     case '19': return { protocol_note: '' };
-    case '20': return { message_content: '', callback_state: '', fallback_state: '', model_audio: '', model_openai: '', speed: '' };
+    case '20': return { message_content: '', callback_state: '', fallback_state: '', model_audio: 'alloy', model_openai: 'tts-1', speed: '1' };
     case '21': return { contact_item_type: 'EMAIL', message_text: '' };
     case '22': return { url: '', payload: '', callback_state: '', fallback_state: '', timeout: '' };
     default: return {};
@@ -245,7 +398,10 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       // Ação nativa "Transf. Agente" (Action 4) na Orpen popula tanto agentes
       // quanto bots no mesmo select (ver optGroupAgents/optGroupBots em
       // ContactCenter/bot.php:3820-3840) — replica aqui pra manter paridade.
-      corpo = campoAmbienteSelect('Agente / bot destino', () => [...opcoesAgentes(), ...opcoesBots()], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
+      corpo = campoAmbienteSelect('Agente / bot destino', () => [
+        ...opcoesAgentes().map((o) => ({ ...o, grupo: 'Agentes' })),
+        ...opcoesBots().map((o) => ({ ...o, grupo: 'Bots' })),
+      ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
       break;
     case '5':
       // Fila é o destino mais comum, mas o campo historicamente aceita
@@ -307,17 +463,30 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       break;
     case '16':
       corpo = campoBuscavel('Campo a atualizar', UPDATE_CONTACT_LABELS, 'update-contact-datalist', a.TRANSITION_ID, a.ID, 'update_contact_value', d.update_contact_value)
-        + (d.labels !== undefined ? campoTextoEditavel('Labels (separadas por vírgula)', a.TRANSITION_ID, a.ID, 'labels', Array.isArray(d.labels) ? d.labels.join(', ') : d.labels) : '')
+        + (d.labels !== undefined
+          ? campoLabels(
+            'Labels',
+            d.labels,
+            `data-alvo="acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}"`,
+            campoTextoEditavel('IDs das labels (separados por vírgula)', a.TRANSITION_ID, a.ID, 'labels', Array.isArray(d.labels) ? d.labels.join(', ') : d.labels),
+          )
+          : '')
         + (d.contact_item_type !== undefined ? campoSelectEditavel('Tipo de contato', [{ value: 'phone', label: 'Telefone' }, { value: 'email', label: 'E-mail' }], a.TRANSITION_ID, a.ID, 'contact_item_type', d.contact_item_type) : '')
         + (d.message_text !== undefined ? campoTextoEditavel('Valor', a.TRANSITION_ID, a.ID, 'message_text', d.message_text) : '');
       break;
     case '17':
-      corpo = campoTextoEditavel('Arquivo (ID)', a.TRANSITION_ID, a.ID, 'send_file', d.send_file);
+      // Lista de anexos do bot como no nativo (bot.php:4348-4386); o campo de
+      // ID só aparece se a lista não carregou.
+      corpo = temAnexos()
+        ? campoAmbienteSelect('Arquivo', opcoesAnexos, a.TRANSITION_ID, a.ID, 'send_file', d.send_file)
+        : campoTextoEditavel('Arquivo (ID)', a.TRANSITION_ID, a.ID, 'send_file', d.send_file);
       break;
     case '18':
       corpo = campoSelectEditavel('Método', entriesToOptions(OPENAI_METHOD_LABELS), a.TRANSITION_ID, a.ID, 'openai', d.openai)
-        + campoAmbienteSelect('Conta OpenAI', opcoesOpenAiContas, a.TRANSITION_ID, a.ID, 'openai_account', d.openai_account)
-        + campoTextoEditavel('Assistente (ID)', a.TRANSITION_ID, a.ID, 'assistant_id', d.assistant_id)
+        // Como no nativo (bot.php:4419-4449): conta (só as que têm
+        // assistentes) e depois o assistente daquela conta.
+        + campoAmbienteSelect('Conta OpenAI', opcoesContasComAssistentes, a.TRANSITION_ID, a.ID, 'openai_account', d.openai_account)
+        + campoAmbienteSelect('Assistente', () => opcoesAssistentesDaConta(d.openai_account), a.TRANSITION_ID, a.ID, 'assistant_id', d.assistant_id)
         + campoEstadoLivre('Estado de callback', estadoPorNumero, a.TRANSITION_ID, a.ID, 'callback_state', d.callback_state)
         + campoAreaEditavel('Conteúdo', a.TRANSITION_ID, a.ID, 'assistant_content', d.assistant_content, 3, true);
       break;
@@ -325,10 +494,12 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       corpo = campoAreaEditavel('Nota', a.TRANSITION_ID, a.ID, 'protocol_note', d.protocol_note, 2);
       break;
     case '20':
-      corpo = campoAreaEditavel('Conteúdo (TTS)', a.TRANSITION_ID, a.ID, 'message_content', d.message_content, 2)
-        + campoEstadoLivre('Estado de retorno', estadoPorNumero, a.TRANSITION_ID, a.ID, 'callback_state', d.callback_state)
-        + campoEstadoLivre('Estado de falha', estadoPorNumero, a.TRANSITION_ID, a.ID, 'fallback_state', d.fallback_state)
-        + campoTextoEditavel('Velocidade', a.TRANSITION_ID, a.ID, 'speed', d.speed);
+      corpo = campoVozAudio(a, d.model_audio)
+        + campoSelectEditavel('Modelo', AUDIO_MODELOS, a.TRANSITION_ID, a.ID, 'model_openai', d.model_openai || AUDIO_MODELOS[0].value)
+        + campoBloco('Velocidade (0,25 a 4)', `<input type="number" step=".01" min=".25" max="4" class="field-view" value="${escapeHtml(d.speed || '1')}" data-action="mudar-campo-acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}" data-campo="speed">`)
+        + campoAreaEditavel('Mensagem', a.TRANSITION_ID, a.ID, 'message_content', d.message_content, 2)
+        + campoEstadoLivre('Estado de retorno (callback)', estadoPorNumero, a.TRANSITION_ID, a.ID, 'callback_state', d.callback_state)
+        + campoEstadoLivre('Estado de falha (fallback)', estadoPorNumero, a.TRANSITION_ID, a.ID, 'fallback_state', d.fallback_state);
       break;
     case '21':
       corpo = campoSelectEditavel('Tipo', [{ value: 'EMAIL', label: 'E-mail' }, { value: 'PHONE', label: 'Telefone' }], a.TRANSITION_ID, a.ID, 'contact_item_type', d.contact_item_type)
@@ -543,15 +714,12 @@ export function abrirBotView(bot) {
   $('#bv-estados-datalist').innerHTML = estados.map(e => `<option value="${escapeHtml(e.STATE_NUMBER)} - ${escapeHtml(e.ALIAS)}">`).join('');
 
   // Atualiza as variáveis na datalist combinando o dicionário fixo com as variáveis do ambiente
-  const dictVariaveis = { ...VARIABLE_LABELS };
-  if (state.ambienteOrpen && state.ambienteOrpen.variables) {
-    state.ambienteOrpen.variables.forEach(v => {
-      if (v.id && !dictVariaveis[v.id]) {
-        dictVariaveis[v.id] = v.name || v.id;
-      }
-    });
-  }
-  $('#variaveis-datalist').innerHTML = entriesToOptions(dictVariaveis).map(o => `<option value="${escapeHtml(o.label)}">`).join('');
+  // Condição de I.A.: como no modal nativo (bot.php:3491-3500), cada
+  // assistente das contas OpenAI entra na lista como "[Conta] Assistente:
+  // Nome", no lugar das entradas genéricas assistant_analysis_*.
+  // Cada <option> leva a chave em data-value (a escolha é conferida por ela,
+  // em mudar-condicao-variavel) e o tópico em data-grupo.
+  atualizarListaVariaveisCondicao(bot);
   atualizarDatalistsVariaveis(bot);
 
   $('#bv-numero').value = bot.ID ?? '';
@@ -624,6 +792,7 @@ export async function pedirFecharBotView() {
 }
 
 export function fecharBotView() {
+  fecharCombobox();
   $('#bot-view-overlay').classList.add('hidden');
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';

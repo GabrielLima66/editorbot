@@ -64,6 +64,10 @@
   // <script id="__orpen_bot_env_data__" type="application/json"> no <head>;
   // aqui só lemos esse elemento, que já é texto plano — sem eval, sem inline.
   function lerDadosAmbiente() {
+    // Pede ao coletor (page-env-collector.js, contexto da página) para
+    // refazer a coleta agora: variáveis do bot e de scripts chegam por ajax
+    // depois do carregamento. O evento é síncrono entre os dois contextos.
+    try { document.dispatchEvent(new CustomEvent('__ORPEN_REQ_ENV_DATA__')); } catch (e) { /* segue com o que tiver */ }
     const el = document.getElementById('__orpen_bot_env_data__');
     if (!el) {
       console.warn('[EDITOR_BOT] page-env-collector.js ainda não gravou os dados do ambiente (elemento não encontrado).');

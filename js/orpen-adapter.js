@@ -138,6 +138,37 @@ export function fromGetBotResponse(getBotJson) {
 // diff parcial. Não é tudo-ou-nada: INSERT que falha é ignorado e o resto
 // recebe commit — por isso salvarBotNaOrpen relê o bot e confere.
 // ---------------------------------------------------------------------------
+// Áudio (20): o modal nativo sempre grava o que os seletores mostram — voz
+// "alloy" e modelo "tts-1" quando ninguém mexeu, velocidade 1 quando vazia
+// (bot.php:2453-2455, 4539-4580) —, e o motor repassa tudo direto pro
+// texto-para-voz (Bot.class.php:1706-1711).
+function dadosDaAcao(a) {
+  const d = a.ACTION_DATA || {};
+  if (String(a.ACTION_TYPE) !== '20') return d;
+  if (d.speed && d.model_audio && d.model_openai) return d;
+  return { ...d, speed: d.speed || '1', model_audio: d.model_audio || 'alloy', model_openai: d.model_openai || 'tts-1' };
+}
+
+// Condição do assistente OpenAI: a raiz é 1 (status) ou 2 (conteúdo), como o
+// modal nativo grava (bot.php:2317, 3694-3697); o operador fica no data.
+// Corrige também condições salvas antes com o operador na raiz.
+function tipoDaCondicao(c) {
+  const variavel = c.CONDITION_DATA?.variable;
+  if (variavel === 'assistant_analysis_status') return 1;
+  if (variavel === 'assistant_analysis_text') return 2;
+  return isNaN(Number(c.CONDITION_TYPE)) ? (c.CONDITION_TYPE || 0) : Number(c.CONDITION_TYPE);
+}
+
+// "Possui os labels" (18): o valor é uma lista de IDs (o motor faz foreach,
+// Bot.class.php:1011-1023). Corrige também condições salvas antes como texto.
+function dadosDaCondicao(c) {
+  const d = c.CONDITION_DATA || {};
+  if (String(c.CONDITION_TYPE) === '18' && d.value !== undefined && !Array.isArray(d.value)) {
+    return { ...d, value: String(d.value ?? '').split(',').map((s) => s.trim()).filter(Boolean) };
+  }
+  return d;
+}
+
 export function toUpdateBotPayload(bot) {
   const transicoesPorEstado = agruparPor(bot.BOT_TRANSITIONS, 'STATE');
   const condicoesPorTransicao = agruparPor(bot.BOT_CONDITIONS, 'TRANSITION_ID');
@@ -159,12 +190,12 @@ export function toUpdateBotPayload(bot) {
         return {
           priority: parseInt(t.PRIORITY, 10) || 0,
           conditions: condicoes.map((c) => ({
-            type: isNaN(Number(c.CONDITION_TYPE)) ? (c.CONDITION_TYPE || 0) : Number(c.CONDITION_TYPE),
-            data: c.CONDITION_DATA || {},
+            type: tipoDaCondicao(c),
+            data: dadosDaCondicao(c),
           })),
           actions: acoes.map((a) => ({
             type: parseInt(a.ACTION_TYPE, 10) || 0,
-            data: a.ACTION_DATA || {},
+            data: dadosDaAcao(a),
           })),
         };
       }),
@@ -199,6 +230,30 @@ export function toUpdateBotPayload(bot) {
     actionForm: 'edit',
     states,
   };
+}
+
+// O que Bot::update grava de um payload: condição/ação com tipo 0 (sem tipo)
+// é pulada de propósito (`type == 0 → continue`, Bot.class.php:227/240).
+// Serve de referência pra conferir a gravação relendo o bot (getBot →
+// fromGetBotResponse → toUpdateBotPayload deve dar exatamente isto).
+export function payloadEsperadoNoServidor(payload) {
+  let descartados = 0;
+  const semTipo = (item) => Number(item.type) === 0;
+  const esperado = {
+    ...payload,
+    states: payload.states.map((s) => ({
+      ...s,
+      transitions: s.transitions.map((t) => {
+        descartados += t.conditions.filter(semTipo).length + t.actions.filter(semTipo).length;
+        return {
+          ...t,
+          conditions: t.conditions.filter((c) => !semTipo(c)),
+          actions: t.actions.filter((a) => !semTipo(a)),
+        };
+      }),
+    })),
+  };
+  return { esperado, descartados };
 }
 
 // ---------------------------------------------------------------------------

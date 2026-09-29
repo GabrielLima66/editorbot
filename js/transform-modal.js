@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { $ } from './utils.js';
+import { $, escapeHtml } from './utils.js';
 import { criarIcones } from './dom-root.js';
 import { TRANSFORMACOES } from './transformations.js';
 import { listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
@@ -13,7 +13,7 @@ function renderLista() {
   if (filtradas.length === 0) {
     lista.innerHTML = `
       <li class="h-full flex items-center justify-center text-sm text-[#8b899b] px-6 text-center">
-        ${state.termoBusca ? `Nenhum resultado pra "${state.termoBusca}".` : 'Nenhuma transformação disponível ainda.'}
+        ${state.termoBusca ? `Nenhum resultado pra "${escapeHtml(state.termoBusca)}".` : 'Nenhuma transformação disponível ainda.'}
       </li>`;
     return;
   }

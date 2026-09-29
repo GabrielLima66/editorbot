@@ -127,17 +127,17 @@ export function atualizarDatalistsVariaveis(bot) {
   const rotulos = new Map(ambiente.map((v) => [v.id, v.nome]));
   rotulosCache = rotulos;
 
-  const opcoesValor = [`<option value="${escapeHtml(TOKEN_MENSAGEM)}" label="Mensagem do cliente"></option>`];
+  const opcoesValor = [`<option value="${escapeHtml(TOKEN_MENSAGEM)}" label="Mensagem do cliente" data-grupo="Mensagem"></option>`];
   const vistos = new Set(['message']);
   ambiente.forEach((v) => {
     if (vistos.has(v.id)) return;
     vistos.add(v.id);
-    opcoesValor.push(`<option value="${escapeHtml(`{$${v.id}}`)}" label="${escapeHtml(v.nome)}"></option>`);
+    opcoesValor.push(`<option value="${escapeHtml(`{$${v.id}}`)}" label="${escapeHtml(v.nome)}" data-grupo="Variáveis do ambiente"></option>`);
   });
   [...tokens].sort().forEach((t) => {
     if (vistos.has(t)) return;
     vistos.add(t);
-    opcoesValor.push(`<option value="${escapeHtml(`{$${t}}`)}" label="Usada neste bot"></option>`);
+    opcoesValor.push(`<option value="${escapeHtml(`{$${t}}`)}" data-grupo="Usadas neste bot"></option>`);
   });
   garantir('var-valores-datalist').innerHTML = opcoesValor.join('');
 
@@ -145,12 +145,12 @@ export function atualizarDatalistsVariaveis(bot) {
   const nomesVistos = new Set();
   [...nomes].sort().forEach((n) => {
     nomesVistos.add(n);
-    opcoesNome.push(`<option value="${escapeHtml(n)}" label="Gravada neste bot"></option>`);
+    opcoesNome.push(`<option value="${escapeHtml(n)}" data-grupo="Gravadas neste bot"></option>`);
   });
   ambiente.forEach((v) => {
     if (nomesVistos.has(v.id)) return;
     nomesVistos.add(v.id);
-    opcoesNome.push(`<option value="${escapeHtml(v.id)}" label="${escapeHtml(v.nome)}"></option>`);
+    opcoesNome.push(`<option value="${escapeHtml(v.id)}" label="${escapeHtml(v.nome)}" data-grupo="Variáveis do ambiente"></option>`);
   });
   garantir('var-nomes-datalist').innerHTML = opcoesNome.join('');
 }
