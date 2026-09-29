@@ -4,7 +4,7 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Aviso de estados renumerados e travas do "Salvar" nativo (**v0.8.7**, 29/09/2026). Antes: salvamento conferido relendo o bot, guarda de fechamento e pilha de Esc (v0.8.6). Motor da Orpen relê o bot a cada ciclo (cache 60 s) e o atendimento guarda só o número do estado: edições valem para quem está no meio do fluxo. Pendente no servidor Orpen (fora do escopo, só leitura): Bot::update grava parcial com "success"; confirmar max_input_vars (bot grande envia ~2.255 campos)
+- **Fase Atual:** Aviso de entrada do bot alterada (estado 0) no alerta de renumeração (**v0.8.8**, 29/09/2026). Antes: aviso de estados renumerados e travas do "Salvar" nativo (v0.8.7). Antes: salvamento conferido relendo o bot, guarda de fechamento e pilha de Esc (v0.8.6). Motor da Orpen relê o bot a cada ciclo (cache 60 s) e o atendimento guarda só o número do estado: edições valem para quem está no meio do fluxo. Pendente no servidor Orpen (fora do escopo, só leitura): Bot::update grava parcial com "success"; confirmar max_input_vars (bot grande envia ~2.255 campos)
 - **Última Tarefa Concluída:** Aviso de versão nova (branch `release` do GitHub), Atualizar.bat e recarga automática da extensão (validada no Chrome real). Ao fechar versão: `git push origin main:release`
 - **Próxima Tarefa em Aberto:** Fase 3 do tratamento (atualizar tratamento) e Fase 2 da busca (substituir), quando pedidas
 
