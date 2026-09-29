@@ -1,5 +1,9 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.7] - 2026-09-29
+* **Aviso de estados renumerados**: arrastar, duplicar ou excluir estados muda o número dos outros. Cada atendimento em andamento guarda só o número do estado em que o cliente está, então, até 1 minuto depois de salvar, quem estiver num número que mudou passa a seguir outro estado. Agora, ao salvar, o editor mostra um aviso em vermelho com a lista dos estados que mudaram de número ou foram excluídos, lembra que configurações fora do bot (como o failover de uma entrada com destino "estado") não são atualizadas e pede confirmação. Editar textos, condições e ações sem mudar a numeração não mostra aviso.
+* **Mesmas travas do "Salvar" nativo**: o editor não salva mais um bot que a Orpen recusaria: nome com mais de 50 caracteres, JSON inválido em Menu (Mensagem Options), Formulário, Armazenar variável ou no payload da Automação, e I.A. no fluxo sem a "Conta para transcrição de áudio". A mensagem diz em qual estado e transição está o problema.
+
 ## [0.8.6] - 2026-09-29
 * **Salvamento conferido**: depois de salvar, o editor relê o bot na plataforma e confere se o que ficou gravado é o que foi enviado. A Orpen pode responder "sucesso" mesmo quando parte do bot não foi gravada; agora isso aparece como aviso, e o bot continua marcado como não salvo. Se a rede ou o servidor falharem no meio do salvamento, a conferência diz se o bot foi gravado ou não. Condições e ações sem tipo, que a plataforma ignora, passam a ser avisadas ao salvar.
 * **Fechar sem perder alterações**: fechar o editor pelo X, clicando fora ou com Esc agora pergunta antes quando há alterações não salvas, com as opções "Continuar editando", "Descartar" e "Salvar e fechar".

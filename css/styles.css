@@ -750,6 +750,28 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 .fx-btn-secundario:focus-visible,
 .fx-btn-primario:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+/* Aviso de renumeração de estados (orpen-bridge.js, confirmarRenumeracao):
+   mesmo painel, com borda e título de alerta pra não passar como confirmação comum. */
+.fx-alerta { max-width: 520px; border: 2px solid var(--alerta-perigo); }
+.fx-alerta-titulo { color: var(--alerta-perigo); }
+.fx-alerta .fx-confirmacao-texto + .fx-confirmacao-texto,
+.fx-alerta-lista + .fx-confirmacao-texto { margin-top: 10px; }
+.fx-alerta-lista {
+  margin: 12px 0 0;
+  padding: 10px 12px 10px 28px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--alerta-bloqueio-texto);
+  background: var(--alerta-bloqueio-bg);
+  border: 1px solid var(--alerta-bloqueio-borda);
+  border-radius: 8px;
+}
+.fx-alerta-dica { color: var(--text); font-weight: 500; }
+.fx-btn-primario.fx-btn-perigo { background: var(--alerta-perigo); border-color: var(--alerta-perigo); }
+.fx-btn-primario.fx-btn-perigo:hover { background: var(--alerta-perigo-hover); }
+
 /* ---- Tema claro: botão de alternância e detalhes (SPEC-tema-claro.md) ---- */
 /* ✓ decorativo do header do estado: vinha só do text-white do Tailwind
    (sumia no claro). Mesma cor no escuro, via token. */

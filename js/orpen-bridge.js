@@ -25,12 +25,13 @@
 // ---------------------------------------------------------------------------
 
 import { state } from './state.js';
-import { $, mostrarToast } from './utils.js';
+import { $, mostrarToast, escapeHtml } from './utils.js';
 import { setRootNode, criarIcones, getRootNode, empilharEsc } from './dom-root.js';
 import { avisarSeHouverNovaVersao } from './atualizacao.js';
 import { abrirNovidades } from './novidades.js';
 import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation } from './orpen-adapter.js';
-import { abrirBotView, pedirFecharBotView, definirGuardaFechar } from './bot-view-render.js';
+import { abrirBotView, pedirFecharBotView, definirGuardaFechar, lerContaTranscricao } from './bot-view-render.js';
+import { ACTION_TYPE_LABELS } from './dictionaries.js';
 import { initBotViewWiring, listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
 
 const HOST_ID = 'orpen-editor-bot-host';
@@ -497,6 +498,129 @@ async function conferirGravacao(botId, payloadEnviado) {
   return { resultado: 'diferente', descartados };
 }
 
+// Mesmas travas do "Salvar" do modal nativo (bot.php:2299-2544), que a
+// Orpen nunca deixou passar: JSON inválido nas ações 10/11/13 (e no payload
+// da 22, quando preenchido) quebra o bot em execução; nome acima de 50
+// caracteres não cabe (o UPDATE do bot falha e o resto é gravado assim
+// mesmo); IA no fluxo (18 chamando assistente, ou 20) exige conta de
+// transcrição de áudio. Devolve a primeira falha em texto, ou null.
+const CAMPO_JSON_OBRIGATORIO = { '10': 'message_option_text', '11': 'message_option_form', '13': 'bot_variables_text' };
+
+function problemaAntesDeSalvar(bot) {
+  if (String(bot.NAME).length > 50) return 'o nome do bot passa de 50 caracteres.';
+
+  const estadoPorNumero = {};
+  (bot.BOT_STATES || []).forEach((s) => { estadoPorNumero[s.STATE_NUMBER] = s; });
+  const transicaoPorId = {};
+  (bot.BOT_TRANSITIONS || []).forEach((t) => { transicaoPorId[t.ID] = t; });
+  const onde = (a) => {
+    const t = transicaoPorId[a.TRANSITION_ID];
+    if (!t) return '';
+    const e = estadoPorNumero[t.STATE];
+    return ` no estado ${t.STATE}${e?.ALIAS ? ` "${e.ALIAS}"` : ''}, transição ${t.PRIORITY}`;
+  };
+  const jsonInvalido = (v) => {
+    if (typeof v !== 'string') return v == null;
+    try { JSON.parse(v); return false; } catch { return true; }
+  };
+
+  const acoes = (bot.BOT_ACTIONS || []).filter((a) => transicaoPorId[a.TRANSITION_ID]);
+  let usaIa = false;
+  for (const a of acoes) {
+    const d = a.ACTION_DATA || {};
+    const rotulo = ACTION_TYPE_LABELS[a.ACTION_TYPE] || `tipo ${a.ACTION_TYPE}`;
+    const campo = CAMPO_JSON_OBRIGATORIO[a.ACTION_TYPE];
+    if (campo && jsonInvalido(d[campo])) return `a ação "${rotulo}"${onde(a)} está vazia ou com JSON inválido.`;
+    if (a.ACTION_TYPE === '22' && d.payload && jsonInvalido(d.payload)) return `o payload da ação "${rotulo}"${onde(a)} não é um JSON válido.`;
+    if ((a.ACTION_TYPE === '18' && d.openai === 'call_assistant') || a.ACTION_TYPE === '20') usaIa = true;
+  }
+  if (usaIa && !lerContaTranscricao(bot)) {
+    return 'o bot usa I.A. no fluxo, então é preciso selecionar a "Conta para transcrição de áudio" nos dados do bot.';
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Renumeração de estados. Cada atendimento em andamento guarda só o NÚMERO do
+// estado em que o cliente está (ctc_attendance.bot_state), e o motor relê o
+// bot do banco a cada ciclo (Bot.class.php, loadTransitions, cache de 60 s).
+// Arrastar, duplicar ou excluir estados renumera os outros: quem está parado
+// num número que mudou passa a rodar o estado que ficou com aquele número.
+// Configurações fora do bot também guardam número de estado (failover de
+// entrada com destino "estado", Chat.class.php:3977) e não são atualizadas.
+// O editor muta os objetos de estado no lugar (remapStateNumbers), então o
+// próprio objeto identifica o estado entre o último salvamento e agora.
+// ---------------------------------------------------------------------------
+let numerosSalvos = null; // Map<objeto do estado, { numero, alias }>
+
+function registrarNumerosSalvos(bot) {
+  numerosSalvos = new Map((bot.BOT_STATES || []).map((s) => [s, { numero: String(s.STATE_NUMBER), alias: s.ALIAS || '' }]));
+}
+
+function mudancasDeNumero(bot) {
+  if (!numerosSalvos) return null;
+  const atuais = new Set(bot.BOT_STATES || []);
+  const mudados = [];
+  const excluidos = [];
+  numerosSalvos.forEach(({ numero, alias }, estado) => {
+    if (!atuais.has(estado)) excluidos.push({ numero, alias });
+    else if (String(estado.STATE_NUMBER) !== numero) mudados.push({ alias: estado.ALIAS || '', de: numero, para: String(estado.STATE_NUMBER) });
+  });
+  if (!mudados.length && !excluidos.length) return null;
+  const porNumero = (a, b) => parseInt(a.de ?? a.numero, 10) - parseInt(b.de ?? b.numero, 10);
+  return { mudados: mudados.sort(porNumero), excluidos: excluidos.sort(porNumero) };
+}
+
+let renumeracaoAberta = false;
+function confirmarRenumeracao({ mudados, excluidos }) {
+  // Segundo clique em Salvar com o aviso aberto não abre outro.
+  if (renumeracaoAberta) return Promise.resolve(false);
+  renumeracaoAberta = true;
+  return new Promise((resolve) => {
+    const root = getRootNode();
+    const LIMITE = 8;
+    const linhas = [
+      ...excluidos.map((e) => `<li><strong>${escapeHtml(e.alias || '(sem nome)')}</strong> (nº ${escapeHtml(e.numero)}) foi excluído</li>`),
+      ...mudados.map((m) => `<li><strong>${escapeHtml(m.alias || '(sem nome)')}</strong>: nº ${escapeHtml(m.de)} → nº ${escapeHtml(m.para)}</li>`),
+    ];
+    const extras = linhas.length > LIMITE ? `<li>… e mais ${linhas.length - LIMITE}</li>` : '';
+
+    const fundo = document.createElement('div');
+    fundo.className = 'fx-confirmacao';
+    fundo.setAttribute('role', 'alertdialog');
+    fundo.setAttribute('aria-modal', 'true');
+    fundo.setAttribute('aria-labelledby', 'rn-titulo');
+    fundo.innerHTML = `
+      <div class="fx-confirmacao-painel fx-alerta">
+        <h3 id="rn-titulo" class="fx-confirmacao-titulo fx-alerta-titulo">Atenção: estados mudaram de número</h3>
+        <p class="fx-confirmacao-texto">Cada atendimento em andamento guarda <strong>só o número</strong> do estado em que o cliente está. Até 1 minuto depois de salvar, quem estiver parado num destes números passa a seguir o estado que ficou com aquele número, ou fica sem resposta se o número deixar de existir.</p>
+        <ul class="fx-alerta-lista">${linhas.slice(0, LIMITE).join('')}${extras}</ul>
+        <p class="fx-confirmacao-texto">Configurações <strong>fora do bot</strong> que apontam para um número de estado dele, como o failover de uma entrada com destino "estado", <strong>não são atualizadas</strong>: confira-as depois.</p>
+        <p class="fx-confirmacao-texto fx-alerta-dica">Se o bot está em uso agora, prefira salvar fora do horário de atendimento.</p>
+        <div class="fx-confirmacao-acoes">
+          <button type="button" data-acao="cancelar" class="fx-btn-secundario">Cancelar</button>
+          <button type="button" data-acao="salvar" class="fx-btn-primario fx-btn-perigo">Salvar mesmo assim</button>
+        </div>
+      </div>`;
+
+    const terminar = (salvar) => {
+      fundo.remove();
+      soltarEsc();
+      renumeracaoAberta = false;
+      resolve(salvar);
+    };
+    const soltarEsc = empilharEsc(() => terminar(false));
+    fundo.addEventListener('click', (e) => {
+      const acao = e.target.closest('[data-acao]')?.dataset.acao;
+      if (acao) terminar(acao === 'salvar');
+      else if (e.target === fundo) terminar(false);
+    });
+
+    (root === document ? document.body : root).appendChild(fundo);
+    fundo.querySelector('[data-acao="cancelar"]').focus();
+  });
+}
+
 // Devolve true se o bot foi gravado, false em qualquer falha — o botão
 // "Salvar" ignora o retorno; o "Gerar fluxograma" usa pra só gerar depois de
 // salvar com sucesso.
@@ -510,6 +634,16 @@ async function salvarBotNaOrpen() {
     if (input) input.focus();
     return false;
   }
+
+  const problema = problemaAntesDeSalvar(bot);
+  if (problema) {
+    mostrarToast('Não foi possível salvar: ' + problema);
+    return false;
+  }
+
+  const renumeracao = mudancasDeNumero(bot);
+  if (renumeracao && !(await confirmarRenumeracao(renumeracao))) return false;
+  if (state.botCarregado !== bot) return false;
 
   const botaoSalvar = $('#btn-bv-salvar');
   const label = $('#btn-bv-salvar-label');
@@ -584,6 +718,7 @@ async function salvarBotNaOrpen() {
     if (state.botCarregado !== bot) return true;
     // O que acabou de ser gravado é a nova referência de "sem alterações".
     state.baselineSalvo = body;
+    registrarNumerosSalvos(bot);
     const pendencias = listarPendencias(bot);
     if (pendencias.length) abrirPendenciasModal(pendencias);
     return true;
@@ -630,6 +765,7 @@ export async function abrirEditorOrpen(botId, envData = null) {
   // que a pessoa descartou ao fechar.
   state.botCarregado = null;
   state.baselineSalvo = null;
+  numerosSalvos = null;
   const carregamento = ++carregamentoAtual;
 
   try {
@@ -650,6 +786,7 @@ export async function abrirEditorOrpen(botId, envData = null) {
     // Depois do abrirBotView: se o render normalizar algum campo, isso não
     // conta como alteração do usuário.
     state.baselineSalvo = assinaturaBot(state.botCarregado);
+    registrarNumerosSalvos(state.botCarregado);
     atualizarBotaoFluxograma();
     if (titulo) titulo.innerHTML = `Editar Bot <span class="bv-badge-header-id">#${state.botCarregado.ID} — ${state.botCarregado.NAME || '(sem nome)'}</span>`;
   } catch (err) {
