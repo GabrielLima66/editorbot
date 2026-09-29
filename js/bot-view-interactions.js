@@ -1,6 +1,6 @@
 import { state } from './state.js';
-import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO } from './dictionaries.js';
-import { $, escapeHtml, resolverPorLabel, resolverPorLabelLista, entriesToOptions } from './utils.js';
+import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO, GRUPOS_ACAO, agruparOpcoes } from './dictionaries.js';
+import { $, escapeHtml, resolverPorLabel, resolverPorLabelLista, entriesToOptions, mostrarToast } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 import {
   buildOperatorOptions,
@@ -11,6 +11,7 @@ import {
   renderPainelBloqueio,
   renderPainelConfirmacao,
   abrirBotView,
+  atualizarListaVariaveisCondicao,
   pedirFecharBotView,
   atualizarSecaoDestino,
   lerContaTranscricao,
@@ -21,6 +22,8 @@ import { initVariaveisBuilders } from './variaveis-builder.js';
 import { abrirModalMenu } from './menu-modal.js';
 import { abrirModalTratamento } from './menu-tratamento.js';
 import { initBusca } from './busca.js';
+import { initCombobox, datalistDe } from './combobox.js';
+import { assistentesOpenAi } from './orpen-env.js';
 import { mostrarResumoBot } from './upload.js';
 
 // ---------------------------------------------------------------------------
@@ -272,46 +275,123 @@ export function excluirCondicao(bot, transitionId, conditionId) {
 // usuário ajusta se precisar. CONDITION_TYPE sempre fica no nível raiz da
 // condição (não dentro de CONDITION_DATA), mesmo formato usado pelo resto
 // do arquivo (renderCondicao já lê de lá pro caso não-assistente).
+// Condições do assistente OpenAI seguem o formato do modal nativo
+// (bot.php:2328-2337, 3691-3740): CONDITION_TYPE na raiz é 1 (status da
+// análise) ou 2 (conteúdo da análise); o operador de fato vai em
+// CONDITION_DATA.value (success/error) ou CONDITION_DATA.type (1-4), que é o
+// que check_condition lê (Bot.class.php:609-629). Gravar o operador na raiz
+// deixava o seletor do nativo em branco, e um Salvar por lá descartava a
+// condição (tipo 0).
+export function tipoRaizAssistente(variavel) {
+  if (variavel === 'assistant_analysis_status') return '1';
+  if (variavel === 'assistant_analysis_text') return '2';
+  return null;
+}
+
 export function mudarCondicaoVariavel(bot, transitionId, conditionId, novaVariavel) {
   const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === conditionId);
   if (!cond) return;
   cond.CONDITION_DATA = { ...cond.CONDITION_DATA, variable: novaVariavel };
-  if (novaVariavel.startsWith('assistant_analysis_')) {
-    if (cond.CONDITION_DATA.assistant_id === undefined) {
-      cond.CONDITION_DATA.assistant_id = '';
-    }
-  }
   const kind = VARIABLE_KIND[novaVariavel] || 'text';
   const primeiroTipo = buildOperatorOptions(kind, '')[0]?.value ?? '';
-  cond.CONDITION_TYPE = primeiroTipo;
-  if (cond.CONDITION_DATA && cond.CONDITION_DATA.assistant_id !== undefined) {
+  const raizAssistente = tipoRaizAssistente(novaVariavel);
+  if (raizAssistente) {
+    if (cond.CONDITION_DATA.assistant_id === undefined) cond.CONDITION_DATA.assistant_id = '';
+    cond.CONDITION_TYPE = raizAssistente;
     if (novaVariavel === 'assistant_analysis_status') {
       cond.CONDITION_DATA.value = primeiroTipo;
+      delete cond.CONDITION_DATA.type;
     } else {
       cond.CONDITION_DATA.type = primeiroTipo;
     }
+  } else {
+    // Saiu do assistente: os campos dele deixam de valer (e fariam a tela
+    // continuar tratando a condição como de assistente).
+    delete cond.CONDITION_DATA.assistant_id;
+    delete cond.CONDITION_DATA.type;
+    cond.CONDITION_TYPE = primeiroTipo;
   }
   withMirrors('condition', cond);
 }
 
+// Condição de I.A.: o operador é o tipo da análise, como no nativo
+// ('1' Status da análise, '2' Conteúdo da análise; bot.php:3694-3737).
+// Trocar para Status começa em Sucesso; para Conteúdo começa em "Igual a"
+// com o texto limpo (o nativo limpa o textarea na troca).
 export function mudarCondicaoOperador(bot, transitionId, conditionId, novoTipo) {
   const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === conditionId);
   if (!cond) return;
-  cond.CONDITION_TYPE = novoTipo;
-  if (cond.CONDITION_DATA && cond.CONDITION_DATA.assistant_id !== undefined) {
-    if (cond.CONDITION_DATA.variable === 'assistant_analysis_status') {
-      cond.CONDITION_DATA.value = novoTipo;
+  if (tipoRaizAssistente(cond.CONDITION_DATA?.variable)) {
+    const d = cond.CONDITION_DATA;
+    if (String(novoTipo) === '1') {
+      if (d.variable !== 'assistant_analysis_status') {
+        cond.CONDITION_DATA = { variable: 'assistant_analysis_status', value: 'success', assistant_id: d.assistant_id ?? '' };
+      }
+      cond.CONDITION_TYPE = '1';
     } else {
-      cond.CONDITION_DATA.type = novoTipo;
+      if (d.variable !== 'assistant_analysis_text') {
+        cond.CONDITION_DATA = { variable: 'assistant_analysis_text', type: '1', value: '', assistant_id: d.assistant_id ?? '' };
+      }
+      cond.CONDITION_TYPE = '2';
     }
+  } else {
+    cond.CONDITION_TYPE = novoTipo;
   }
   withMirrors('condition', cond);
+}
+
+// Detalhe da condição de I.A.: Sucesso/Falha (status, em data.value) ou o
+// operador do conteúdo (Igual a/Contém…, em data.type).
+export function mudarCondicaoIaDetalhe(bot, transitionId, conditionId, valor) {
+  const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === conditionId);
+  if (!cond || !tipoRaizAssistente(cond.CONDITION_DATA?.variable)) return;
+  const campo = cond.CONDITION_DATA.variable === 'assistant_analysis_status' ? 'value' : 'type';
+  cond.CONDITION_DATA = { ...cond.CONDITION_DATA, [campo]: valor };
+}
+
+// Escolher um assistente na variável da condição (como na lista do nativo).
+// Se a condição já era de I.A., só troca o assistente; senão vira "Status da
+// análise: Sucesso", o padrão do nativo.
+export function mudarCondicaoParaAssistente(bot, transitionId, conditionId, assistenteId) {
+  const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === conditionId);
+  if (!cond) return;
+  if (tipoRaizAssistente(cond.CONDITION_DATA?.variable)) {
+    cond.CONDITION_DATA = { ...cond.CONDITION_DATA, assistant_id: String(assistenteId) };
+  } else {
+    cond.CONDITION_DATA = { variable: 'assistant_analysis_status', value: 'success', assistant_id: String(assistenteId) };
+    cond.CONDITION_TYPE = '1';
+  }
+  withMirrors('condition', cond);
+}
+
+// "Possui os labels" (18) guarda uma LISTA de IDs de label: o motor faz
+// foreach no valor (Bot.class.php:1011-1023), e em texto a condição nunca é
+// verdadeira. A tela mostra "12, 15"; aqui volta a virar lista.
+export function listaDeIds(valor) {
+  if (Array.isArray(valor)) return valor;
+  return String(valor ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+// Lista de labels de uma condição 18 (CONDITION_DATA.value) ou de uma ação
+// "Adicionar labels" (ACTION_DATA.labels). `transformar` recebe a lista atual
+// de IDs e devolve a nova.
+export function mudarLabels(bot, alvo, transitionId, itemId, transformar) {
+  if (alvo === 'acao') {
+    const acao = (bot.BOT_ACTIONS || []).find(a => a.TRANSITION_ID === transitionId && a.ID === itemId);
+    if (!acao) return;
+    acao.ACTION_DATA = { ...acao.ACTION_DATA, labels: transformar(listaDeIds(acao.ACTION_DATA?.labels)) };
+  } else {
+    const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === itemId);
+    if (!cond) return;
+    cond.CONDITION_DATA = { ...cond.CONDITION_DATA, value: transformar(listaDeIds(cond.CONDITION_DATA?.value)) };
+  }
 }
 
 export function mudarCondicaoValor(bot, transitionId, conditionId, novoValor) {
   const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === conditionId);
   if (!cond) return;
-  cond.CONDITION_DATA = { ...cond.CONDITION_DATA, value: novoValor };
+  const valor = String(cond.CONDITION_TYPE) === '18' ? listaDeIds(novoValor) : novoValor;
+  cond.CONDITION_DATA = { ...cond.CONDITION_DATA, value: valor };
 }
 
 export function excluirAcao(bot, transitionId, actionId) {
@@ -370,7 +450,10 @@ export function mudarCampoAcao(bot, transitionId, actionId, campo, valor) {
   // guarda array em vez de string — o campo mostra/edita como texto
   // separado por vírgula, mas precisa voltar a virar array ao salvar.
   const valorFinal = campo === 'labels' ? valor.split(',').map(s => s.trim()).filter(Boolean) : valor;
+  const conta18Mudou = String(acao.ACTION_TYPE) === '18' && campo === 'openai_account' && String(acao.ACTION_DATA?.openai_account ?? '') !== String(valorFinal);
   acao.ACTION_DATA = { ...acao.ACTION_DATA, [campo]: valorFinal };
+  // Outra conta, outros assistentes: o nativo esvazia o assistente (bot.php:4439-4441).
+  if (conta18Mudou) acao.ACTION_DATA.assistant_id = '';
 }
 
 // Reescreve toda referência a STATE_NUMBER (estado dos próprios estados,
@@ -645,6 +728,8 @@ export function transicaoParaEstado(bot, transitionId) {
 // DOM (ex.: estado ainda fechado), cai pro reabrirPreservandoExpansao normal
 // como fallback seguro.
 export function rerenderTransicao(bot, transitionId) {
+  // Ações de script/Automação mudam quais variáveis a condição pode usar.
+  atualizarListaVariaveisCondicao(bot);
   const transicao = (bot.BOT_TRANSITIONS || []).find(t => t.ID === transitionId);
   const linhaAtual = $(`#bv-estados .estado-row[data-transition-id="${transitionId}"]`);
   if (!transicao || !linhaAtual) { reabrirPreservandoExpansao(bot); return; }
@@ -875,9 +960,70 @@ export function initEstadoReorderDnD() {
 // foram recriados (ou duplicaria listener nos poucos casos que ainda usam
 // reabrirPreservandoExpansao). Delegação resolve isso de graça: funciona
 // pra qualquer elemento presente agora OU inserido depois, sem religar nada.
+// ---- Lista de labels (campoLabels): abrir, filtrar, fechar. Uma aberta por vez.
+let soltarEscLabels = null;
+
+function fecharListaLabels(campo) {
+  const lista = campo?.querySelector('.labels-lista');
+  if (!lista || lista.classList.contains('hidden')) return;
+  lista.classList.add('hidden');
+  campo.querySelector('.labels-caixa')?.setAttribute('aria-expanded', 'false');
+  if (soltarEscLabels) { soltarEscLabels(); soltarEscLabels = null; }
+}
+
+function fecharListasLabels() {
+  getRootNode().querySelectorAll('#bv-estados .labels-campo').forEach(fecharListaLabels);
+}
+
+function filtrarListaLabels(campo, texto) {
+  const alvo = texto.trim().toLowerCase();
+  let visiveis = 0;
+  campo.querySelectorAll('.labels-opcao').forEach((opcao) => {
+    const mostra = !alvo || opcao.dataset.busca.includes(alvo);
+    opcao.parentElement.classList.toggle('hidden', !mostra);
+    if (mostra) visiveis++;
+  });
+  campo.querySelector('.labels-sem-resultado')?.classList.toggle('hidden', visiveis > 0);
+}
+
+function alternarListaLabels(campo) {
+  if (!campo) return;
+  const lista = campo.querySelector('.labels-lista');
+  if (!lista.classList.contains('hidden')) { fecharListaLabels(campo); return; }
+  fecharListasLabels();
+  lista.classList.remove('hidden');
+  campo.querySelector('.labels-caixa')?.setAttribute('aria-expanded', 'true');
+  const busca = campo.querySelector('.labels-busca');
+  busca.value = '';
+  filtrarListaLabels(campo, '');
+  busca.focus();
+  soltarEscLabels = empilharEsc(() => {
+    fecharListaLabels(campo);
+    campo.querySelector('.labels-caixa')?.focus();
+  });
+}
+
 export function initAcoesDelegadas() {
   const container = $('#bv-estados');
-  const acoesComEnterParaBlur = new Set(['mover-transicao', 'mover-estado', 'renomear-estado', 'mudar-estado-acao', 'mudar-campo-acao', 'mudar-condicao-variavel', 'mudar-condicao-operador', 'mudar-tipo-acao', 'mudar-campo-acao-buscavel', 'mudar-campo-acao-ambiente-buscavel']);
+
+  // Busca dentro da lista de labels: filtra enquanto digita; Enter escolhe a
+  // primeira que sobrou.
+  container.addEventListener('input', (e) => {
+    if (e.target.dataset.role !== 'labels-busca') return;
+    filtrarListaLabels(e.target.closest('.labels-campo'), e.target.value);
+  });
+  container.addEventListener('keydown', (e) => {
+    if (e.target.dataset.role === 'labels-busca' && e.key === 'Enter') {
+      e.preventDefault();
+      e.target.closest('.labels-campo').querySelector('li:not(.hidden) .labels-opcao')?.click();
+      return;
+    }
+    if (e.target.classList?.contains('labels-caixa') && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      alternarListaLabels(e.target.closest('.labels-campo'));
+    }
+  });
+  const acoesComEnterParaBlur = new Set(['mover-transicao', 'mover-estado', 'renomear-estado', 'mudar-estado-acao', 'mudar-campo-acao', 'mudar-condicao-variavel', 'mudar-condicao-operador', 'mudar-tipo-acao', 'mudar-campo-acao-buscavel', 'mudar-campo-acao-ambiente-buscavel', 'mudar-condicao-ia-detalhe']);
 
   // Campos de busca (qualquer <input list="..."> com datalist — variável de
   // condição, operador, tipo de ação, estado de destino livre, campo
@@ -887,13 +1033,18 @@ export function initAcoesDelegadas() {
   // 'focusin' bubla (diferente de 'focus'), então um listener delegado aqui
   // cobre também campos inseridos depois via rerenderTransicao/rerenderEstado.
   container.addEventListener('focusin', (e) => {
-    if (e.target.tagName === 'INPUT' && e.target.hasAttribute('list')) {
+    if (e.target.tagName === 'INPUT' && (e.target.hasAttribute('list') || e.target.dataset.lista)) {
       e.target.select();
     }
   });
 
   container.addEventListener('click', (e) => {
     if (!state.botCarregado) return;
+    // Clique fora de uma lista de labels aberta fecha a lista (como o select2).
+    const campoLabelsClicado = e.target.closest('.labels-campo');
+    container.querySelectorAll('.labels-campo').forEach((campo) => {
+      if (campo !== campoLabelsClicado) fecharListaLabels(campo);
+    });
     const header = e.target.closest('.estado-header');
     if (header && !e.target.closest('button, select, input, .estado-drag-handle')) {
       const wrap = header.closest('.estado-wrap');
@@ -949,6 +1100,28 @@ export function initAcoesDelegadas() {
         adicionarAcao(bot, btn.dataset.transitionId);
         rerenderTransicao(bot, btn.dataset.transitionId);
         break;
+      case 'remover-label':
+      case 'escolher-label': {
+        const itemId = btn.dataset.alvo === 'acao' ? btn.dataset.actionId : btn.dataset.conditionId;
+        const labelId = btn.dataset.labelId;
+        mudarLabels(bot, btn.dataset.alvo, btn.dataset.transitionId, itemId, (ids) => (btn.dataset.action === 'remover-label'
+          ? ids.filter((id) => String(id) !== labelId)
+          : (ids.includes(labelId) ? ids : [...ids, labelId])));
+        fecharListasLabels();
+        rerenderTransicao(bot, btn.dataset.transitionId);
+        break;
+      }
+      case 'abrir-labels':
+        alternarListaLabels(btn.closest('.labels-campo'));
+        break;
+      // Exemplo da voz, o mesmo arquivo que o nativo toca (bot.php:4553-4563).
+      case 'ouvir-voz': {
+        const opcao = btn.parentElement.querySelector('select')?.selectedOptions[0];
+        if (!opcao) break;
+        const url = `${location.origin}/rcx/ContactCenter/sounds/open_ai/${opcao.dataset.pasta || 'pt'}/${opcao.value}.mp3`;
+        new Audio(url).play().catch(() => mostrarToast('Não foi possível tocar o exemplo desta voz.'));
+        break;
+      }
       case 'ir-para-estado': {
         const stateNumber = btn.dataset.state;
         if (!stateNumber) break;
@@ -971,15 +1144,31 @@ export function initAcoesDelegadas() {
     if (!el.dataset.action) return;
     const bot = state.botCarregado;
     switch (el.dataset.action) {
+      // Conferida pela própria lista exibida (variaveis-datalist): fixas do
+      // motor, variáveis do ambiente e assistentes. Antes só as fixas eram
+      // aceitas e uma variável do ambiente escolhida voltava ao valor anterior.
       case 'mudar-condicao-variavel': {
-        const chave = resolverPorLabel(VARIABLE_LABELS, el.value);
+        const texto = el.value.trim().toLowerCase();
+        const opt = Array.from(datalistDe(el)?.options || []).find((o) => o.value.trim().toLowerCase() === texto);
+        if (opt?.dataset.assistente) {
+          mudarCondicaoParaAssistente(bot, el.dataset.transitionId, el.dataset.conditionId, opt.dataset.value);
+          rerenderTransicao(bot, el.dataset.transitionId);
+          break;
+        }
+        const assistente = assistentesOpenAi().find((a) => a.rotulo.toLowerCase() === texto);
+        if (assistente) {
+          mudarCondicaoParaAssistente(bot, el.dataset.transitionId, el.dataset.conditionId, assistente.id);
+          rerenderTransicao(bot, el.dataset.transitionId);
+          break;
+        }
+        const chave = opt?.dataset.value || resolverPorLabel(VARIABLE_LABELS, el.value);
         if (!chave) { el.value = el.defaultValue; return; }
         mudarCondicaoVariavel(bot, el.dataset.transitionId, el.dataset.conditionId, chave);
         rerenderTransicao(bot, el.dataset.transitionId);
         break;
       }
       case 'mudar-condicao-operador': {
-        const datalist = el.list;
+        const datalist = datalistDe(el);
         let chave;
         if (datalist) {
           const opt = Array.from(datalist.options).find(o => o.value === el.value);
@@ -999,6 +1188,13 @@ export function initAcoesDelegadas() {
       case 'mudar-condicao-valor':
         mudarCondicaoValor(bot, el.dataset.transitionId, el.dataset.conditionId, el.value);
         break;
+      case 'mudar-condicao-ia-detalhe': {
+        const opt = Array.from(datalistDe(el)?.options || []).find(o => o.value === el.value);
+        if (!opt) { el.value = el.defaultValue; return; }
+        mudarCondicaoIaDetalhe(bot, el.dataset.transitionId, el.dataset.conditionId, opt.dataset.value);
+        rerenderTransicao(bot, el.dataset.transitionId);
+        break;
+      }
       case 'mover-transicao': {
         const alvo = parseInt(el.value, 10);
         if (Number.isNaN(alvo)) { el.value = el.defaultValue; return; }
@@ -1035,7 +1231,10 @@ export function initAcoesDelegadas() {
         break;
       case 'mudar-campo-acao':
         mudarCampoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, el.value);
-        rerenderTransicao(bot, el.dataset.transitionId);
+        // Voz do áudio: redesenhar voltaria o seletor para o grupo Português
+        // (a mesma voz existe nos três idiomas) e o "ouvir" tocaria o idioma
+        // errado; nada mais na tela depende da voz.
+        if (el.dataset.campo !== 'model_audio') rerenderTransicao(bot, el.dataset.transitionId);
         break;
       case 'mudar-campo-acao-buscavel': {
         const dict = DICTS_BUSCAVEIS[el.dataset.dict];
@@ -1049,9 +1248,10 @@ export function initAcoesDelegadas() {
       // CRM/substatus, conta OpenAI etc.) — a <datalist> é montada por
       // campoAmbienteSelect com um data-value por <option> (o valor real
       // esperado por Bot::update(), a label é só o texto exibido/buscado).
-      // el.list é a <datalist> associada nativamente via atributo list=.
+      // datalistDe(el) é a <datalist> do campo (atributo list=, que combobox.js
+      // troca por data-lista para o popup nativo não abrir).
       case 'mudar-campo-acao-ambiente-buscavel': {
-        const datalist = el.list;
+        const datalist = datalistDe(el);
         const opt = datalist && Array.from(datalist.options).find(o => o.value === el.value);
         if (!opt) { el.value = el.defaultValue; return; }
         mudarCampoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, opt.dataset.value);
@@ -1067,10 +1267,10 @@ export function initAcoesDelegadas() {
     // Autocompletar pesquisa: ao apertar Enter num campo com datalist,
     // procura a opção que contenha o texto digitado (ex.: digitou "estado" ->
     // "Mudar de Estado"). Seleciona a primeira que bater e dispara change.
-    if (e.target.tagName === 'INPUT' && e.target.hasAttribute('list') && e.target.list) {
+    if (e.target.tagName === 'INPUT' && datalistDe(e.target)) {
       const digitado = e.target.value.toLowerCase().trim();
       if (digitado) {
-        const options = Array.from(e.target.list.options);
+        const options = Array.from(datalistDe(e.target).options);
         // Prioriza quem começa com o texto; se não, quem apenas contém
         let match = options.find(o => o.value.toLowerCase().startsWith(digitado));
         if (!match) match = options.find(o => o.value.toLowerCase().includes(digitado));
@@ -1312,7 +1512,7 @@ export function listarPendencias(bot) {
     const cd = c.CONDITION_DATA || {};
     if (cd.assistant_id !== undefined && campoVazio(cd.assistant_id)) {
       const posicao = posicaoNaTransicao(bot.BOT_CONDITIONS || [], c.TRANSITION_ID, c.ID);
-      addPendencia(c.TRANSITION_ID, 'Condição', c.ID, posicao, 'Assistente OpenAI', 'Assistente (ID)');
+      addPendencia(c.TRANSITION_ID, 'Condição', c.ID, posicao, 'Assistente OpenAI', 'Assistente');
     }
   });
 
@@ -1357,7 +1557,8 @@ export function initBotViewWiring() {
   // fixo com state.ambienteOrpen.variables, que só fica disponível depois do
   // bootstrap.js injetar os dados do ambiente) — aqui só as fixas, que não
   // dependem de bot carregado nem de ambiente.
-  $('#acao-tipo-datalist').innerHTML = entriesToOptions(ACTION_TYPE_LABELS).map(o => `<option value="${escapeHtml(o.label)}">`).join('');
+  $('#acao-tipo-datalist').innerHTML = agruparOpcoes(ACTION_TYPE_LABELS, GRUPOS_ACAO)
+    .map(o => `<option value="${escapeHtml(o.label)}" data-grupo="${escapeHtml(o.grupo)}">`).join('');
   $('#update-contact-datalist').innerHTML = entriesToOptions(UPDATE_CONTACT_LABELS).map(o => `<option value="${escapeHtml(o.label)}">`).join('');
 
   initAcoesDelegadas();
@@ -1368,6 +1569,8 @@ export function initBotViewWiring() {
   initBotHeaderEdit();
   initPendenciasWiring();
   initBusca();
+  // Lista de sugestões própria em todos os campos de busca (combobox.js).
+  initCombobox($('#bot-view-overlay'));
 
   // Opcional: só existe no fluxo standalone (bot_transform.html completo,
   // seção #bot-summary). No modo extensão só o esqueleto de #bot-view-overlay

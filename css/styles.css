@@ -908,6 +908,51 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 #bot-view-overlay .menu-resumo-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 #bot-view-overlay .menu-resumo-chip { font-size: 0.75rem; font-weight: 500; color: var(--wa-botao-texto); background: var(--obd-surface); border: 1px solid var(--mb-borda); border-radius: 9999px; padding: 0.15rem 0.6rem; }
 
+/* Labels de contato (campoLabels): mesmo comportamento do select2 múltiplo do
+   modal nativo. Caixa com as escolhidas (× remove); clicar abre a lista com
+   busca logo abaixo, no fluxo da página (não flutua, para não ser cortada). */
+#bot-view-overlay .labels-campo { display: flex; flex-direction: column; gap: 0.25rem; }
+#bot-view-overlay .labels-caixa { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; min-height: 2.25rem; height: auto; cursor: pointer; }
+#bot-view-overlay .labels-caixa:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+#bot-view-overlay .labels-placeholder { font-size: 0.8125rem; color: var(--text-faint, var(--text-muted)); }
+#bot-view-overlay .labels-lista { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.375rem; background: var(--obd-panel); border: 1px solid var(--mb-borda); border-radius: 0.5rem; box-shadow: 0 6px 18px var(--dlg-sombra); }
+#bot-view-overlay .labels-lista.hidden { display: none; }
+#bot-view-overlay .labels-lista ul { list-style: none; margin: 0; padding: 0; max-height: 13rem; overflow-y: auto; }
+#bot-view-overlay .labels-opcao { display: block; width: 100%; text-align: left; font-size: 0.8125rem; color: var(--text); background: transparent; border: 0; border-radius: 0.375rem; padding: 0.35rem 0.5rem; cursor: pointer; }
+#bot-view-overlay .labels-opcao:hover,
+#bot-view-overlay .labels-opcao:focus-visible { background: var(--hover-bg); outline: none; }
+/* Lista de sugestões dos campos de busca (js/combobox.js), no lugar do popup
+   nativo do <datalist>. Fica fora do .bv-panel (sem zoom), posicionada por
+   getBoundingClientRect: px, pelo mesmo motivo do .fx-confirmacao. Mesmo
+   visual da lista de labels. */
+.cb-painel {
+  position: fixed;
+  z-index: 2147483001;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 5px;
+  background: var(--obd-panel);
+  border: 1px solid var(--mb-borda);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px var(--dlg-sombra);
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.cb-painel.hidden { display: none; }
+.cb-opcao { display: block; width: 100%; flex-shrink: 0; text-align: left; font-size: 13px; line-height: 1.35; color: var(--text); background: transparent; border: 0; border-radius: 6px; padding: 6px 8px; cursor: pointer; }
+.cb-opcao:hover, .cb-opcao.cb-marcada { background: var(--hover-bg); }
+.cb-opcao.cb-atual { font-weight: 600; }
+.cb-vazio { margin: 0; padding: 6px 8px; font-size: 13px; color: var(--text-muted); }
+.cb-grupo { flex-shrink: 0; margin: 6px 0 2px; padding: 2px 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.cb-grupo:first-child { margin-top: 0; }
+.cb-apoio { display: block; font-size: 11px; color: var(--text-muted); }
+
+#bot-view-overlay .labels-sem-resultado { margin: 0; padding: 0.35rem 0.5rem; font-size: 0.8125rem; color: var(--text-muted); }
+#bot-view-overlay .label-chip { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 500; color: var(--text); background: var(--obd-surface); border: 1px solid var(--mb-borda); border-radius: 9999px; padding: 0.1rem 0.25rem 0.1rem 0.6rem; }
+#bot-view-overlay .label-chip-remover { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; border-radius: 9999px; color: var(--text-muted); background: transparent; border: 0; cursor: pointer; }
+#bot-view-overlay .label-chip-remover:hover { color: var(--danger); background: var(--hover-bg); }
+#bot-view-overlay .label-chip-remover:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
 /* ---- Modal "Editar menu" com celular simulado ----
    Fora de .bv-panel (sem zoom): px, pelo mesmo motivo do .fx-confirmacao. */
 .mm-fundo {

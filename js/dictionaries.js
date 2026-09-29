@@ -37,6 +37,40 @@ export const VARIABLE_LABELS = {
   assistant_analysis_text: 'Assistente OpenAI (texto)',
 };
 
+// Tópicos das listas de busca (combobox.js mostra um cabeçalho por grupo).
+// Chave que não estiver em nenhum grupo cai em "Outras".
+export const GRUPOS_VARIAVEL = [
+  ['Mensagem', ['message', 'email_subject']],
+  ['Contato', ['contact', 'opt_in', 'uci', 'contact_number', 'pref_agent', 'name_pref_agent']],
+  ['Atendimento', ['error_count', 'old_attendance', 'status_last_att', 'agent_last_att', 'entrance_type', 'entrance', 'sender']],
+  ['Agentes e filas', ['agent_on_queue', 'agent_online', 'agent_available_on_chat']],
+  ['Calendário', ['calendario', 'calendario_falso']],
+  ['Automação', ['automate_message', 'automate_status', 'automate_thread_id']],
+];
+
+export const GRUPOS_ACAO = [
+  ['Mensagens', ['1', '10', '11', '17', '20', '12']],
+  ['Fluxo do bot', ['2', '8', '9', '13']],
+  ['Encaminhamento', ['4', '5', '6', '14']],
+  ['Contato e atendimento', ['15', '16', '19', '21']],
+  ['Integrações', ['7', '18', '22']],
+];
+
+/** [{ value, label, grupo }] na ordem dos grupos; o que sobrar vai em "Outras". */
+export function agruparOpcoes(dict, grupos) {
+  const saida = [];
+  const usadas = new Set();
+  grupos.forEach(([grupo, chaves]) => chaves.forEach((k) => {
+    if (dict[k] === undefined) return;
+    usadas.add(k);
+    saida.push({ value: k, label: dict[k], grupo });
+  }));
+  Object.entries(dict).forEach(([k, label]) => {
+    if (!usadas.has(k)) saida.push({ value: k, label, grupo: 'Outras' });
+  });
+  return saida;
+}
+
 export const TEXT_OPERATORS = {
   '1': 'Igual a', '2': 'Contém', '3': 'Diferente de', '4': 'Não contém', '5': 'É CPF',
   '6': 'Maior que', '7': 'Maior igual que', '8': 'Menor que', '9': 'Menor igual que',
@@ -126,6 +160,6 @@ export const CAMPOS_PENDENCIA_POR_TIPO = {
   '14': [['substatus', 'Substatus (ID)']],
   '15': [['message_text', 'Nome da tag']],
   '17': [['send_file', 'Arquivo (ID)']],
-  '18': [['openai_account', 'Conta OpenAI'], ['assistant_id', 'Assistente (ID)']],
+  '18': [['openai_account', 'Conta OpenAI'], ['assistant_id', 'Assistente']],
   '22': [['url', 'URL']],
 };

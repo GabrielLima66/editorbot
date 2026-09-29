@@ -29,9 +29,10 @@ import { $, mostrarToast, escapeHtml } from './utils.js';
 import { setRootNode, criarIcones, getRootNode, empilharEsc } from './dom-root.js';
 import { avisarSeHouverNovaVersao } from './atualizacao.js';
 import { abrirNovidades } from './novidades.js';
-import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation } from './orpen-adapter.js';
-import { abrirBotView, pedirFecharBotView, definirGuardaFechar, lerContaTranscricao } from './bot-view-render.js';
-import { ACTION_TYPE_LABELS } from './dictionaries.js';
+import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, payloadEsperadoNoServidor } from './orpen-adapter.js';
+import { problemaAntesDeSalvar } from './validacao-salvar.js';
+import { fotografarNumeros, mudancasDeNumero } from './renumeracao.js';
+import { abrirBotView, pedirFecharBotView, definirGuardaFechar } from './bot-view-render.js';
 import { initBotViewWiring, listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
 
 const HOST_ID = 'orpen-editor-bot-host';
@@ -456,25 +457,10 @@ async function buscarBotCru(botId) {
 // falha — só devolve a mensagem —, então o que falhar some e o resto recebe
 // commit, com "success" do mesmo jeito. Aqui o bot é relido e remontado no
 // mesmo payload do envio: se não bater, algo não foi gravado.
-// Condição/ação com tipo 0 (sem tipo) o servidor pula de propósito
-// (`type == 0 → continue`); elas saem do esperado e são contadas à parte.
+// Condição/ação com tipo 0 (sem tipo) o servidor pula de propósito; elas
+// saem do esperado e são contadas à parte (payloadEsperadoNoServidor).
 async function conferirGravacao(botId, payloadEnviado) {
-  let descartados = 0;
-  const semTipo = (item) => Number(item.type) === 0;
-  const esperado = {
-    ...payloadEnviado,
-    states: payloadEnviado.states.map((s) => ({
-      ...s,
-      transitions: s.transitions.map((t) => {
-        descartados += t.conditions.filter(semTipo).length + t.actions.filter(semTipo).length;
-        return {
-          ...t,
-          conditions: t.conditions.filter((c) => !semTipo(c)),
-          actions: t.actions.filter((a) => !semTipo(a)),
-        };
-      }),
-    })),
-  };
+  const { esperado, descartados } = payloadEsperadoNoServidor(payloadEnviado);
 
   let raw;
   try {
@@ -498,86 +484,12 @@ async function conferirGravacao(botId, payloadEnviado) {
   return { resultado: 'diferente', descartados };
 }
 
-// Mesmas travas do "Salvar" do modal nativo (bot.php:2299-2544), que a
-// Orpen nunca deixou passar: JSON inválido nas ações 10/11/13 (e no payload
-// da 22, quando preenchido) quebra o bot em execução; nome acima de 50
-// caracteres não cabe (o UPDATE do bot falha e o resto é gravado assim
-// mesmo); IA no fluxo (18 chamando assistente, ou 20) exige conta de
-// transcrição de áudio. Devolve a primeira falha em texto, ou null.
-const CAMPO_JSON_OBRIGATORIO = { '10': 'message_option_text', '11': 'message_option_form', '13': 'bot_variables_text' };
-
-function problemaAntesDeSalvar(bot) {
-  if (String(bot.NAME).length > 50) return 'o nome do bot passa de 50 caracteres.';
-
-  const estadoPorNumero = {};
-  (bot.BOT_STATES || []).forEach((s) => { estadoPorNumero[s.STATE_NUMBER] = s; });
-  const transicaoPorId = {};
-  (bot.BOT_TRANSITIONS || []).forEach((t) => { transicaoPorId[t.ID] = t; });
-  const onde = (a) => {
-    const t = transicaoPorId[a.TRANSITION_ID];
-    if (!t) return '';
-    const e = estadoPorNumero[t.STATE];
-    return ` no estado ${t.STATE}${e?.ALIAS ? ` "${e.ALIAS}"` : ''}, transição ${t.PRIORITY}`;
-  };
-  const jsonInvalido = (v) => {
-    if (typeof v !== 'string') return v == null;
-    try { JSON.parse(v); return false; } catch { return true; }
-  };
-
-  const acoes = (bot.BOT_ACTIONS || []).filter((a) => transicaoPorId[a.TRANSITION_ID]);
-  let usaIa = false;
-  for (const a of acoes) {
-    const d = a.ACTION_DATA || {};
-    const rotulo = ACTION_TYPE_LABELS[a.ACTION_TYPE] || `tipo ${a.ACTION_TYPE}`;
-    const campo = CAMPO_JSON_OBRIGATORIO[a.ACTION_TYPE];
-    if (campo && jsonInvalido(d[campo])) return `a ação "${rotulo}"${onde(a)} está vazia ou com JSON inválido.`;
-    if (a.ACTION_TYPE === '22' && d.payload && jsonInvalido(d.payload)) return `o payload da ação "${rotulo}"${onde(a)} não é um JSON válido.`;
-    if ((a.ACTION_TYPE === '18' && d.openai === 'call_assistant') || a.ACTION_TYPE === '20') usaIa = true;
-  }
-  if (usaIa && !lerContaTranscricao(bot)) {
-    return 'o bot usa I.A. no fluxo, então é preciso selecionar a "Conta para transcrição de áudio" nos dados do bot.';
-  }
-  return null;
-}
-
-// ---------------------------------------------------------------------------
-// Renumeração de estados. Cada atendimento em andamento guarda só o NÚMERO do
-// estado em que o cliente está (ctc_attendance.bot_state), e o motor relê o
-// bot do banco a cada ciclo (Bot.class.php, loadTransitions, cache de 60 s).
-// Arrastar, duplicar ou excluir estados renumera os outros: quem está parado
-// num número que mudou passa a rodar o estado que ficou com aquele número.
-// Configurações fora do bot também guardam número de estado (failover de
-// entrada com destino "estado", Chat.class.php:3977) e não são atualizadas.
-// O editor muta os objetos de estado no lugar (remapStateNumbers), então o
-// próprio objeto identifica o estado entre o último salvamento e agora.
-// ---------------------------------------------------------------------------
-let numerosSalvos = null; // Map<objeto do estado, { numero, alias }>
+// Foto dos números dos estados no último salvamento (ou carga): base do
+// aviso de renumeração (js/renumeracao.js).
+let numerosSalvos = null;
 
 function registrarNumerosSalvos(bot) {
-  numerosSalvos = new Map((bot.BOT_STATES || []).map((s) => [s, { numero: String(s.STATE_NUMBER), alias: s.ALIAS || '' }]));
-}
-
-function mudancasDeNumero(bot) {
-  if (!numerosSalvos) return null;
-  const atuais = new Set(bot.BOT_STATES || []);
-  const mudados = [];
-  const excluidos = [];
-  numerosSalvos.forEach(({ numero, alias }, estado) => {
-    if (!atuais.has(estado)) excluidos.push({ numero, alias });
-    else if (String(estado.STATE_NUMBER) !== numero) mudados.push({ alias: estado.ALIAS || '', de: numero, para: String(estado.STATE_NUMBER) });
-  });
-  if (!mudados.length && !excluidos.length) return null;
-  const porNumero = (a, b) => parseInt(a.de ?? a.numero, 10) - parseInt(b.de ?? b.numero, 10);
-
-  // O atendimento novo começa no estado 0: se outro estado ficou com o 0, a
-  // entrada do bot muda para todas as conversas novas, não só as em andamento.
-  let entrada = null;
-  const inicialAntes = [...numerosSalvos].find(([, v]) => v.numero === '0');
-  const inicialAgora = (bot.BOT_STATES || []).find((s) => String(s.STATE_NUMBER) === '0');
-  if (inicialAntes && inicialAntes[0] !== inicialAgora) {
-    entrada = { antes: inicialAntes[1].alias, depois: inicialAgora ? inicialAgora.ALIAS || '' : null };
-  }
-  return { mudados: mudados.sort(porNumero), excluidos: excluidos.sort(porNumero), entrada };
+  numerosSalvos = fotografarNumeros(bot);
 }
 
 let renumeracaoAberta = false;
@@ -651,7 +563,7 @@ async function salvarBotNaOrpen() {
     return false;
   }
 
-  const renumeracao = mudancasDeNumero(bot);
+  const renumeracao = mudancasDeNumero(bot, numerosSalvos);
   if (renumeracao && !(await confirmarRenumeracao(renumeracao))) return false;
   if (state.botCarregado !== bot) return false;
 
@@ -785,9 +697,14 @@ export async function abrirEditorOrpen(botId, envData = null) {
 
     if (raw.openai_accounts) {
       if (!state.ambienteOrpen) state.ambienteOrpen = {};
+      // Mesma fonte do modal nativo (bot.php:2792): cada conta traz os
+      // assistentes em SETTINGS.assistants, usados na condição e na ação de I.A.
       state.ambienteOrpen.openAiAccounts = raw.openai_accounts.map((a) => ({
         id: a.ID,
         name: a.NAME || (a.SETTINGS && a.SETTINGS.name) || a.ID,
+        assistants: (a.SETTINGS?.assistants || [])
+          .filter((s) => s && s.id)
+          .map((s) => ({ id: String(s.id), name: s.name || s.id })),
       }));
     }
 
@@ -798,7 +715,7 @@ export async function abrirEditorOrpen(botId, envData = null) {
     state.baselineSalvo = assinaturaBot(state.botCarregado);
     registrarNumerosSalvos(state.botCarregado);
     atualizarBotaoFluxograma();
-    if (titulo) titulo.innerHTML = `Editar Bot <span class="bv-badge-header-id">#${state.botCarregado.ID} — ${state.botCarregado.NAME || '(sem nome)'}</span>`;
+    if (titulo) titulo.innerHTML = `Editar Bot <span class="bv-badge-header-id">#${escapeHtml(state.botCarregado.ID)} — ${escapeHtml(state.botCarregado.NAME || '(sem nome)')}</span>`;
   } catch (err) {
     if (carregamento !== carregamentoAtual) return;
     console.error('[EDITOR_BOT] Falha ao carregar bot:', err);

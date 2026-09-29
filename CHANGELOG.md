@@ -1,5 +1,13 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.9] - 2026-09-29
+* **I.A. igual ao sistema**: na condição, a variável lista os assistentes como "[Conta] Assistente: Nome", e o operador é "Status da análise" (Sucesso/Falha) ou "Conteúdo da análise" (Igual a/Contém/Diferente de/Não contém + texto). Na ação OpenAI, escolhe a conta e depois o assistente dela. Nada de digitar ID, e o que já existe abre preenchido. Antes, uma condição de I.A. feita no editor ficava sem assistente e nunca era verdadeira, e abrir no sistema depois deixava o operador em branco.
+* **Labels e anexos pelo nome**: "Possui os labels" e "Adicionar labels" funcionam como o seletor do sistema (clicar abre a lista com busca, × remove). A condição "Possui os labels" editada no editor ficava sempre falsa; corrigido. "Enviar anexo" lista os anexos do bot ("imagem - Título").
+* **Enviar mensagem de áudio completa**: voz agrupada por idioma com botão para ouvir o exemplo, modelo TTS-1/TTS-1-HD e velocidade de 0,25 a 4, com os mesmos padrões do sistema.
+* **Variáveis da condição como no sistema**: todas as que aparecem na lista podem ser escolhidas (antes as variáveis do bot voltavam ao valor anterior). Variáveis de script só aparecem com a ação "Executar Script" daquele script, e as da Automação só com "Executar Automação".
+* **Listas de busca novas**: todos os campos de busca abrem uma lista clara abaixo do campo, no lugar da caixa escura do navegador, separada por tópicos (variáveis, tipos de ação, agentes e bots, entradas, variáveis do bot). Setas e Enter escolhem, Esc fecha só a lista.
+* **Segurança**: o nome do bot no título do editor não é mais interpretado como HTML.
+
 ## [0.8.8] - 2026-09-29
 * **Aviso quando a entrada do bot muda**: toda conversa nova começa no estado nº 0. Se arrastar outro estado para o topo ou excluir o estado 0, o aviso de renumeração ganha uma faixa vermelha no topo dizendo qual estado passa a ser a entrada (e qual era). Duplicar o estado 0 não muda a entrada, porque a cópia vai para o nº 1.
 
