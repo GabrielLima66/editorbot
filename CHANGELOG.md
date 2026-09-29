@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.8] - 2026-09-29
+* **Aviso quando a entrada do bot muda**: toda conversa nova começa no estado nº 0. Se arrastar outro estado para o topo ou excluir o estado 0, o aviso de renumeração ganha uma faixa vermelha no topo dizendo qual estado passa a ser a entrada (e qual era). Duplicar o estado 0 não muda a entrada, porque a cópia vai para o nº 1.
+
 ## [0.8.7] - 2026-09-29
 * **Aviso de estados renumerados**: arrastar, duplicar ou excluir estados muda o número dos outros. Cada atendimento em andamento guarda só o número do estado em que o cliente está, então, até 1 minuto depois de salvar, quem estiver num número que mudou passa a seguir outro estado. Agora, ao salvar, o editor mostra um aviso em vermelho com a lista dos estados que mudaram de número ou foram excluídos, lembra que configurações fora do bot (como o failover de uma entrada com destino "estado") não são atualizadas e pede confirmação. Editar textos, condições e ações sem mudar a numeração não mostra aviso.
 * **Mesmas travas do "Salvar" nativo**: o editor não salva mais um bot que a Orpen recusaria: nome com mais de 50 caracteres, JSON inválido em Menu (Mensagem Options), Formulário, Armazenar variável ou no payload da Automação, e I.A. no fluxo sem a "Conta para transcrição de áudio". A mensagem diz em qual estado e transição está o problema.

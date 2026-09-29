@@ -568,11 +568,20 @@ function mudancasDeNumero(bot) {
   });
   if (!mudados.length && !excluidos.length) return null;
   const porNumero = (a, b) => parseInt(a.de ?? a.numero, 10) - parseInt(b.de ?? b.numero, 10);
-  return { mudados: mudados.sort(porNumero), excluidos: excluidos.sort(porNumero) };
+
+  // O atendimento novo começa no estado 0: se outro estado ficou com o 0, a
+  // entrada do bot muda para todas as conversas novas, não só as em andamento.
+  let entrada = null;
+  const inicialAntes = [...numerosSalvos].find(([, v]) => v.numero === '0');
+  const inicialAgora = (bot.BOT_STATES || []).find((s) => String(s.STATE_NUMBER) === '0');
+  if (inicialAntes && inicialAntes[0] !== inicialAgora) {
+    entrada = { antes: inicialAntes[1].alias, depois: inicialAgora ? inicialAgora.ALIAS || '' : null };
+  }
+  return { mudados: mudados.sort(porNumero), excluidos: excluidos.sort(porNumero), entrada };
 }
 
 let renumeracaoAberta = false;
-function confirmarRenumeracao({ mudados, excluidos }) {
+function confirmarRenumeracao({ mudados, excluidos, entrada }) {
   // Segundo clique em Salvar com o aviso aberto não abre outro.
   if (renumeracaoAberta) return Promise.resolve(false);
   renumeracaoAberta = true;
@@ -593,6 +602,7 @@ function confirmarRenumeracao({ mudados, excluidos }) {
     fundo.innerHTML = `
       <div class="fx-confirmacao-painel fx-alerta">
         <h3 id="rn-titulo" class="fx-confirmacao-titulo fx-alerta-titulo">Atenção: estados mudaram de número</h3>
+        ${entrada ? `<p class="fx-alerta-entrada"><strong>A entrada do bot muda.</strong> Toda conversa nova começa no estado nº 0, que ${entrada.depois === null ? 'deixa de existir' : `passa a ser <strong>${escapeHtml(entrada.depois || '(sem nome)')}</strong>`} (era <strong>${escapeHtml(entrada.antes || '(sem nome)')}</strong>).</p>` : ''}
         <p class="fx-confirmacao-texto">Cada atendimento em andamento guarda <strong>só o número</strong> do estado em que o cliente está. Até 1 minuto depois de salvar, quem estiver parado num destes números passa a seguir o estado que ficou com aquele número, ou fica sem resposta se o número deixar de existir.</p>
         <ul class="fx-alerta-lista">${linhas.slice(0, LIMITE).join('')}${extras}</ul>
         <p class="fx-confirmacao-texto">Configurações <strong>fora do bot</strong> que apontam para um número de estado dele, como o failover de uma entrada com destino "estado", <strong>não são atualizadas</strong>: confira-as depois.</p>

@@ -769,6 +769,15 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
   border-radius: 8px;
 }
 .fx-alerta-dica { color: var(--text); font-weight: 500; }
+.fx-alerta-entrada {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sobre-cor);
+  background: var(--alerta-perigo);
+  border-radius: 8px;
+}
 .fx-btn-primario.fx-btn-perigo { background: var(--alerta-perigo); border-color: var(--alerta-perigo); }
 .fx-btn-primario.fx-btn-perigo:hover { background: var(--alerta-perigo-hover); }
 
