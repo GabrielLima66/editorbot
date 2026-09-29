@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO } from './dictionaries.js';
 import { $, escapeHtml, resolverPorLabel, resolverPorLabelLista, entriesToOptions } from './utils.js';
-import { getRootNode, criarIcones } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 import {
   buildOperatorOptions,
   defaultActionData,
@@ -11,7 +11,7 @@ import {
   renderPainelBloqueio,
   renderPainelConfirmacao,
   abrirBotView,
-  fecharBotView,
+  pedirFecharBotView,
   atualizarSecaoDestino,
   lerContaTranscricao,
   atualizarContadorRodape,
@@ -1327,12 +1327,17 @@ export function renderPendencia(p) {
     </label>`;
 }
 
+let soltarEscPendencias = null;
 export function abrirPendenciasModal(pendencias) {
   $('#pendencias-lista').innerHTML = pendencias.map(renderPendencia).join('');
   $('#pendencias-overlay').classList.remove('hidden');
+  if (!soltarEscPendencias) soltarEscPendencias = empilharEsc(fecharPendenciasModal);
   criarIcones();
 }
-export function fecharPendenciasModal() { $('#pendencias-overlay').classList.add('hidden'); }
+export function fecharPendenciasModal() {
+  $('#pendencias-overlay').classList.add('hidden');
+  if (soltarEscPendencias) { soltarEscPendencias(); soltarEscPendencias = null; }
+}
 
 // Ligado UMA VEZ, mesmo motivo dos outros init* deste módulo: o modal de
 // pendências é markup estático, não recriado por render nenhum.
@@ -1369,7 +1374,7 @@ export function initBotViewWiring() {
   // + #pendencias-overlay é injetado (ver orpen-bridge.js) — sem isso, essa
   // linha sozinha lançaria e abortaria o resto de initBotViewWiring().
   $('#btn-ver-bot')?.addEventListener('click', () => { if (state.botCarregado) abrirBotView(state.botCarregado); });
-  $('#btn-fechar-bot-view').addEventListener('click', fecharBotView);
-  $('#btn-fechar-bot-view-2').addEventListener('click', fecharBotView);
-  $('#bot-view-overlay').addEventListener('click', (e) => { if (e.target.id === 'bot-view-overlay') fecharBotView(); });
+  $('#btn-fechar-bot-view').addEventListener('click', pedirFecharBotView);
+  $('#btn-fechar-bot-view-2').addEventListener('click', pedirFecharBotView);
+  $('#bot-view-overlay').addEventListener('click', (e) => { if (e.target.id === 'bot-view-overlay') pedirFecharBotView(); });
 }

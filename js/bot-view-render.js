@@ -611,6 +611,18 @@ export function abrirBotView(bot) {
   atualizarContadorRodape(bot);
 }
 
+// Quem monta o editor pode barrar o fechamento: a extensão pergunta quando há
+// alteração não salva. Sem guarda (modo standalone), fecha direto. X, clique
+// fora e Esc passam por aqui; fecharBotView() fecha sem perguntar.
+let guardaFechar = null;
+export function definirGuardaFechar(fn) {
+  guardaFechar = fn;
+}
+export async function pedirFecharBotView() {
+  if (guardaFechar && !(await guardaFechar())) return;
+  fecharBotView();
+}
+
 export function fecharBotView() {
   $('#bot-view-overlay').classList.add('hidden');
   document.body.style.overflow = '';

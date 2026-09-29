@@ -4,7 +4,7 @@ Iniciado em: 17/09/2026, 17:18:57
 
 ## 📌 Resumo Executivo do Estado Atual (Atualizado a Cada Marco)
 > **Atenção Agentes:** Para economizar contexto, leiam apenas este bloco inicial (linhas 1-30) ao retomar o projeto.
-- **Fase Atual:** Criação de bot devolvida ao modal nativo da Orpen e correções do status de salvamento (**v0.8.5**, 29/09/2026)
+- **Fase Atual:** Salvamento conferido relendo o bot, guarda de fechamento e pilha de Esc (**v0.8.6**, 29/09/2026). Pendente no servidor Orpen (fora do escopo, só leitura): Bot::update grava parcial com "success"; confirmar max_input_vars (bot grande envia ~2.255 campos)
 - **Última Tarefa Concluída:** Aviso de versão nova (branch `release` do GitHub), Atualizar.bat e recarga automática da extensão (validada no Chrome real). Ao fechar versão: `git push origin main:release`
 - **Próxima Tarefa em Aberto:** Fase 3 do tratamento (atualizar tratamento) e Fase 2 da busca (substituir), quando pedidas
 

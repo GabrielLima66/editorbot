@@ -134,8 +134,9 @@ export function fromGetBotResponse(getBotJson) {
 // Escrita: state.botCarregado → payload de campos pro POST de action=updateBot
 // (ainda não serializado — ver serializeBracketNotation abaixo). Reconstrói
 // a árvore aninhada que Bot::update() espera, sempre a árvore inteira: ela
-// faz DELETE + INSERT em loop dentro de uma transação (Bot.class.php:210-213
-// em diante), nunca um diff parcial.
+// faz DELETE + INSERT em loop (Bot.class.php:210-213 em diante), nunca um
+// diff parcial. Não é tudo-ou-nada: INSERT que falha é ignorado e o resto
+// recebe commit — por isso salvarBotNaOrpen relê o bot e confere.
 // ---------------------------------------------------------------------------
 export function toUpdateBotPayload(bot) {
   const transicoesPorEstado = agruparPor(bot.BOT_TRANSITIONS, 'STATE');

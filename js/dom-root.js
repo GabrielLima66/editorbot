@@ -22,6 +22,34 @@ export function getRootNode() {
   return rootNode;
 }
 
+// Esc em pilha: quem abriu por último (janela, painel, o próprio editor)
+// trata o Esc, esteja o foco onde estiver. Escuta no document em captura,
+// então nenhum listener de baixo recebe o mesmo Esc (antes, com o foco fora
+// da janela, o Esc fechava o editor inteiro por baixo dela). O handler
+// devolve false quando não se aplica agora, e o Esc passa pro de baixo.
+// empilharEsc devolve a função que tira o handler da pilha.
+const pilhaEsc = [];
+
+function aoEsc(e) {
+  if (e.key !== 'Escape') return;
+  for (let i = pilhaEsc.length - 1; i >= 0; i--) {
+    if (pilhaEsc[i](e) === false) continue;
+    e.stopPropagation();
+    e.preventDefault();
+    return;
+  }
+}
+
+export function empilharEsc(fn) {
+  if (!pilhaEsc.length) document.addEventListener('keydown', aoEsc, true);
+  pilhaEsc.push(fn);
+  return () => {
+    const i = pilhaEsc.lastIndexOf(fn);
+    if (i >= 0) pilhaEsc.splice(i, 1);
+    if (!pilhaEsc.length) document.removeEventListener('keydown', aoEsc, true);
+  };
+}
+
 // lucide.createIcons() já aceita um {root} próprio (vendor/lucide.umd.js,
 // função createIcons) — só precisa sempre receber o root ativo em vez de
 // depender do `document` implícito, senão ícones dentro do shadow root nunca

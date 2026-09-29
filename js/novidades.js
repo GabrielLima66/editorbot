@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import { escapeHtml } from './utils.js';
-import { getRootNode, criarIcones } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 
 const URL_GITHUB = 'https://github.com/GabrielLima66/editorbot/blob/release/CHANGELOG.md';
 
@@ -82,23 +82,12 @@ export async function abrirNovidades(versaoInstalada) {
       </header>
       <div class="nv-corpo">${corpo}</div>
     </div>`;
-  // Esc escutado no document em captura, e não só na janela: se o foco sair
-  // dela (clique no texto), o Esc iria pro atalho do editor e fecharia o bot
-  // inteiro por baixo, sem checar alterações não salvas.
-  const aoTeclar = (e) => {
-    if (e.key !== 'Escape') return;
-    e.stopPropagation();
-    e.preventDefault();
-    fechar();
-  };
-  const fechar = () => {
-    fundo.remove();
-    document.removeEventListener('keydown', aoTeclar, true);
-  };
+  // Esc = fechar, esteja o foco onde estiver (pilha de Esc, dom-root.js).
+  const soltarEsc = empilharEsc(() => fechar());
+  const fechar = () => { fundo.remove(); soltarEsc(); };
   fundo.addEventListener('click', (e) => {
     if (e.target === fundo || e.target.closest('[data-nv="fechar"]')) fechar();
   });
-  document.addEventListener('keydown', aoTeclar, true);
   (root === document ? document.body : root).appendChild(fundo);
   criarIcones();
   fundo.querySelector('[data-nv="fechar"]').focus();
