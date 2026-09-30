@@ -11,7 +11,7 @@
 // usa datalistDe(input).
 // ---------------------------------------------------------------------------
 
-import { getRootNode, empilharEsc } from './dom-root.js';
+import { getRootNode, empilharEsc, marcarSemAutopreenchimento } from './dom-root.js';
 
 export function datalistDe(input) {
   const id = input?.dataset?.lista || input?.getAttribute?.('list');
@@ -188,7 +188,7 @@ export function initCombobox(container) {
       el.dataset.lista = el.getAttribute('list');
       el.removeAttribute('list');
     }
-    el.setAttribute('autocomplete', 'off');
+    marcarSemAutopreenchimento(el);
     abrir(el, '');
   });
 

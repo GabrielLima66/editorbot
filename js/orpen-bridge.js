@@ -26,7 +26,7 @@
 
 import { state } from './state.js';
 import { $, mostrarToast, escapeHtml } from './utils.js';
-import { setRootNode, criarIcones, getRootNode, empilharEsc } from './dom-root.js';
+import { setRootNode, criarIcones, getRootNode, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { avisarSeHouverNovaVersao } from './atualizacao.js';
 import { abrirNovidades } from './novidades.js';
 import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, payloadEsperadoNoServidor } from './orpen-adapter.js';
@@ -66,6 +66,10 @@ async function extrairEsqueletoOverlay() {
   // poder ser anexados na página de verdade.
   const botView = document.importNode(botViewOverlay, true);
   const pendencias = document.importNode(pendenciasOverlay, true);
+  // Campos do cabeçalho (nome, tempos, mensagem…) marcados antes de entrar na
+  // página, para gerenciadores de senha não os tratarem como login.
+  marcarCamposSemAutopreenchimento(botView);
+  marcarCamposSemAutopreenchimento(pendencias);
 
   // z-index alto o bastante pra ficar acima de qualquer coisa que a tela do
   // Orpen já tenha (o valor original do standalone, z-50/z-[60], é baixo

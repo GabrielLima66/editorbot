@@ -19,7 +19,7 @@
 
 import { state } from './state.js';
 import { escapeHtml, mostrarToast, setPath } from './utils.js';
-import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import {
   parseMenuModel,
   defaultMenuModel,
@@ -400,6 +400,7 @@ export function abrirModalMenu(transitionId, actionId) {
       modelo.kind === 'whatsapp_button' ? conteudoBotoes(modelo)
         : modelo.kind === 'whatsapp_list' ? conteudoLista(modelo)
           : conteudoWebchat(modelo, textoWebchat);
+    marcarCamposSemAutopreenchimento($m('.mm-chat'));
     criarIcones();
     atualizarAvisos();
   };
@@ -566,6 +567,7 @@ export function abrirModalMenu(transitionId, actionId) {
     }
   });
 
+  marcarCamposSemAutopreenchimento(fundo);
   montagem.appendChild(fundo);
   desenharConteudo();
   criarIcones();

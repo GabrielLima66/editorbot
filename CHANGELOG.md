@@ -1,5 +1,9 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.12] - 2026-09-30
+* **Inserir variável nas caixas de texto**: como no sistema, o botão direito numa caixa de texto abre a lista de variáveis; digitar `{$` também abre, filtrando pelo que vem depois. A variável entra onde está o cursor (no sistema ela sempre ia para o fim) e o Ctrl+Z desfaz. A lista traz as variáveis do bot (com as mesmas regras da condição) e as gravadas pelo próprio bot em "Armazenar variável". Funciona em condições, ações, janela de menu e mensagem de encerramento.
+* **Sem sugestão de login nos campos do editor**: o Chrome e gerenciadores de senha (Bitwarden, LastPass, 1Password) não oferecem mais usuários salvos nas caixas de busca e de escolha do editor.
+
 ## [0.8.11] - 2026-09-30
 * **Condição "ENTRADA" volta a listar as entradas**: a lista vinha vazia. Agora mostra todas as entradas pelo nome e grava o ID, como no sistema. A ação "Enviar msg. à Entrance" continua com a própria lista (WhatsApp, Facebook e Instagram), agora lida do mesmo lugar que o sistema usa.
 
