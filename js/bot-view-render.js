@@ -20,8 +20,9 @@ import {
   agruparOpcoes,
 } from './dictionaries.js';
 import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
-import { criarIcones } from './dom-root.js';
+import { criarIcones, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { fecharCombobox } from './combobox.js';
+import { fecharVariaveisTexto } from './variaveis-texto.js';
 import { parseMenuModel, renderMenuBuilderShell, initMenuBuilders } from './menu-builder.js';
 import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariaveis } from './variaveis-builder.js';
 import { renderMenuResumo, renderMenuVazio, menuVazio, tipoDoModal } from './menu-modal.js';
@@ -114,7 +115,7 @@ export function renderCondicao(c, indice, total) {
     const detalheAtual = String((iaStatus ? c.CONDITION_DATA.value : c.CONDITION_DATA.type) ?? '');
     const detalheTexto = detalheOpcoes.find((o) => o.value === detalheAtual)?.label ?? detalheAtual;
     const listaId = `ia-detalhe-${c.ID}`;
-    assistantLine = `<div class="mb-1.5"><input type="text" list="${escapeHtml(listaId)}" class="field-view" value="${escapeHtml(detalheTexto)}" data-action="mudar-condicao-ia-detalhe" ${attrsCond}><datalist id="${escapeHtml(listaId)}">${detalheOpcoes.map((o) => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist></div>`;
+    assistantLine = `<div class="mb-1.5"><input type="search" list="${escapeHtml(listaId)}" class="field-view" value="${escapeHtml(detalheTexto)}" data-action="mudar-condicao-ia-detalhe" ${attrsCond}><datalist id="${escapeHtml(listaId)}">${detalheOpcoes.map((o) => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist></div>`;
   }
 
   const valorBruto = c.CONDITION_DATA?.value ?? '';
@@ -136,8 +137,8 @@ export function renderCondicao(c, indice, total) {
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex gap-2 mb-1.5">
-            <input type="text" list="variaveis-datalist" class="field-view condicao-variavel flex-1" value="${escapeHtml(textoVariavel)}"${isAssistant ? ' placeholder="Escolha o assistente"' : ''} data-action="mudar-condicao-variavel" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
-            <input type="text" list="operador-datalist-${escapeHtml(c.ID)}" class="field-view condicao-operador flex-1" value="${escapeHtml((operatorOptions.find(o => String(o.value) === String(currentType)) || {}).label ?? '')}" data-action="mudar-condicao-operador" data-kind="${escapeHtml(kind)}" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
+            <input type="search" list="variaveis-datalist" class="field-view condicao-variavel flex-1" value="${escapeHtml(textoVariavel)}"${isAssistant ? ' placeholder="Escolha o assistente"' : ''} data-action="mudar-condicao-variavel" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
+            <input type="search" list="operador-datalist-${escapeHtml(c.ID)}" class="field-view condicao-operador flex-1" value="${escapeHtml((operatorOptions.find(o => String(o.value) === String(currentType)) || {}).label ?? '')}" data-action="mudar-condicao-operador" data-kind="${escapeHtml(kind)}" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
             <datalist id="operador-datalist-${escapeHtml(c.ID)}">${operatorOptions.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist>
           </div>
           ${assistantLine}
@@ -163,7 +164,7 @@ export function campoBloco(label, valorHtml) {
 export function campoEstadoLivre(label, estadoPorNumero, transitionId, actionId, campo, selected) {
   const estado = estadoPorNumero[selected];
   const valorExibido = estado ? `${estado.STATE_NUMBER} - ${estado.ALIAS}` : (selected ?? '');
-  return campoBloco(label, `<input type="text" list="bv-estados-datalist" class="field-view" value="${escapeHtml(valorExibido)}" data-action="mudar-estado-acao" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`);
+  return campoBloco(label, `<input type="search" list="bv-estados-datalist" class="field-view" value="${escapeHtml(valorExibido)}" data-action="mudar-estado-acao" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`);
 }
 
 // Troca Estado (ACTION_TYPE 2) precisa ser sempre um dos estados reais do
@@ -209,7 +210,7 @@ export function campoSelectEditavel(label, options, transitionId, actionId, camp
 // pra chave interna.
 export function campoBuscavel(label, dict, datalistId, transitionId, actionId, campo, selected) {
   const texto = dict[selected] ?? selected ?? '';
-  return campoBloco(label, `<input type="text" list="${escapeHtml(datalistId)}" class="field-view" value="${escapeHtml(texto)}" data-action="mudar-campo-acao-buscavel" data-dict="${escapeHtml(datalistId)}" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`);
+  return campoBloco(label, `<input type="search" list="${escapeHtml(datalistId)}" class="field-view" value="${escapeHtml(texto)}" data-action="mudar-campo-acao-buscavel" data-dict="${escapeHtml(datalistId)}" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`);
 }
 
 // Helper para renderizar dropdown nativo de campos do ambiente, com fallback
@@ -224,7 +225,7 @@ export function campoAmbienteSelect(label, optionsFn, transitionId, actionId, ca
     const textoExibido = selectedOpt ? selectedOpt.label : (selected ?? '');
 
     const datalistHtml = `<datalist id="${escapeHtml(datalistId)}">${opcoes.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}"${o.grupo ? ` data-grupo="${escapeHtml(o.grupo)}"` : ''}>`).join('')}</datalist>`;
-    const inputHtml = `<input type="text" list="${escapeHtml(datalistId)}" class="field-view" value="${escapeHtml(textoExibido)}" data-action="mudar-campo-acao-ambiente-buscavel" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`;
+    const inputHtml = `<input type="search" list="${escapeHtml(datalistId)}" class="field-view" value="${escapeHtml(textoExibido)}" data-action="mudar-campo-acao-ambiente-buscavel" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`;
 
     return campoBloco(label, inputHtml + datalistHtml);
   }
@@ -256,7 +257,7 @@ export function campoLabels(rotulo, ids, alvoAttrs, fallbackHtml) {
     <div class="labels-campo">
       <div class="labels-caixa field-view" data-action="abrir-labels" role="button" tabindex="0" aria-haspopup="listbox">${chips}${selecionadas.length ? '' : '<span class="labels-placeholder">Selecione as labels</span>'}</div>
       <div class="labels-lista hidden">
-        <input type="text" class="field-view labels-busca" data-role="labels-busca" placeholder="Buscar" spellcheck="false" autocomplete="off">
+        <input type="search" class="field-view labels-busca" data-role="labels-busca" placeholder="Buscar" spellcheck="false" autocomplete="off">
         <ul role="listbox">${itens}</ul>
         <p class="labels-sem-resultado${disponiveis.length ? ' hidden' : ''}">Nenhum resultado</p>
       </div>
@@ -525,7 +526,7 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
           <button type="button" class="reorder-btn" data-action="mover-acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}" data-dir="1"${indice === total - 1 ? ' disabled' : ''} title="Mover para baixo"><i data-lucide="chevron-down" class="w-3 h-3 pointer-events-none"></i></button>
         </div>
         <div class="flex-1 min-w-0">
-          <input type="text" list="acao-tipo-datalist" class="field-view mb-1.5 acao-tipo" value="${escapeHtml(ACTION_TYPE_LABELS[a.ACTION_TYPE] || `Tipo ${a.ACTION_TYPE}`)}" data-action="mudar-tipo-acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}">
+          <input type="search" list="acao-tipo-datalist" class="field-view mb-1.5 acao-tipo" value="${escapeHtml(ACTION_TYPE_LABELS[a.ACTION_TYPE] || `Tipo ${a.ACTION_TYPE}`)}" data-action="mudar-tipo-acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}">
           ${corpo}
         </div>
         <button type="button" class="item-delete-btn shrink-0" data-action="delete-acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}" title="Excluir ação"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>
@@ -758,6 +759,9 @@ export function abrirBotView(bot) {
   $('#bv-estados').innerHTML = estados.length
     ? estados.map(e => renderEstado(e, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, estados.length)).join('')
     : '<p class="estado-empty text-xs italic p-4">Nenhum estado neste bot.</p>';
+  // No mesmo instante da inserção, antes que gerenciadores de senha
+  // classifiquem os campos (o observador deles roda depois deste código).
+  marcarCamposSemAutopreenchimento($('#bv-estados'));
 
   // Nenhum listener é ligado aqui — tudo dentro de #bv-estados (clique,
   // change, keydown, drag) é tratado por delegação, ligada UMA VEZ fora
@@ -793,6 +797,7 @@ export async function pedirFecharBotView() {
 
 export function fecharBotView() {
   fecharCombobox();
+  fecharVariaveisTexto();
   $('#bot-view-overlay').classList.add('hidden');
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';

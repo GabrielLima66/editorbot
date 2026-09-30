@@ -161,10 +161,10 @@ function renderLinha(linha, i) {
   const legenda = legendaDoValor(linha.valor, rotulosCache);
   return `
     <div class="var-linha" data-i="${i}">
-      <input type="text" class="field-view var-nome" list="var-nomes-datalist" value="${escapeHtml(linha.nome)}" placeholder="nome_da_variavel" spellcheck="false" aria-label="Nome da variável">
+      <input type="search" class="field-view var-nome" list="var-nomes-datalist" value="${escapeHtml(linha.nome)}" placeholder="nome_da_variavel" spellcheck="false" aria-label="Nome da variável">
       <span class="var-seta" aria-hidden="true">←</span>
       <div class="var-valor-wrap">
-        <input type="text" class="field-view var-valor" list="var-valores-datalist" value="${escapeHtml(linha.valor)}" placeholder="valor ou {$variável}" spellcheck="false" aria-label="Valor">
+        <input type="search" class="field-view var-valor" list="var-valores-datalist" value="${escapeHtml(linha.valor)}" placeholder="valor ou {$variável}" spellcheck="false" aria-label="Valor">
         <p class="var-legenda${legenda ? '' : ' hidden'}">${escapeHtml(legenda)}</p>
       </div>
       <button type="button" class="mb-builder-remove-btn" data-var="remover" data-i="${i}" title="Remover variável"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>

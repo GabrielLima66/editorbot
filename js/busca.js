@@ -12,7 +12,7 @@
 
 import { state } from './state.js';
 import { escapeHtml } from './utils.js';
-import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { parseMenuModel } from './menu-builder.js';
 import { VARIABLE_LABELS, TEXT_OPERATORS } from './dictionaries.js';
 import { abrirModalMenu } from './menu-modal.js';
@@ -312,7 +312,7 @@ function montarPainel() {
         ${MODOS.map((m) => `<button type="button" class="bs-aba" role="tab" data-modo="${m.id}" title="${escapeHtml(m.dica)}"><i data-lucide="${m.icone}"></i>${m.rotulo}</button>`).join('')}
       </div>
       <div class="bs-campo">
-        <input type="text" class="bs-termo" spellcheck="false" autocomplete="off" aria-label="Termo de busca">
+        <input type="search" class="bs-termo" spellcheck="false" autocomplete="off" aria-label="Termo de busca">
         <button type="button" class="bs-opcao" data-bs="maiusculas" aria-pressed="false" title="Diferenciar maiúsculas e minúsculas">Aa</button>
         <button type="button" class="bs-opcao" data-bs="inteira" aria-pressed="false" title="Palavra inteira"><i data-lucide="whole-word"></i></button>
       </div>
@@ -325,6 +325,7 @@ function montarPainel() {
       <p class="bs-dica">Clique num resultado para editar o texto direto no campo.</p>
     </aside>`);
   const p = painel();
+  marcarCamposSemAutopreenchimento(p);
   const campo = p.querySelector('.bs-termo');
 
   campo.addEventListener('input', () => {

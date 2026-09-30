@@ -9,7 +9,7 @@
 
 import { state } from './state.js';
 import { escapeHtml, mostrarToast } from './utils.js';
-import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { parseMenuModel } from './menu-builder.js';
 import { temAmbiente, opcoesFilas, opcoesCrmStatus } from './orpen-env.js';
 import {
@@ -323,6 +323,7 @@ export function abrirModalTratamento(transitionId, actionId) {
   });
 
   const root = getRootNode();
+  marcarCamposSemAutopreenchimento(fundo);
   (root === document ? document.body : root).appendChild(fundo);
   trocarTipo();
   criarIcones();

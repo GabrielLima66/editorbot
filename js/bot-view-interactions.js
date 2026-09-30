@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO, GRUPOS_ACAO, agruparOpcoes } from './dictionaries.js';
 import { $, escapeHtml, resolverPorLabel, resolverPorLabelLista, entriesToOptions, mostrarToast } from './utils.js';
-import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
+import { getRootNode, criarIcones, empilharEsc, ignorarGerenciadoresDeSenha, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import {
   buildOperatorOptions,
   defaultActionData,
@@ -23,6 +23,7 @@ import { abrirModalMenu } from './menu-modal.js';
 import { abrirModalTratamento } from './menu-tratamento.js';
 import { initBusca } from './busca.js';
 import { initCombobox, datalistDe } from './combobox.js';
+import { initVariaveisTexto } from './variaveis-texto.js';
 import { assistentesOpenAi } from './orpen-env.js';
 import { mostrarResumoBot } from './upload.js';
 
@@ -747,6 +748,7 @@ export function rerenderTransicao(bot, transitionId) {
   const temp = document.createElement('div');
   temp.innerHTML = renderTransicaoRow(transicao, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, totalTransicoes).trim();
   const novaLinha = temp.firstElementChild;
+  marcarCamposSemAutopreenchimento(novaLinha); // antes de entrar na tela
   linhaAtual.replaceWith(novaLinha);
   initMenuBuilders(novaLinha);
   initVariaveisBuilders(novaLinha);
@@ -782,6 +784,7 @@ export function rerenderEstado(bot, stateNumber) {
   const temp = document.createElement('div');
   temp.innerHTML = renderEstado(estado, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, totalEstados).trim();
   const novoWrap = temp.firstElementChild;
+  marcarCamposSemAutopreenchimento(novoWrap); // antes de entrar na tela
   wrapAtual.replaceWith(novoWrap);
   if (estavaAberto) {
     novoWrap.querySelector('.estado-body').classList.remove('hidden');
@@ -1571,6 +1574,10 @@ export function initBotViewWiring() {
   initBusca();
   // Lista de sugestões própria em todos os campos de busca (combobox.js).
   initCombobox($('#bot-view-overlay'));
+  // Botão direito ou {$ nas caixas de texto insere variável (variaveis-texto.js).
+  initVariaveisTexto(getRootNode());
+  // Bitwarden & cia. não oferecem autopreenchimento nos campos do editor.
+  ignorarGerenciadoresDeSenha(getRootNode());
 
   // Opcional: só existe no fluxo standalone (bot_transform.html completo,
   // seção #bot-summary). No modo extensão só o esqueleto de #bot-view-overlay
