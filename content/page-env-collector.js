@@ -82,10 +82,17 @@
       subStatus: toArray(window.subStatus).map(function (s) {
         return { id: s.ID, name: s.NAME || s.ID };
       }),
-      entrances: toArray(window.entrances).map(function (e) {
-        var prefix = e.ENTRANCE_TYPE ? '[' + e.ENTRANCE_TYPE + '] ' : '';
-        return { id: e.ENTRANCE, name: prefix + e.ENTRANCE };
+      // Condição "ENTRADA": a variável `entrances` da página traz { ID, NAME }
+      // de todas as entradas (bot.php:42, 1073) e o nativo grava o ID
+      // (bot.php:3570-3576).
+      entradasCondicao: toArray(window.entrances).map(function (e) {
+        var id = e.ID !== undefined ? e.ID : e.id;
+        var nome = e.NAME || e.name;
+        return { id: id, name: nome ? nome : 'ID: ' + id };
       }),
+      // Ação "Enviar msg. à Entrance" (12): lista própria, montada dentro do
+      // formulário da ação (bot.php:4155-4164), preenchida abaixo.
+      entrances: [],
       calendars: toArray(window.calendario).map(function (c) {
         return { id: c.id || c.ID, name: c.name || c.NAME || c.id };
       }),
@@ -130,23 +137,24 @@
       }
     }
 
-    // Checkpoints via createAction nativa
-    if (typeof window.createAction === 'function' && typeof window.$ !== 'undefined') {
+    // Listas que o nativo só monta dentro do formulário da ação: pede ao
+    // próprio createAction (fora da tela) e lê as <option>. Checkpoints (9) e
+    // entradas de envio (12, value = a entrada, texto "[Tipo] entrada").
+    function opcoesDoFormularioNativo(tipo, nomeSelect, destino, rotulo) {
+      if (typeof window.createAction !== 'function' || typeof window.$ === 'undefined') return;
       try {
         var dummy = window.$('<div><div class="actions"></div></div>');
-        window.createAction(dummy, '9', {});
-        var selects = dummy.find('select[name="check_point"]');
-        if (selects.length > 0) {
-          selects.first().find('option').each(function () {
-            var val = window.$(this).val();
-            var text = window.$(this).text();
-            if (val) dados.checkpoints.push({ id: val, name: text });
-          });
-        }
+        window.createAction(dummy, tipo, {});
+        dummy.find('select[name="' + nomeSelect + '"]').first().find('option').each(function () {
+          var val = window.$(this).val();
+          if (val) destino.push({ id: val, name: window.$(this).text() });
+        });
       } catch (e) {
-        console.warn('[EDITOR_BOT] Aviso ao obter checkpoints via createAction:', e);
+        console.warn('[EDITOR_BOT] Aviso ao obter ' + rotulo + ' via createAction:', e);
       }
     }
+    opcoesDoFormularioNativo('9', 'check_point', dados.checkpoints, 'checkpoints');
+    opcoesDoFormularioNativo('12', 'entrances', dados.entrances, 'entradas de envio');
 
     return dados;
   }

@@ -69,3 +69,12 @@ test('sem ambiente (modo avulso): lista fixa do editor', () => {
   state.ambienteOrpen = null;
   assert.ok(valores(botCom()).includes('message'));
 });
+
+test('condição ENTRADA lista as entradas pelo nome e grava o ID, como no nativo', () => {
+  state.ambienteOrpen = {
+    entradasCondicao: [{ id: '11', name: 'WhatsApp Vendas' }, { id: '12', name: 'ID: 12' }],
+    entrances: [{ id: '5511999', name: '[Whatsapp] 5511999' }],
+  };
+  const opcoes = R.buildOperatorOptions('ref_entrance', '');
+  assert.deepEqual(opcoes.map((o) => [o.value, o.label]), [['11', 'WhatsApp Vendas'], ['12', 'ID: 12']]);
+});

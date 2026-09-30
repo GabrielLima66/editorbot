@@ -27,7 +27,7 @@ import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariav
 import { renderMenuResumo, renderMenuVazio, menuVazio, tipoDoModal } from './menu-modal.js';
 import {
   temAmbiente, opcoesFilas, opcoesAgentes, opcoesBots, opcoesCrmStatus, opcoesSubStatus,
-  opcoesEntrancesEnvio, opcoesScripts, opcoesCheckpoints, opcoesOpenAiContas,
+  opcoesEntrancesEnvio, opcoesEntradasCondicao, opcoesScripts, opcoesCheckpoints, opcoesOpenAiContas,
   opcoesCalendarios, comValorAtual, opcoesLabels, temLabels,
   assistentesOpenAi, opcoesAssistentesDaConta, opcoesContasComAssistentes,
   opcoesAnexos, temAnexos,
@@ -76,7 +76,7 @@ export function buildOperatorOptions(kind, currentValue) {
     case 'ref_fila': base = temAmbiente() ? comValorAtual(opcoesFilas(), currentValue) : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]; break;
     case 'ref_agente': base = temAmbiente() ? comValorAtual(opcoesAgentes(), currentValue) : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]; break;
     case 'ref_crm_status': base = temAmbiente() ? comValorAtual(opcoesCrmStatus(), currentValue) : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]; break;
-    case 'ref_entrance': base = temAmbiente() ? comValorAtual(opcoesEntrancesEnvio(), currentValue) : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]; break;
+    case 'ref_entrance': base = temAmbiente() ? comValorAtual(opcoesEntradasCondicao(), currentValue) : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]; break;
     case 'ref': base = [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo, não disponível no JSON)` }]; break;
     case 'none': base = [{ value: currentValue ?? '', label: '— (variável sem operador)' }]; break;
     default: base = [];
