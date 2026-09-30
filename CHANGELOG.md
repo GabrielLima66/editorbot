@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.10] - 2026-09-30
+* **Aviso de renumeração mais completo**: além do failover das entradas com destino "estado" (inclusive a integração com Facebook), o aviso agora lembra de conferir a inatividade do cliente e do agente nas configurações do ContactCenter. Esses três lugares guardam o número do estado fora do bot e não são atualizados quando os estados mudam de número.
+
 ## [0.8.9] - 2026-09-29
 * **I.A. igual ao sistema**: na condição, a variável lista os assistentes como "[Conta] Assistente: Nome", e o operador é "Status da análise" (Sucesso/Falha) ou "Conteúdo da análise" (Igual a/Contém/Diferente de/Não contém + texto). Na ação OpenAI, escolhe a conta e depois o assistente dela. Nada de digitar ID, e o que já existe abre preenchido. Antes, uma condição de I.A. feita no editor ficava sem assistente e nunca era verdadeira, e abrir no sistema depois deixava o operador em branco.
 * **Labels e anexos pelo nome**: "Possui os labels" e "Adicionar labels" funcionam como o seletor do sistema (clicar abre a lista com busca, × remove). A condição "Possui os labels" editada no editor ficava sempre falsa; corrigido. "Enviar anexo" lista os anexos do bot ("imagem - Título").

@@ -517,7 +517,7 @@ function confirmarRenumeracao({ mudados, excluidos, entrada }) {
         ${entrada ? `<p class="fx-alerta-entrada"><strong>A entrada do bot muda.</strong> Toda conversa nova começa no estado nº 0, que ${entrada.depois === null ? 'deixa de existir' : `passa a ser <strong>${escapeHtml(entrada.depois || '(sem nome)')}</strong>`} (era <strong>${escapeHtml(entrada.antes || '(sem nome)')}</strong>).</p>` : ''}
         <p class="fx-confirmacao-texto">Cada atendimento em andamento guarda <strong>só o número</strong> do estado em que o cliente está. Até 1 minuto depois de salvar, quem estiver parado num destes números passa a seguir o estado que ficou com aquele número, ou fica sem resposta se o número deixar de existir.</p>
         <ul class="fx-alerta-lista">${linhas.slice(0, LIMITE).join('')}${extras}</ul>
-        <p class="fx-confirmacao-texto">Configurações <strong>fora do bot</strong> que apontam para um número de estado dele, como o failover de uma entrada com destino "estado", <strong>não são atualizadas</strong>: confira-as depois.</p>
+        <p class="fx-confirmacao-texto">Configurações <strong>fora do bot</strong> que apontam para um número de estado dele <strong>não são atualizadas</strong>. Confira depois: o failover das entradas com destino "estado" (inclusive integração com Facebook) e a inatividade do cliente e do agente nas configurações do ContactCenter.</p>
         <p class="fx-confirmacao-texto fx-alerta-dica">Se o bot está em uso agora, prefira salvar fora do horário de atendimento.</p>
         <div class="fx-confirmacao-acoes">
           <button type="button" data-acao="cancelar" class="fx-btn-secundario">Cancelar</button>

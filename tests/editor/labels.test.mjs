@@ -1,4 +1,4 @@
-// Labels de contato escolhidas pelo nome (VALIDACAO.md 6.7c): a tela mostra
+// Labels de contato escolhidas pelo nome: a tela mostra
 // nomes, o bot grava IDs; sem a lista do ambiente, cai no campo de IDs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

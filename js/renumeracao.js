@@ -4,8 +4,12 @@
 // bot do banco a cada ciclo (Bot.class.php, loadTransitions, cache de 60 s).
 // Arrastar, duplicar ou excluir estados renumera os outros: quem está parado
 // num número que mudou passa a rodar o estado que ficou com aquele número.
-// Configurações fora do bot também guardam número de estado (failover de
-// entrada com destino "estado", Chat.class.php:3977) e não são atualizadas.
+// Configurações fora do bot também guardam número de estado e não são
+// atualizadas: failover da entrada com destino "estado" (ctc_message_entrance,
+// Chat.class.php:3977; também gravado pela integração com Facebook,
+// Integration.class.php:149) e inatividade do cliente/agente (rcx_config
+// *_inactivity_bots_state, bin/clientInactiveObserver.php:125 e
+// bin/agentInactiveObserver.php:130).
 // O editor muta os objetos de estado no lugar (remapStateNumbers), então o
 // próprio objeto identifica o estado entre o último salvamento e agora (o ID
 // não serve: nextId pode reaproveitar o de um estado excluído).
