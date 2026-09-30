@@ -9,3 +9,10 @@ Claude outputs/
 .claude/settings.local.json
 fluxograma/tests/visual_out/
 fluxograma/tests/tema_out/
+
+# Material de trabalho local (validação, agentes, log e planejamento): fica só na máquina de desenvolvimento
+VALIDACAO.md
+.claude/agents/
+.project/
+project-lifecycle/
+CAPABILITY_MAP.md

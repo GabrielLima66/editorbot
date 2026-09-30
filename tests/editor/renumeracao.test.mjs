@@ -1,4 +1,4 @@
-// Aviso de estados renumerados (VALIDACAO.md, itens 4.3 e 4.4), com as
+// Aviso de estados renumerados, com as
 // mesmas funções que o editor usa para mover, duplicar e excluir estados.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

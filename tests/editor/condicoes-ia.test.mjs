@@ -1,4 +1,4 @@
-// Condições do assistente OpenAI no formato do modal nativo (VALIDACAO.md 6.6):
+// Condições do assistente OpenAI no formato do modal nativo:
 // raiz 1 (status) ou 2 (conteúdo), operador dentro do data.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -88,7 +88,7 @@ test('ida e volta com condições de I.A. confere', () => {
   assert.equal(gravado, serializeBracketNotation(payloadEsperadoNoServidor(payload).esperado));
 });
 
-// "Possui os labels" (18) e "Adicionar labels" (VALIDACAO.md 6.7)
+// "Possui os labels" (18) e "Adicionar labels"
 test('condição 18: valor editado vira lista de IDs', () => {
   const { bot, t, c } = comCondicao();
   I.mudarCondicaoVariavel(bot, t.ID, c.ID, 'contact');
@@ -108,7 +108,7 @@ test('condição 18 salva antes como texto sai como lista no payload e confere',
   assert.equal(gravado, serializeBracketNotation(payloadEsperadoNoServidor(payload).esperado));
 });
 
-// Tela no formato do nativo: nada de digitar ID (VALIDACAO.md 6.6b)
+// Tela no formato do nativo: nada de digitar ID
 const { state } = await js('state.js');
 const R = await js('bot-view-render.js');
 const CONTAS = [

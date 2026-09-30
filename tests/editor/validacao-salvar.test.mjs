@@ -1,4 +1,4 @@
-// Travas do "Salvar" nativo (VALIDACAO.md, seção 5).
+// Travas do "Salvar" nativo.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { botsDeExemplo, servidorOrpen, js } from './apoio.mjs';

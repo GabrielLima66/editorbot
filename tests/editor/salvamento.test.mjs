@@ -1,4 +1,4 @@
-// Ida e volta do salvamento (VALIDACAO.md, itens 1.3 e 6.4): o que o editor
+// Ida e volta do salvamento: o que o editor
 // envia, depois de gravado e relido, tem que bater com o esperado; e uma
 // gravação parcial do servidor tem que ser detectada.
 import { test } from 'node:test';
