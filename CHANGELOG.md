@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.11] - 2026-09-30
+* **Condição "ENTRADA" volta a listar as entradas**: a lista vinha vazia. Agora mostra todas as entradas pelo nome e grava o ID, como no sistema. A ação "Enviar msg. à Entrance" continua com a própria lista (WhatsApp, Facebook e Instagram), agora lida do mesmo lugar que o sistema usa.
+
 ## [0.8.10] - 2026-09-30
 * **Aviso de renumeração mais completo**: além do failover das entradas com destino "estado" (inclusive a integração com Facebook), o aviso agora lembra de conferir a inatividade do cliente e do agente nas configurações do ContactCenter. Esses três lugares guardam o número do estado fora do bot e não são atualizados quando os estados mudam de número.
 

@@ -26,7 +26,11 @@ export function opcoesAgentes() { return opcoesDe(state.ambienteOrpen?.agents); 
 export function opcoesBots() { return opcoesDe(state.ambienteOrpen?.bots); }
 export function opcoesCrmStatus() { return opcoesDe(state.ambienteOrpen?.crm_status); }
 export function opcoesSubStatus() { return opcoesDe(state.ambienteOrpen?.subStatus); }
-// Entradas agrupadas pelo tipo (o nome vem como "[TIPO] entrada", como no nativo).
+// Condição "ENTRADA": todas as entradas, gravando o ID (como no nativo).
+export function opcoesEntradasCondicao() { return opcoesDe(state.ambienteOrpen?.entradasCondicao); }
+
+// Ação "Enviar msg. à Entrance": entradas de WhatsApp/Facebook/Instagram,
+// agrupadas pelo tipo (o nome vem como "[Tipo] entrada", como no nativo).
 export function opcoesEntrancesEnvio() {
   return opcoesDe(state.ambienteOrpen?.entrances)
     .map((o) => {
