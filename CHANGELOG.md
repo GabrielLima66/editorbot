@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.16] - 2026-10-06
+* **Localizar acha calendários**: um novo filtro "Calendários" busca nas condições de calendário pelo nome do calendário (e pelo ID), sem diferenciar acento. Clicar no resultado abre o estado, rola até a condição e destaca o campo do calendário.
+
 ## [0.8.15] - 2026-10-06
 * **Copiar e colar estados entre bots**: o botão "Copiar / colar", ao lado de "Adicionar" na lista de estados, abre uma janela. Em "Copiar deste bot" você busca por número ou nome e marca os estados (vários de uma vez, com as ligações entre eles mantidas). No outro bot, em "Colar neste bot", escolhe depois de qual estado entram, ou no fim da lista. Antes de colar, a janela mostra como vai ficar, quais estados mudam de número e se algo impede a colagem. Colar não salva nada: você revisa e clica em Salvar. O estado 0 (entrada do bot) nunca muda.
 * **Colar em outro ambiente**: fila, agente, anexo, conta OpenAI, labels e demais cadastros vêm em branco (os códigos são outros), e uma lista mostra onde escolher de novo. Ligações com estados que não foram copiados também ficam em branco. O Salvar não deixa gravar uma condição de fila, agente, entrada, calendário ou status sem o cadastro escolhido, porque o servidor a descartaria e a transição passaria a valer sempre.
