@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.14] - 2026-10-06
+* **Editor mais fácil de ler**: o tipo da ação virou o título do cartão (clicar nele continua trocando o tipo), os botões de copiar e excluir ficam em cinza e só ganham cor ao passar o mouse, cada transição virou um bloco separado, "+ Transição" se destaca de "+ Condição" e "+ Ação", e só o "Salvar" fica em roxo cheio no rodapé.
+* **Caixas de texto se ajustam ao texto**: crescem e encolhem sozinhas conforme o conteúdo, com mínimo de 2 linhas; textos muito longos passam a rolar dentro da caixa.
+* **"Ir para o estado" mais claro**: o estado de destino abre com a animação, a tela rola suave até o topo dele e ele pisca em roxo para você achar. A animação aparece mesmo com os efeitos de animação do Windows desligados.
+
 ## [0.8.13] - 2026-10-06
 * **Localizar busca em tudo de uma vez**: o campo de busca foi para o topo do painel e a lista traz todos os resultados, separados em blocos de textos enviados, condições e estados. Cada filtro mostra ao lado quantos resultados há naquele tipo; clicar num filtro deixa só aquele bloco e clicar de novo volta para a lista completa.
 

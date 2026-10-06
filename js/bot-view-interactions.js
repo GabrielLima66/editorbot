@@ -690,6 +690,16 @@ export function iniciarExclusaoEstado(bot, stateNumber) {
   criarIcones();
 }
 
+// Liga uma classe de animação CSS e a tira depois de `ms`. Religar enquanto
+// ainda toca reinicia a animação (clique repetido em "ir para o estado").
+function animarClasse(el, classe, ms) {
+  el.classList.remove(classe);
+  void el.offsetWidth;
+  el.classList.add(classe);
+  clearTimeout(el._timerAnimacao);
+  el._timerAnimacao = setTimeout(() => el.classList.remove(classe), ms);
+}
+
 // Reabre a tela mantendo os estados que já estavam expandidos (senão cada
 // duplicação recolheria tudo de novo). `focarNumero`, se passado, só recebe
 // scroll pra ficar visível — não é expandido automaticamente, pra não confundir
@@ -1130,12 +1140,19 @@ export function initAcoesDelegadas() {
         if (!stateNumber) break;
         const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${stateNumber}"]`);
         if (!wrap) break;
-        wrap.querySelector('.estado-body').classList.remove('hidden');
+        const corpo = wrap.querySelector('.estado-body');
+        const jaAberto = !corpo.classList.contains('hidden');
+        corpo.classList.remove('hidden');
         wrap.classList.add('estado-expandido');
         wrap.querySelector('.estado-chevron').classList.add('rotate-180');
-        wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        wrap.classList.add('estado-destaque');
-        setTimeout(() => wrap.classList.remove('estado-destaque'), 1200);
+        // O estado abre antes da rolagem (o corpo aberto aumenta a altura da
+        // lista) e a rolagem leva o TOPO dele ao topo da área visível.
+        // Sem checar prefers-reduced-motion de propósito: é feedback curto de
+        // um clique, e com "efeitos de animação" desligados no Windows o
+        // navegador reporta "reduzir" e o botão ficaria seco.
+        if (!jaAberto) animarClasse(corpo, 'estado-abrindo', 400);
+        animarClasse(wrap, 'estado-destaque', 1500);
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
         break;
       }
     }
