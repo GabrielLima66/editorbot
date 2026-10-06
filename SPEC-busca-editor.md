@@ -13,11 +13,11 @@ Em bots grandes (o 50514 tem 72 estados e 249 transições) achar onde um texto 
 
 Um painel **"Localizar"** encaixado à direita, fora do modal do editor. Ele abre com **Ctrl+F** ou com a lupa no cabeçalho, e fecha com Esc ou quando o editor fecha. Com ele aberto, o editor encolhe e vai para a esquerda, em vez de ficar por baixo do painel. Numa tela de 1366px, os dois cabem lado a lado.
 
-### Modos exclusivos
+### Tipos de resultado
 
-Busca-se num modo por vez, para nunca misturar o que o bot envia com o que o cliente digita. Cada modo tem cor e ícone próprios:
+O campo de busca fica no topo, acima dos filtros. A busca corre nos três tipos de uma vez e a lista vem completa, separada em um bloco por tipo, para nunca misturar o que o bot envia com o que o cliente digita. Cada filtro mostra ao lado a quantidade encontrada naquele tipo; clicar num filtro deixa só aquele bloco, clicar de novo volta para todos. Cada tipo tem cor e ícone próprios:
 
-| Modo | Onde busca | Cor |
+| Tipo | Onde busca | Cor |
 |---|---|---|
 | **Textos enviados** | Mensagem (1), mensagem de áudio (20), forma de contato (21) e menus (cabeçalho, corpo, rodapé, botões, opções e descrições, botão da lista; JSON cru se o formato não for reconhecido) | roxo |
 | **Condições** | Valor das condições; o rótulo mostra variável e operador ("MENSAGEM Contém") | verde-azulado |
@@ -34,7 +34,7 @@ Busca-se num modo por vez, para nunca misturar o que o bot envia com o que o cli
 - **Contador e setas:** "3 de 12", ▲/▼, Enter e Shift+Enter no campo, F3 e Shift+F3 em qualquer lugar do editor. Isso abre o estado se estiver fechado, rola até o campo e faz o campo piscar. **O foco continua na busca**, porque um Enter dentro do campo inseriria uma quebra de linha no texto do bot.
 - **Clique num resultado:** vai até o campo, põe o foco nele e **seleciona o termo**, pronto para editar.
 - **Resultado de menu:** leva ao cartão do menu. O lápis ao lado abre o modal do menu.
-- **Lista:** agrupada por estado, com quantidade, caminho ("T2 · Mensagem") e trecho com o termo destacado.
+- **Lista:** dividida em blocos por tipo (sem filtro marcado) e, dentro de cada bloco, agrupada por estado, com quantidade, caminho ("T2 · Mensagem") e trecho com o termo destacado.
 
 ### Ao vivo
 
