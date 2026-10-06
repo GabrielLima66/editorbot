@@ -212,9 +212,15 @@
       <div class="pt-5">
         <div class="flex items-center justify-between mb-3">
           <p class="bv-estados-title text-sm font-medium">Transições</p>
-          <button id="btn-adicionar-estado" type="button" class="flex items-center gap-1.5 text-sm font-medium text-white bg-primary rounded-lg px-3 py-1.5 transition-colors">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-copiar-colar" type="button" class="btn-copiar-colar flex items-center gap-1.5 text-sm font-medium rounded-lg px-3 py-1.5 transition-colors" title="Copiar estados deste bot ou colar estados copiados de outro">
+              <i data-lucide="clipboard-copy" class="w-3.5 h-3.5"></i> Copiar / colar
+              <span class="btn-copiar-colar-ponto" aria-hidden="true"></span>
+            </button>
+            <button id="btn-adicionar-estado" type="button" class="flex items-center gap-1.5 text-sm font-medium text-white bg-primary rounded-lg px-3 py-1.5 transition-colors">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar
+            </button>
+          </div>
         </div>
         <div id="bv-estados"></div>
         <datalist id="bv-estados-datalist"></datalist>
@@ -241,19 +247,49 @@
   </div>
 </div>
 
+<!-- ===================== MODAL: COPIAR / COLAR ESTADOS ===================== -->
+<div id="copiar-overlay" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-[60]">
+  <div class="cc-painel" role="dialog" aria-modal="true" aria-labelledby="cc-titulo">
+    <div class="cc-topo">
+      <h2 id="cc-titulo" class="cc-titulo">Copiar e colar estados</h2>
+      <div class="cc-abas" role="tablist">
+        <button type="button" class="cc-aba" role="tab" data-aba="copiar" aria-selected="true">Copiar deste bot</button>
+        <button type="button" class="cc-aba" role="tab" data-aba="colar" aria-selected="false">Colar neste bot<span id="cc-aba-ponto" class="cc-ponto hidden"></span></button>
+      </div>
+      <button id="cc-fechar" type="button" class="cc-fechar" title="Fechar" aria-label="Fechar"><i data-lucide="x" class="pointer-events-none"></i></button>
+    </div>
+    <div class="cc-corpo">
+      <div class="cc-esquerda">
+        <input id="cc-busca" type="search" class="cc-input" placeholder="Buscar por número ou nome do estado" aria-label="Buscar estado">
+        <div id="cc-acoes-lista" class="cc-acoes-lista">
+          <button type="button" class="cc-link" data-acao="sel-filtrados">Selecionar os filtrados</button>
+          <button type="button" class="cc-link" data-acao="sel-nenhum">Limpar seleção</button>
+        </div>
+        <div id="cc-lista" class="cc-lista"></div>
+      </div>
+      <div id="cc-direita" class="cc-direita"></div>
+    </div>
+    <div class="cc-rodape">
+      <span id="cc-info" class="cc-info"></span>
+      <button id="cc-cancelar" type="button" class="fx-btn-secundario">Cancelar</button>
+      <button id="cc-confirmar" type="button" class="fx-btn-primario">Copiar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== MODAL: PENDÊNCIAS ANTES DE BAIXAR ===================== -->
 <div id="pendencias-overlay" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-[60]">
   <div class="bv-panel w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
 
     <div class="bv-header flex items-center gap-3 px-6 py-5 border-b shrink-0">
-      <h2 class="text-lg font-semibold">Pendências depois de importar</h2>
+      <h2 id="pendencias-titulo" class="text-lg font-semibold">Pendências depois de importar</h2>
       <button id="btn-fechar-pendencias" class="bv-btn-close ml-auto text-[#8b899b] p-1 rounded-lg transition-colors">
         <i data-lucide="x" class="w-4.5 h-4.5"></i>
       </button>
     </div>
 
     <div class="overflow-y-auto px-6 py-5">
-      <p class="bv-hint text-xs mb-4">O JSON já foi baixado. Estes campos referenciam cadastros que só existem no ambiente de destino (fila, agente, script, OpenAI, etc.) — esta ferramenta não tem como preenchê-los sozinha. Use a lista abaixo como conferência depois de importar o bot no ambiente, marcando cada item conforme for configurando.</p>
+      <p id="pendencias-dica" class="bv-hint text-xs mb-4">O JSON já foi baixado. Estes campos referenciam cadastros que só existem no ambiente de destino (fila, agente, script, OpenAI, etc.) — esta ferramenta não tem como preenchê-los sozinha. Use a lista abaixo como conferência depois de importar o bot no ambiente, marcando cada item conforme for configurando.</p>
       <div id="pendencias-lista"></div>
     </div>
 

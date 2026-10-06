@@ -145,6 +145,17 @@ export const TABLE_KEY_ORDER = {
   action: ['ID', 'TRANSITION_ID', 'ACTION_TYPE'],
 };
 
+// Campos de ACTION_DATA que guardam NÚMERO DE ESTADO do próprio bot
+// (bot-engine-spec.md §5). Lista única: renumerar estados
+// (remapStateNumbers) e copiar trechos entre bots (trechos.js) leem daqui,
+// pra os dois nunca divergirem.
+export const CAMPOS_ESTADO_POR_TIPO = {
+  '2': ['destiny'],
+  '18': ['callback_state', 'fallback_state'],
+  '20': ['callback_state', 'fallback_state'],
+  '22': ['callback_state', 'fallback_state'],
+};
+
 // Campos de ACTION_DATA/CONDITION_DATA que só existem no ambiente de destino
 // (fila, agente, script, OpenAI, etc.) — esta ferramenta não tem como saber
 // o valor certo. Trocas de estado (destiny do tipo 2, callback_state,

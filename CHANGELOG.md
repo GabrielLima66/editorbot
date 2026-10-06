@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.15] - 2026-10-06
+* **Copiar e colar estados entre bots**: o botão "Copiar / colar", ao lado de "Adicionar" na lista de estados, abre uma janela. Em "Copiar deste bot" você busca por número ou nome e marca os estados (vários de uma vez, com as ligações entre eles mantidas). No outro bot, em "Colar neste bot", escolhe depois de qual estado entram, ou no fim da lista. Antes de colar, a janela mostra como vai ficar, quais estados mudam de número e se algo impede a colagem. Colar não salva nada: você revisa e clica em Salvar. O estado 0 (entrada do bot) nunca muda.
+* **Colar em outro ambiente**: fila, agente, anexo, conta OpenAI, labels e demais cadastros vêm em branco (os códigos são outros), e uma lista mostra onde escolher de novo. Ligações com estados que não foram copiados também ficam em branco. O Salvar não deixa gravar uma condição de fila, agente, entrada, calendário ou status sem o cadastro escolhido, porque o servidor a descartaria e a transição passaria a valer sempre.
+* **Copiar e colar transições soltas**: ícone de copiar na barra da transição e "Colar transições" dentro do estado de destino, no mesmo bot ou em outro.
+
 ## [0.8.14] - 2026-10-06
 * **Editor mais fácil de ler**: o tipo da ação virou o título do cartão (clicar nele continua trocando o tipo), os botões de copiar e excluir ficam em cinza e só ganham cor ao passar o mouse, cada transição virou um bloco separado, "+ Transição" se destaca de "+ Condição" e "+ Ação", e só o "Salvar" fica em roxo cheio no rodapé.
 * **Caixas de texto se ajustam ao texto**: crescem e encolhem sozinhas conforme o conteúdo, com mínimo de 2 linhas; textos muito longos passam a rolar dentro da caixa.

@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO, GRUPOS_ACAO, agruparOpcoes } from './dictionaries.js';
+import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO, CAMPOS_ESTADO_POR_TIPO, GRUPOS_ACAO, agruparOpcoes } from './dictionaries.js';
 import { $, escapeHtml, resolverPorLabel, resolverPorLabelLista, entriesToOptions, mostrarToast } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc, ignorarGerenciadoresDeSenha, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import {
@@ -22,6 +22,7 @@ import { initVariaveisBuilders } from './variaveis-builder.js';
 import { abrirModalMenu } from './menu-modal.js';
 import { abrirModalTratamento } from './menu-tratamento.js';
 import { initBusca } from './busca.js';
+import { initCopiarColar } from './copiar-colar.js';
 import { initCombobox, datalistDe } from './combobox.js';
 import { initVariaveisTexto } from './variaveis-texto.js';
 import { assistentesOpenAi } from './orpen-env.js';
@@ -472,16 +473,11 @@ export function remapStateNumbers(bot, mapa) {
     if (mapa.has(t.STATE)) { t.STATE = mapa.get(t.STATE); t['1'] = t.STATE; }
   });
   (bot.BOT_ACTIONS || []).forEach(a => {
-    if (a.ACTION_TYPE === '2' && a.ACTION_DATA && mapa.has(a.ACTION_DATA.destiny)) {
-      a.ACTION_DATA.destiny = mapa.get(a.ACTION_DATA.destiny);
-    }
-    // Tipos 18 (OpenAI), 20 (Áudio) e 22 (Automação) também guardam número de
-    // estado, em callback_state/fallback_state (bot-engine-spec.md §5).
-    if (['18', '20', '22'].includes(a.ACTION_TYPE) && a.ACTION_DATA) {
-      ['callback_state', 'fallback_state'].forEach(campo => {
-        if (mapa.has(a.ACTION_DATA[campo])) a.ACTION_DATA[campo] = mapa.get(a.ACTION_DATA[campo]);
-      });
-    }
+    // Troca Estado (destiny) e callback_state/fallback_state de OpenAI, Áudio
+    // e Automação: CAMPOS_ESTADO_POR_TIPO (bot-engine-spec.md §5).
+    (CAMPOS_ESTADO_POR_TIPO[a.ACTION_TYPE] || []).forEach(campo => {
+      if (a.ACTION_DATA && mapa.has(a.ACTION_DATA[campo])) a.ACTION_DATA[campo] = mapa.get(a.ACTION_DATA[campo]);
+    });
   });
   if (bot.TIMEOUT_ACTION === 'bot' && mapa.has(bot.TIMEOUT_DESTINY)) {
     bot.TIMEOUT_DESTINY = mapa.get(bot.TIMEOUT_DESTINY);
@@ -1548,7 +1544,14 @@ export function renderPendencia(p) {
 }
 
 let soltarEscPendencias = null;
-export function abrirPendenciasModal(pendencias) {
+export function abrirPendenciasModal(pendencias, textos) {
+  // Textos próprios (ex.: depois de colar um trecho); sem eles, volta aos do download.
+  const titulo = $('#pendencias-titulo');
+  const dica = $('#pendencias-dica');
+  titulo.dataset.padrao ??= titulo.textContent;
+  dica.dataset.padrao ??= dica.textContent;
+  titulo.textContent = textos?.titulo ?? titulo.dataset.padrao;
+  dica.textContent = textos?.dica ?? dica.dataset.padrao;
   $('#pendencias-lista').innerHTML = pendencias.map(renderPendencia).join('');
   $('#pendencias-overlay').classList.remove('hidden');
   if (!soltarEscPendencias) soltarEscPendencias = empilharEsc(fecharPendenciasModal);
@@ -1588,6 +1591,7 @@ export function initBotViewWiring() {
   initBotNumeroEdit();
   initBotHeaderEdit();
   initPendenciasWiring();
+  initCopiarColar();
   initBusca();
   // Lista de sugestões própria em todos os campos de busca (combobox.js).
   initCombobox($('#bot-view-overlay'));
