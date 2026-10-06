@@ -604,7 +604,23 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 #bot-view-overlay .ir-para-estado-btn { width: 2.25rem; border-radius: 0.5rem; background: var(--ir-estado-bg); color: var(--ir-estado-texto); display: flex; align-items: center; justify-content: center; transition: background-color .12s, color .12s; }
 #bot-view-overlay .ir-para-estado-btn:hover:not(:disabled) { background: var(--ir-estado-bg-hover); color: var(--ir-estado-texto-hover); }
 #bot-view-overlay .ir-para-estado-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-#bot-view-overlay .estado-wrap.estado-destaque { outline: 2px solid var(--primary); outline-offset: 2px; }
+#bot-view-overlay .estado-wrap { scroll-margin-top: 0.75rem; }
+#bot-view-overlay .estado-wrap.estado-destaque {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  animation: estado-destaque 1.5s ease-out forwards;
+}
+@keyframes estado-destaque {
+  0% { outline-color: var(--primary); box-shadow: 0 0 0 8px var(--foco-anel); }
+  100% { outline-color: transparent; box-shadow: 0 0 0 0 transparent; }
+}
+/* "Ir para o estado": o corpo desce suave em vez de aparecer de uma vez
+   (classe só posta por ir-para-estado, pra não animar a cada re-render). */
+#bot-view-overlay .estado-body.estado-abrindo { animation: estado-abrir 0.3s ease-out; }
+@keyframes estado-abrir {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
 
 /* ---- Excluir estado (bloqueio por referência / confirmação) ---- */
 #bot-view-overlay .estado-delete-panel { padding: 0.75rem 1rem; }
@@ -1271,3 +1287,88 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .nv-antigas { margin: 14px 0 0; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 .nv-vazio { color: var(--text-muted); font-size: 13px; }
 .nv-vazio a { color: var(--accent); }
+
+/* ---- Hierarquia visual (só CSS; o HTML e o caminho de salvar não mudam) ----
+   Tipo da ação vira título do cartão, copiar/excluir viram ícones discretos,
+   cada transição ganha corpo próprio, os "+" têm pesos diferentes e só o
+   Salvar fica em roxo cheio. Tudo por tokens, então segue os dois temas. */
+
+/* Tipo da ação: continua sendo o campo que troca o tipo (datalist), mas em
+   repouso lê como título; borda e fundo aparecem no hover e no foco. */
+#bot-view-overlay .acao-item .acao-tipo {
+  font-weight: 600;
+  background: transparent;
+  border-color: transparent;
+}
+#bot-view-overlay .acao-item .acao-tipo:hover {
+  background: var(--hover-bg);
+  border-color: var(--obd-border-field);
+}
+#bot-view-overlay .acao-item .acao-tipo:focus {
+  background: var(--obd-surface);
+  border-color: var(--accent);
+}
+
+/* Copiar e excluir (estado e transição): ícone cinza em repouso, cor só no
+   hover. O laranja fica só no selo do número do estado. */
+#bot-view-overlay .obd-btn-warn,
+#bot-view-overlay .obd-btn-danger {
+  background: transparent;
+  color: var(--text-faint);
+}
+#bot-view-overlay .obd-btn-warn:hover { background: var(--warn); color: var(--sobre-cor); }
+#bot-view-overlay .obd-btn-danger:hover { background: var(--danger); color: var(--sobre-cor); }
+
+/* Transição como bloco: espaço entre elas, bordas nas duas pontas, marca
+   roxa à esquerda (mesma linguagem do .mb-section-card) e fundo de painel
+   pra destacar do fundo do estado. */
+#bot-view-overlay .estado-body .estado-row {
+  margin-top: 0.875rem;
+  border-style: solid;
+  border-width: 1px 0 1px 3px;
+  border-color: var(--obd-border-field) transparent var(--obd-border-field) var(--fx-acento-borda);
+  background: var(--obd-panel);
+}
+#bot-view-overlay .transicao-barra { border-bottom-color: var(--obd-border-field); }
+#bot-view-overlay .transicao-rotulo { color: var(--text); font-size: 0.75rem; }
+
+/* "+ Condição" / "+ Ação": leves. "+ Transição": adiciona um bloco inteiro,
+   então tem preenchimento e borda sólida. */
+#bot-view-overlay .transicao-corpo .mb-builder-add-btn {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+#bot-view-overlay .transicao-corpo .mb-builder-add-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+#bot-view-overlay .mb-builder-add-btn[data-action="add-transicao"] {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--accent);
+  background: var(--fx-acento-hover-bg);
+  border: 1px solid var(--fx-acento-borda);
+}
+#bot-view-overlay .mb-builder-add-btn[data-action="add-transicao"]:hover {
+  background: var(--fx-acento-hover-bg);
+  border-color: var(--accent);
+}
+
+/* Rodapé: só o Salvar é primário. Backup JSON vira secundário (contorno por
+   box-shadow inset pra não mudar a altura em relação ao Salvar). */
+#bot-view-overlay #btn-bv-baixar {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--obd-border-field);
+}
+#bot-view-overlay #btn-bv-baixar:hover { background: var(--hover-bg); }
+
+/* Caixas de texto acompanham o tamanho do texto (field-sizing, Chrome 123+,
+   o mesmo recurso do nome do estado). Mínimo de 2 linhas; passando do teto
+   passa a rolar por dentro. Sem field-sizing, valem o rows e o resize antigos. */
+#bot-view-overlay .textarea-view {
+  field-sizing: content;
+  min-height: 3.925rem;
+  max-height: 22rem;
+  overflow-y: auto;
+}
