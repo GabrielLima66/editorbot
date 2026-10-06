@@ -1,11 +1,14 @@
 // ---------------------------------------------------------------------------
 // Localizar no editor (SPEC-busca-editor.md): painel encaixado à direita do
-// editor, fora do .bv-panel, com três modos EXCLUSIVOS pra nunca misturar o
-// que o bot envia com o que o cliente digita:
+// editor, fora do .bv-panel. A busca corre nos três tipos de uma vez e a
+// lista vem separada em blocos, pra nunca misturar o que o bot envia com o
+// que o cliente digita:
 //   - textos:    Mensagem, áudio, forma de contato e menus (cabeçalho, corpo,
 //                rodapé, botões, opções, botão da lista)
 //   - condicoes: valores das condições (o que o cliente digita)
 //   - estados:   nomes dos estados
+// Os filtros mostram quantos resultados há em cada tipo; clicar num deles
+// deixa só aquele bloco, clicar de novo volta para todos.
 // A busca lê state.botCarregado (não o DOM) e refaz sozinha a cada edição.
 // Sem acento e sem maiúscula por padrão ("horario" acha "Horário").
 // ---------------------------------------------------------------------------
@@ -32,10 +35,11 @@ const TRECHO = 34;
 
 const busca = {
   aberta: false,
-  modo: 'textos',
+  modo: 'todos',
   termo: '',
   diferenciarMaiusculas: false,
   palavraInteira: false,
+  todos: [],
   resultados: [],
   atual: -1,
 };
@@ -109,6 +113,7 @@ function valoresNaTela() {
   return mapa;
 }
 
+/** Resultados dos três tipos; o filtro escolhido é aplicado em atualizar(). */
 function coletar() {
   const bot = state.botCarregado;
   const termoNorm = normalizar(busca.termo.trim(), busca.diferenciarMaiusculas).norm;
@@ -118,48 +123,43 @@ function coletar() {
   const opcoes = { diferenciarMaiusculas: busca.diferenciarMaiusculas, palavraInteira: busca.palavraInteira };
   const estados = [...(bot.BOT_STATES || [])].sort((a, b) => parseInt(a.STATE_NUMBER, 10) - parseInt(b.STATE_NUMBER, 10));
   const porId = (a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10);
-  const saida = [];
+  const porModo = { textos: [], condicoes: [], estados: [] };
 
   estados.forEach((est) => {
     const base = { estadoNumero: est.STATE_NUMBER, estadoAlias: est.ALIAS || '' };
-    if (busca.modo === 'estados') {
-      const nome = aoVivo(`e:${est.STATE_NUMBER}`, est.ALIAS);
-      ocorrencias(nome, termoNorm, opcoes).forEach((o, n) =>
-        saida.push({ ...base, alvo: { tipo: 'estado', id: est.STATE_NUMBER }, rotulo: 'Nome do estado', texto: nome, ...o, chave: `e:${est.STATE_NUMBER}:${n}` }));
-      return;
-    }
+    const nome = aoVivo(`e:${est.STATE_NUMBER}`, est.ALIAS);
+    ocorrencias(nome, termoNorm, opcoes).forEach((o, n) =>
+      porModo.estados.push({ ...base, alvo: { tipo: 'estado', id: est.STATE_NUMBER }, rotulo: 'Nome do estado', texto: nome, ...o, chave: `e:${est.STATE_NUMBER}:${n}` }));
     const transicoes = (bot.BOT_TRANSITIONS || []).filter((t) => t.STATE === est.STATE_NUMBER)
       .sort((a, b) => parseInt(a.PRIORITY, 10) - parseInt(b.PRIORITY, 10));
     transicoes.forEach((t) => {
       const local = { ...base, transicaoId: t.ID, prioridade: t.PRIORITY };
-      if (busca.modo === 'condicoes') {
-        (bot.BOT_CONDITIONS || []).filter((c) => c.TRANSITION_ID === t.ID).sort(porId).forEach((c) => {
-          const d = c.CONDITION_DATA || {};
-          if (typeof d.value !== 'string') return;
-          const valor = aoVivo(`c:${c.ID}`, d.value);
-          const rotulo = `${VARIABLE_LABELS[d.variable] || d.variable || 'Condição'} ${TEXT_OPERATORS[c.CONDITION_TYPE] || ''}`.trim();
-          ocorrencias(valor, termoNorm, opcoes).forEach((o, n) =>
-            saida.push({ ...local, alvo: { tipo: 'condicao', id: c.ID }, rotulo, texto: valor, ...o, chave: `c:${c.ID}:${n}` }));
-        });
-        return;
-      }
+      (bot.BOT_CONDITIONS || []).filter((c) => c.TRANSITION_ID === t.ID).sort(porId).forEach((c) => {
+        const d = c.CONDITION_DATA || {};
+        if (typeof d.value !== 'string') return;
+        const valor = aoVivo(`c:${c.ID}`, d.value);
+        const rotulo = `${VARIABLE_LABELS[d.variable] || d.variable || 'Condição'} ${TEXT_OPERATORS[c.CONDITION_TYPE] || ''}`.trim();
+        ocorrencias(valor, termoNorm, opcoes).forEach((o, n) =>
+          porModo.condicoes.push({ ...local, alvo: { tipo: 'condicao', id: c.ID }, rotulo, texto: valor, ...o, chave: `c:${c.ID}:${n}` }));
+      });
       (bot.BOT_ACTIONS || []).filter((a) => a.TRANSITION_ID === t.ID).sort(porId).forEach((a) => {
         const d = a.ACTION_DATA || {};
         if (a.ACTION_TYPE === '10') {
           camposDoMenu(d.message_option_text).forEach((campo) =>
             ocorrencias(campo.texto, termoNorm, opcoes).forEach((o, n) =>
-              saida.push({ ...local, alvo: { tipo: 'menu', id: a.ID }, rotulo: `Menu › ${campo.rotulo}`, texto: campo.texto, ...o, chave: `m:${a.ID}:${campo.rotulo}:${n}` })));
+              porModo.textos.push({ ...local, alvo: { tipo: 'menu', id: a.ID }, rotulo: `Menu › ${campo.rotulo}`, texto: campo.texto, ...o, chave: `m:${a.ID}:${campo.rotulo}:${n}` })));
           return;
         }
         (CAMPOS_TEXTO[a.ACTION_TYPE] || []).forEach(([campo, rotulo]) => {
           const texto = aoVivo(`a:${a.ID}:${campo}`, d[campo]);
           ocorrencias(texto, termoNorm, opcoes).forEach((o, n) =>
-            saida.push({ ...local, alvo: { tipo: 'acao', id: a.ID, campo }, rotulo, texto, ...o, chave: `a:${a.ID}:${campo}:${n}` }));
+            porModo.textos.push({ ...local, alvo: { tipo: 'acao', id: a.ID, campo }, rotulo, texto, ...o, chave: `a:${a.ID}:${campo}:${n}` }));
         });
       });
     });
   });
-  return saida;
+  // Um bloco por tipo, na ordem dos filtros; dentro do bloco, por estado.
+  return MODOS.flatMap((m) => porModo[m.id].map((r) => ({ ...r, modo: m.id })));
 }
 
 // ---------------------------------------------------------------- DOM
@@ -240,25 +240,40 @@ function desenharLista() {
   const p = painel();
   if (!p) return;
   const modo = MODOS.find((m) => m.id === busca.modo);
+  const temTermo = !!busca.termo.trim();
+  const emBlocos = !modo;
   p.dataset.modo = busca.modo;
-  p.querySelectorAll('.bs-aba').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.modo === busca.modo)));
+  p.querySelectorAll('.bs-aba').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.modo === busca.modo));
+    b.querySelector('.bs-aba-qtd').textContent = temTermo ? String(busca.todos.filter((r) => r.modo === b.dataset.modo).length) : '';
+  });
   const campo = p.querySelector('.bs-termo');
-  campo.placeholder = `Buscar em ${modo.rotulo.toLowerCase()}`;
+  campo.placeholder = modo ? `Buscar em ${modo.rotulo.toLowerCase()}` : 'Buscar no bot';
 
   const lista = p.querySelector('.bs-lista');
-  if (!busca.termo.trim()) {
-    lista.innerHTML = `<p class="bs-vazio">${escapeHtml(modo.dica)}. Digite para buscar.</p>`;
+  if (!temTermo) {
+    lista.innerHTML = `<p class="bs-vazio">${modo ? `${escapeHtml(modo.dica)}. Digite para buscar.` : 'Digite para buscar em textos enviados, condições e nomes de estados.'}</p>`;
   } else if (!busca.resultados.length) {
-    lista.innerHTML = '<p class="bs-vazio">Nenhum resultado neste modo.</p>';
+    lista.innerHTML = `<p class="bs-vazio">${modo && busca.todos.length ? `Nenhum resultado em ${escapeHtml(modo.rotulo.toLowerCase())}. Os outros filtros têm resultados.` : 'Nenhum resultado.'}</p>`;
   } else {
     let html = '';
+    let bloco = null;
     let grupo = null;
+    const fecharGrupo = () => { if (grupo !== null) html += '</ol></section>'; grupo = null; };
     busca.resultados.forEach((r, i) => {
+      if (emBlocos && r.modo !== bloco) {
+        fecharGrupo();
+        if (bloco !== null) html += '</section>';
+        bloco = r.modo;
+        const m = MODOS.find((x) => x.id === bloco);
+        const qtd = busca.resultados.filter((x) => x.modo === bloco).length;
+        html += `<section class="bs-bloco" data-modo="${m.id}"><h4 class="bs-bloco-titulo"><i data-lucide="${m.icone}"></i>${m.rotulo}<span class="bs-bloco-qtd">${qtd}</span></h4>`;
+      }
       if (r.estadoNumero !== grupo) {
-        if (grupo !== null) html += '</ol></section>';
+        fecharGrupo();
         grupo = r.estadoNumero;
-        const qtd = busca.resultados.filter((x) => x.estadoNumero === grupo).length;
-        html += `<section class="bs-grupo"><h4 class="bs-grupo-titulo"><span class="bs-estado-num">${escapeHtml(r.estadoNumero)}</span>${escapeHtml(r.estadoAlias || 'Sem nome')}<span class="bs-grupo-qtd">${qtd}</span></h4><ol>`;
+        const qtd = busca.resultados.filter((x) => x.estadoNumero === grupo && x.modo === r.modo).length;
+        html += `<section class="bs-grupo"><h5 class="bs-grupo-titulo"><span class="bs-estado-num">${escapeHtml(r.estadoNumero)}</span>${escapeHtml(r.estadoAlias || 'Sem nome')}<span class="bs-grupo-qtd">${qtd}</span></h5><ol>`;
       }
       const onde = r.alvo.tipo === 'estado' ? '' : `T${escapeHtml(r.prioridade)} · `;
       const abrirMenu = r.alvo.tipo === 'menu'
@@ -266,7 +281,8 @@ function desenharLista() {
         : '';
       html += `<li class="bs-item" data-i="${i}"><button type="button" class="bs-item-ir" data-bs-ir="${i}"><span class="bs-item-onde">${onde}${escapeHtml(r.rotulo)}</span><span class="bs-item-trecho">${trecho(r)}</span></button>${abrirMenu}</li>`;
     });
-    html += '</ol></section>';
+    fecharGrupo();
+    if (emBlocos) html += '</section>';
     lista.innerHTML = html;
     criarIcones();
   }
@@ -277,7 +293,8 @@ function desenharLista() {
 function atualizar() {
   const anterior = busca.resultados[busca.atual]?.chave;
   const indiceAnterior = busca.atual;
-  busca.resultados = coletar();
+  busca.todos = coletar();
+  busca.resultados = busca.modo === 'todos' ? busca.todos : busca.todos.filter((r) => r.modo === busca.modo);
   const mesmo = anterior ? busca.resultados.findIndex((r) => r.chave === anterior) : -1;
   busca.atual = mesmo >= 0 ? mesmo : busca.resultados.length ? Math.min(Math.max(indiceAnterior, 0), busca.resultados.length - 1) : -1;
   if (indiceAnterior < 0 && mesmo < 0) busca.atual = -1;
@@ -308,13 +325,13 @@ function montarPainel() {
         <i data-lucide="search"></i><h3>Localizar</h3>
         <button type="button" class="bs-fechar" data-bs="fechar" title="Fechar (Esc)"><i data-lucide="x"></i></button>
       </header>
-      <div class="bs-abas" role="tablist">
-        ${MODOS.map((m) => `<button type="button" class="bs-aba" role="tab" data-modo="${m.id}" title="${escapeHtml(m.dica)}"><i data-lucide="${m.icone}"></i>${m.rotulo}</button>`).join('')}
-      </div>
       <div class="bs-campo">
         <input type="search" class="bs-termo" spellcheck="false" autocomplete="off" aria-label="Termo de busca">
         <button type="button" class="bs-opcao" data-bs="maiusculas" aria-pressed="false" title="Diferenciar maiúsculas e minúsculas">Aa</button>
         <button type="button" class="bs-opcao" data-bs="inteira" aria-pressed="false" title="Palavra inteira"><i data-lucide="whole-word"></i></button>
+      </div>
+      <div class="bs-abas" role="group" aria-label="Filtrar resultados">
+        ${MODOS.map((m) => `<button type="button" class="bs-aba" data-modo="${m.id}" aria-pressed="false" title="${escapeHtml(m.dica)}. Clique para ver só estes; clique de novo para ver todos.">${m.rotulo}<span class="bs-aba-qtd"></span></button>`).join('')}
       </div>
       <div class="bs-nav">
         <span class="bs-contagem" aria-live="polite"></span>
@@ -341,7 +358,7 @@ function montarPainel() {
     if (!alvo) return;
     if (alvo.dataset.bs === 'fechar') return fecharBusca();
     if (alvo.classList.contains('bs-aba')) {
-      busca.modo = alvo.dataset.modo;
+      busca.modo = busca.modo === alvo.dataset.modo ? 'todos' : alvo.dataset.modo;
       busca.atual = -1;
       atualizar();
       campo.focus();

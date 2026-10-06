@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.13] - 2026-10-06
+* **Localizar busca em tudo de uma vez**: o campo de busca foi para o topo do painel e a lista traz todos os resultados, separados em blocos de textos enviados, condições e estados. Cada filtro mostra ao lado quantos resultados há naquele tipo; clicar num filtro deixa só aquele bloco e clicar de novo volta para a lista completa.
+
 ## [0.8.12] - 2026-09-30
 * **Inserir variável nas caixas de texto**: como no sistema, o botão direito numa caixa de texto abre a lista de variáveis; digitar `{$` também abre, filtrando pelo que vem depois. A variável entra onde está o cursor (no sistema ela sempre ia para o fim) e o Ctrl+Z desfaz. A lista traz as variáveis do bot (com as mesmas regras da condição) e as gravadas pelo próprio bot em "Armazenar variável". Funciona em condições, ações, janela de menu e mensagem de encerramento.
 * **Sem sugestão de login nos campos do editor**: o Chrome e gerenciadores de senha (Bitwarden, LastPass, 1Password) não oferecem mais usuários salvos nas caixas de busca e de escolha do editor.
