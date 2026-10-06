@@ -1,11 +1,12 @@
 // ---------------------------------------------------------------------------
 // Localizar no editor (SPEC-busca-editor.md): painel encaixado à direita do
-// editor, fora do .bv-panel. A busca corre nos três tipos de uma vez e a
+// editor, fora do .bv-panel. A busca corre nos quatro tipos de uma vez e a
 // lista vem separada em blocos, pra nunca misturar o que o bot envia com o
 // que o cliente digita:
 //   - textos:    Mensagem, áudio, forma de contato e menus (cabeçalho, corpo,
 //                rodapé, botões, opções, botão da lista)
 //   - condicoes: valores das condições (o que o cliente digita)
+//   - calendarios: condições de calendário, pelo nome do calendário (ou ID)
 //   - estados:   nomes dos estados
 // Os filtros mostram quantos resultados há em cada tipo; clicar num deles
 // deixa só aquele bloco, clicar de novo volta para todos.
@@ -17,12 +18,14 @@ import { state } from './state.js';
 import { escapeHtml } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { parseMenuModel } from './menu-builder.js';
-import { VARIABLE_LABELS, TEXT_OPERATORS } from './dictionaries.js';
+import { VARIABLE_LABELS, VARIABLE_KIND, TEXT_OPERATORS } from './dictionaries.js';
+import { opcoesCalendarios } from './orpen-env.js';
 import { abrirModalMenu } from './menu-modal.js';
 
 const MODOS = [
   { id: 'textos', rotulo: 'Textos enviados', icone: 'message-square', dica: 'Mensagens e menus que o bot envia' },
   { id: 'condicoes', rotulo: 'Condições', icone: 'split', dica: 'Valores que o cliente digita' },
+  { id: 'calendarios', rotulo: 'Calendários', icone: 'calendar-clock', dica: 'Condições de calendário, pelo nome ou ID do calendário' },
   { id: 'estados', rotulo: 'Estados', icone: 'circle-dot', dica: 'Nomes dos estados' },
 ];
 // Campos de texto enviados ao cliente, por ACTION_TYPE.
@@ -79,6 +82,21 @@ function ocorrencias(texto, termoNorm, opcoes) {
 
 // ---------------------------------------------------------------- coleta
 
+/**
+ * Condição de calendário (variável calendario / calendario_falso): o calendário
+ * escolhido fica em CONDITION_TYPE (ID). Procura o termo no nome (como a lista
+ * do editor mostra) e no ID. `nomeDe(id)` devolve o nome ou null (sem o cadastro
+ * do ambiente, só o ID existe). Devolve o texto buscado (string) ou null se não for
+ * condição de calendário.
+ */
+export function textoDeCalendario(c, nomeDe) {
+  if (VARIABLE_KIND[c.CONDITION_DATA?.variable] !== 'ref_calendario') return null;
+  const id = String(c.CONDITION_TYPE ?? '').trim();
+  if (!id || id === '0') return null;
+  const nome = nomeDe(id);
+  return nome ? `${nome} (ID ${id})` : `ID ${id}`;
+}
+
 function camposDoMenu(raw) {
   const m = parseMenuModel(raw || '');
   const campos = [];
@@ -113,7 +131,7 @@ function valoresNaTela() {
   return mapa;
 }
 
-/** Resultados dos três tipos; o filtro escolhido é aplicado em atualizar(). */
+/** Resultados dos quatro tipos; o filtro escolhido é aplicado em atualizar(). */
 function coletar() {
   const bot = state.botCarregado;
   const termoNorm = normalizar(busca.termo.trim(), busca.diferenciarMaiusculas).norm;
@@ -123,7 +141,8 @@ function coletar() {
   const opcoes = { diferenciarMaiusculas: busca.diferenciarMaiusculas, palavraInteira: busca.palavraInteira };
   const estados = [...(bot.BOT_STATES || [])].sort((a, b) => parseInt(a.STATE_NUMBER, 10) - parseInt(b.STATE_NUMBER, 10));
   const porId = (a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10);
-  const porModo = { textos: [], condicoes: [], estados: [] };
+  const porModo = { textos: [], condicoes: [], calendarios: [], estados: [] };
+  const nomeDoCalendario = (id) => opcoesCalendarios().find((o) => o.value === String(id))?.label ?? null;
 
   estados.forEach((est) => {
     const base = { estadoNumero: est.STATE_NUMBER, estadoAlias: est.ALIAS || '' };
@@ -136,6 +155,13 @@ function coletar() {
       const local = { ...base, transicaoId: t.ID, prioridade: t.PRIORITY };
       (bot.BOT_CONDITIONS || []).filter((c) => c.TRANSITION_ID === t.ID).sort(porId).forEach((c) => {
         const d = c.CONDITION_DATA || {};
+        const calendario = textoDeCalendario(c, nomeDoCalendario);
+        if (calendario) {
+          const rotuloCal = VARIABLE_LABELS[d.variable] || d.variable || 'Calendário';
+          ocorrencias(calendario, termoNorm, opcoes).forEach((o, n) =>
+            porModo.calendarios.push({ ...local, alvo: { tipo: 'calendario', id: c.ID }, rotulo: rotuloCal, texto: calendario, ...o, chave: `k:${c.ID}:${n}` }));
+          return;
+        }
         if (typeof d.value !== 'string') return;
         const valor = aoVivo(`c:${c.ID}`, d.value);
         const rotulo = `${VARIABLE_LABELS[d.variable] || d.variable || 'Condição'} ${TEXT_OPERATORS[c.CONDITION_TYPE] || ''}`.trim();
@@ -173,6 +199,8 @@ function elementoDoAlvo(r) {
     case 'acao': return $r(`#bv-estados [data-action="mudar-campo-acao"][data-action-id="${cssId(r.alvo.id)}"][data-campo="${cssId(r.alvo.campo)}"]`);
     case 'menu': return $r(`#bv-estados [data-action="editar-menu"][data-action-id="${cssId(r.alvo.id)}"]`)?.closest('.menu-resumo') || null;
     case 'condicao': return $r(`#bv-estados [data-action="mudar-condicao-valor"][data-condition-id="${cssId(r.alvo.id)}"]`);
+    // O calendário aparece no campo do operador da condição (lista de calendários).
+    case 'calendario': return $r(`#bv-estados .condicao-operador[data-condition-id="${cssId(r.alvo.id)}"]`);
     case 'estado': return $r(`#bv-estados .estado-alias[data-state="${cssId(r.alvo.id)}"]`);
     default: return null;
   }
@@ -201,7 +229,8 @@ function irPara(indice, selecionar) {
     el.classList.add('bs-alvo');
     clearTimeout(el._bsTimer);
     el._bsTimer = setTimeout(() => el.classList.remove('bs-alvo'), 1600);
-    if (selecionar && typeof el.setSelectionRange === 'function') {
+    // Calendário: só leva e destaca; focar abriria a lista de calendários.
+    if (selecionar && r.alvo.tipo !== 'calendario' && typeof el.setSelectionRange === 'function') {
       el.focus({ preventScroll: true });
       el.setSelectionRange(r.inicio, r.fim);
     }
@@ -252,7 +281,7 @@ function desenharLista() {
 
   const lista = p.querySelector('.bs-lista');
   if (!temTermo) {
-    lista.innerHTML = `<p class="bs-vazio">${modo ? `${escapeHtml(modo.dica)}. Digite para buscar.` : 'Digite para buscar em textos enviados, condições e nomes de estados.'}</p>`;
+    lista.innerHTML = `<p class="bs-vazio">${modo ? `${escapeHtml(modo.dica)}. Digite para buscar.` : 'Digite para buscar em textos enviados, condições, calendários e nomes de estados.'}</p>`;
   } else if (!busca.resultados.length) {
     lista.innerHTML = `<p class="bs-vazio">${modo && busca.todos.length ? `Nenhum resultado em ${escapeHtml(modo.rotulo.toLowerCase())}. Os outros filtros têm resultados.` : 'Nenhum resultado.'}</p>`;
   } else {

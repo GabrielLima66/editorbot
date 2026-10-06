@@ -1190,6 +1190,7 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .bs-painel, .bs-painel [data-modo="textos"] { --bs-cor: var(--primary); }
 .bs-painel[data-modo="condicoes"], .bs-painel [data-modo="condicoes"] { --bs-cor: #0E9384; }
 .bs-painel[data-modo="estados"], .bs-painel [data-modo="estados"] { --bs-cor: #D97706; }
+.bs-painel[data-modo="calendarios"], .bs-painel [data-modo="calendarios"] { --bs-cor: #2563EB; }
 
 .bs-nav { display: flex; align-items: center; gap: 4px; margin: 8px 14px; min-height: 28px; }
 .bs-contagem { flex: 1; font-size: 12px; color: var(--text-muted); }
