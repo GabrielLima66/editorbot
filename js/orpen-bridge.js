@@ -47,8 +47,10 @@ function urlExtensao(caminho) {
 }
 
 // Busca o próprio bot_transform.html (vendorizado dentro da extensão) e
-// extrai só os dois overlays que interessam aqui — #bot-view-overlay e
-// #pendencias-overlay. O resto da página standalone (upload, modal de
+// extrai só os overlays que interessam aqui — #bot-view-overlay,
+// #pendencias-overlay e #copiar-overlay (modal de copiar/colar estados). Todo
+// bloco novo do bot_transform.html que o editor usa precisa entrar nesta lista,
+// senão na extensão ele não existe (a página standalone tem tudo). O resto da página standalone (upload, modal de
 // transformação de JSON) não faz sentido no fluxo de edição ao vivo e não é
 // injetado.
 async function extrairEsqueletoOverlay() {
@@ -57,8 +59,9 @@ async function extrairEsqueletoOverlay() {
 
   const botViewOverlay = doc.querySelector('#bot-view-overlay');
   const pendenciasOverlay = doc.querySelector('#pendencias-overlay');
-  if (!botViewOverlay || !pendenciasOverlay) {
-    throw new Error('bot_transform.html não tem a estrutura esperada (#bot-view-overlay/#pendencias-overlay não encontrados).');
+  const copiarOverlay = doc.querySelector('#copiar-overlay');
+  if (!botViewOverlay || !pendenciasOverlay || !copiarOverlay) {
+    throw new Error('bot_transform.html não tem a estrutura esperada (#bot-view-overlay/#pendencias-overlay/#copiar-overlay não encontrados).');
   }
 
   // document.importNode: os elementos vieram de um Document criado pelo
@@ -66,16 +69,19 @@ async function extrairEsqueletoOverlay() {
   // poder ser anexados na página de verdade.
   const botView = document.importNode(botViewOverlay, true);
   const pendencias = document.importNode(pendenciasOverlay, true);
+  const copiar = document.importNode(copiarOverlay, true);
   // Campos do cabeçalho (nome, tempos, mensagem…) marcados antes de entrar na
   // página, para gerenciadores de senha não os tratarem como login.
   marcarCamposSemAutopreenchimento(botView);
   marcarCamposSemAutopreenchimento(pendencias);
+  marcarCamposSemAutopreenchimento(copiar);
 
   // z-index alto o bastante pra ficar acima de qualquer coisa que a tela do
   // Orpen já tenha (o valor original do standalone, z-50/z-[60], é baixo
   // demais pra garantir isso numa página host desconhecida).
   botView.classList.add('!z-[2147483000]');
   pendencias.classList.add('!z-[2147483001]');
+  copiar.classList.add('!z-[2147483002]');
 
   // Header ganha um indicador de carregamento — não existe no standalone
   // (lá os dados já estão em memória antes do usuário abrir o overlay; aqui
@@ -179,7 +185,7 @@ async function extrairEsqueletoOverlay() {
     hint.textContent = 'Estes campos referenciam cadastros deste ambiente (fila, agente, script, conta OpenAI, etc.) e ficaram vazios. Revise antes de considerar o bot pronto:';
   }
 
-  return { botView, pendencias };
+  return { botView, pendencias, copiar };
 }
 
 async function montarOverlay() {
@@ -204,7 +210,7 @@ async function montarOverlay() {
     // getRootNode() dinamicamente a cada chamada (ver js/dom-root.js).
     setRootNode(shadowRoot);
 
-    const [twCss, stylesCss, { botView, pendencias }] = await Promise.all([
+    const [twCss, stylesCss, { botView, pendencias, copiar }] = await Promise.all([
       fetch(urlExtensao('vendor/tailwind.css')).then((r) => r.text()),
       fetch(urlExtensao('css/styles.css')).then((r) => r.text()),
       extrairEsqueletoOverlay(),
@@ -217,6 +223,7 @@ async function montarOverlay() {
     shadowRoot.appendChild(style);
     shadowRoot.appendChild(botView);
     shadowRoot.appendChild(pendencias);
+    shadowRoot.appendChild(copiar);
 
     initBotViewWiring();
     ligarBotoesExtensao(shadowRoot);

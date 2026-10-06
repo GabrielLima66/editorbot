@@ -61,3 +61,18 @@ test('assistente (18) só exige conta quando chama o assistente', () => {
   bot.INTEGRATIONS = {};
   assert.match(problemaAntesDeSalvar(bot), /transcrição/);
 });
+
+test('condição de cadastro (fila, agente...) sem o cadastro escolhido é bloqueada; com ele passa', () => {
+  const bot = umBot();
+  const tid = bot.BOT_TRANSITIONS[0].ID;
+  const cond = { ID: '999998', TRANSITION_ID: tid, CONDITION_TYPE: '', CONDITION_DATA: { variable: 'agent_online', value: '' } };
+  bot.BOT_CONDITIONS.push(cond);
+  assert.match(problemaAntesDeSalvar(bot), /sem o cadastro escolhido/);
+  cond.CONDITION_TYPE = '0';
+  assert.match(problemaAntesDeSalvar(bot), /sem o cadastro escolhido/);
+  cond.CONDITION_TYPE = '7';
+  assert.equal(problemaAntesDeSalvar(bot), null);
+  // variável de texto com "sempre verdadeiro" (tipo 0) continua válida
+  bot.BOT_CONDITIONS.push({ ID: '999997', TRANSITION_ID: tid, CONDITION_TYPE: '0', CONDITION_DATA: { variable: 'message', value: '' } });
+  assert.equal(problemaAntesDeSalvar(bot), null);
+});

@@ -7,7 +7,7 @@
 // Módulo puro (sem DOM, sem fetch) pra ser testado em tests/editor/.
 // ---------------------------------------------------------------------------
 
-import { ACTION_TYPE_LABELS } from './dictionaries.js';
+import { ACTION_TYPE_LABELS, VARIABLE_KIND } from './dictionaries.js';
 import { lerContaTranscricao } from './bot-view-render.js';
 
 const CAMPO_JSON_OBRIGATORIO = { '10': 'message_option_text', '11': 'message_option_form', '13': 'bot_variables_text' };
@@ -41,6 +41,19 @@ export function problemaAntesDeSalvar(bot) {
     if (campo && jsonInvalido(d[campo])) return `a ação "${rotulo}"${onde(a)} está vazia ou com JSON inválido.`;
     if (tipo === '22' && d.payload && jsonInvalido(d.payload)) return `o payload da ação "${rotulo}"${onde(a)} não é um JSON válido.`;
     if ((tipo === '18' && d.openai === 'call_assistant') || tipo === '20') usaIa = true;
+  }
+  // Condição de cadastro (fila, agente, calendário, status CRM, entrada) guarda o
+  // cadastro em CONDITION_TYPE. Vazio vira tipo 0 no payload e o servidor descarta a
+  // condição (Bot.class.php:225): a transição passaria a valer sempre. Acontece depois
+  // de colar de outro ambiente, onde o cadastro é esvaziado para ser escolhido de novo.
+  for (const c of bot.BOT_CONDITIONS || []) {
+    const t = transicaoPorId[c.TRANSITION_ID];
+    const tipo = String(c.CONDITION_TYPE ?? '').trim();
+    if (!t || !String(VARIABLE_KIND[c.CONDITION_DATA?.variable] || '').startsWith('ref_')) continue;
+    if (tipo === '' || tipo === '0') {
+      const e = estadoPorNumero[t.STATE];
+      return `uma condição${` no estado ${t.STATE}${e?.ALIAS ? ` "${e.ALIAS}"` : ''}, transição ${t.PRIORITY}`} está sem o cadastro escolhido (fila, agente, entrada, calendário ou status). Sem ele o servidor descarta a condição.`;
+    }
   }
   if (usaIa && !lerContaTranscricao(bot)) {
     return 'o bot usa I.A. no fluxo, então é preciso selecionar a "Conta para transcrição de áudio" nos dados do bot.';

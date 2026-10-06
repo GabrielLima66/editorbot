@@ -1372,3 +1372,122 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
   max-height: 22rem;
   overflow-y: auto;
 }
+
+/* ---- Copiar e colar estados entre bots (js/copiar-colar.js) ----
+   Modal fora do .bv-panel (sem zoom): tamanhos em px, porque rem renderiza ~62%
+   menor na Orpen (html { font-size: 10px }). Só tokens, então segue os dois temas. */
+
+/* Botões "Colar transições" (dentro de cada estado): só com transições copiadas;
+   o overlay recebe data-area-tipo. */
+#bot-view-overlay .btn-colar { display: none; }
+#bot-view-overlay[data-area-tipo="transicoes"] .btn-colar-transicoes { display: block; margin-top: 0.5rem; }
+
+#bot-view-overlay .obd-btn-copiar {
+  background: transparent;
+  color: var(--text-faint);
+  border-radius: 6px;
+  transition: background-color 0.12s, color 0.12s;
+}
+#bot-view-overlay .obd-btn-copiar:hover { background: var(--fx-acento-hover-bg); color: var(--accent); }
+
+/* Botão da barra "Transições": ponto laranja quando há algo copiado esperando. */
+#bot-view-overlay .btn-copiar-colar {
+  position: relative;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--fx-acento-borda);
+}
+#bot-view-overlay .btn-copiar-colar:hover { background: var(--fx-acento-hover-bg); border-color: var(--accent); }
+#bot-view-overlay .btn-copiar-colar-ponto {
+  display: none;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: var(--warn);
+  border: 2px solid var(--obd-bg);
+  box-sizing: content-box;
+}
+#bot-view-overlay .btn-copiar-colar.tem-copia .btn-copiar-colar-ponto { display: block; }
+
+.cc-painel {
+  width: 100%;
+  max-width: 980px;
+  height: min(660px, 90vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--obd-bg);
+  border: 1px solid var(--obd-border);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px var(--dlg-sombra);
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+.cc-topo { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--obd-border); flex-shrink: 0; }
+.cc-titulo { margin: 0; font-family: "Space Grotesk", sans-serif; font-size: 17px; font-weight: 600; }
+.cc-abas { display: flex; gap: 4px; padding: 3px; background: var(--mb-switch-bg); border: 1px solid var(--mb-borda); border-radius: 10px; }
+.cc-aba { font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 7px; color: var(--mb-texto-fraco); cursor: pointer; }
+.cc-aba:hover { color: var(--mb-texto-hover); }
+.cc-aba[aria-selected="true"] { background: var(--primary); color: var(--sobre-cor); }
+.cc-ponto { display: inline-block; width: 7px; height: 7px; margin-left: 7px; border-radius: 9999px; background: var(--warn); vertical-align: middle; }
+.cc-ponto.hidden { display: none; }
+.cc-fechar { margin-left: auto; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--text-muted); cursor: pointer; }
+.cc-fechar:hover { background: var(--hover-bg); color: var(--text); }
+.cc-fechar svg { width: 18px; height: 18px; }
+
+.cc-corpo { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(280px, 360px) 1fr; }
+.cc-esquerda { display: flex; flex-direction: column; min-height: 0; padding: 14px; border-right: 1px solid var(--obd-border); }
+.cc-input {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--obd-surface);
+  border: 1px solid var(--obd-border-field);
+  border-radius: 8px;
+  outline: none;
+}
+.cc-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--foco-anel); }
+.cc-acoes-lista { display: flex; gap: 14px; margin: 8px 2px 6px; }
+.cc-acoes-lista.oculto { display: none; }
+.cc-link { font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.cc-link:hover { text-decoration: underline; }
+.cc-lista { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; margin-top: 4px; }
+.cc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--item-bg);
+  border: 1px solid var(--item-borda);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cc-item:hover { background: var(--hover-bg); }
+.cc-item.sel { background: var(--fx-acento-hover-bg); border-color: var(--fx-acento-borda); }
+.cc-item.desativado { opacity: 0.45; cursor: not-allowed; }
+.cc-item input { accent-color: var(--accent); flex-shrink: 0; }
+.cc-num { min-width: 28px; padding: 2px 5px; text-align: center; font-size: 12px; font-weight: 700; color: var(--sobre-cor); background: var(--warn); border-radius: 6px; }
+.cc-num.fim { background: var(--badge-bg); color: var(--text-muted); }
+.cc-alias { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.cc-meta { flex-shrink: 0; font-size: 12px; color: var(--text-faint); }
+.cc-vazio { padding: 18px 8px; font-size: 13px; color: var(--text-muted); text-align: center; }
+
+.cc-direita { min-height: 0; overflow-y: auto; padding: 18px 22px; }
+.cc-direita h3 { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.cc-bloco { margin-bottom: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.55; background: var(--obd-panel); border: 1px solid var(--obd-border); border-radius: 10px; }
+.cc-bloco strong { font-weight: 600; }
+.cc-bloco ul { margin: 6px 0 0; padding-left: 18px; }
+.cc-bloco.erro { color: var(--alerta-bloqueio-texto); background: var(--alerta-bloqueio-bg); border-color: var(--alerta-bloqueio-borda); }
+.cc-bloco.aviso { color: var(--alerta-confirma-texto); background: var(--alerta-confirma-bg); border-color: var(--alerta-confirma-borda); }
+.cc-bloco.ok { border-color: var(--fx-acento-borda); background: var(--fx-acento-hover-bg); }
+.cc-vazio-direita { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+
+.cc-rodape { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--obd-border); flex-shrink: 0; }
+.cc-info { flex: 1; min-width: 0; font-size: 12px; color: var(--text-muted); }
+.fx-btn-primario:disabled { opacity: 0.45; cursor: not-allowed; }
+@media (max-width: 760px) { .cc-corpo { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); } .cc-esquerda { border-right: 0; border-bottom: 1px solid var(--obd-border); } }
