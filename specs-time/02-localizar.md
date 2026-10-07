@@ -45,6 +45,8 @@ Ordem fixa dos blocos e dos filtros: **Textos enviados, Condições, Calendário
 | `calendarios` | Calendários | `calendar-clock` | `#2563EB` (azul) | condições das variáveis `calendario` e `calendario_falso` |
 | `estados` | Estados | `circle-dot` | `#D97706` (laranja) | `ALIAS` (nome) de cada estado |
 
+Os `<campo>` possíveis em `a:<ID da ação>:<campo>` são as chaves de `ACTION_DATA` que guardam texto: `message_text` (ações 1, 21), `message_content` (ação 20) e, para o menu, o rótulo do campo (cabeçalho, corpo, rodapé, botão da lista, título/descrição de cada item). O mesmo `<campo>` é o valor do atributo `data-campo` do elemento na tela.
+
 Dica (tooltip) de cada filtro: textos = "Mensagens e menus que o bot envia"; condições = "Valores que o cliente digita"; calendários = "Condições de calendário, pelo nome ou ID do calendário"; estados = "Nomes dos estados".
 
 ---

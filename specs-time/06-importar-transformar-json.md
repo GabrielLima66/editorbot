@@ -38,7 +38,14 @@ Uma área de **soltar arquivo** (clique ou arrastar) e um botão **"Criar bot em
 - Mostra o **resumo**: nome do bot (`NAME` ou "(sem nome)"), `ID` (ou "—"), quantidade de estados, quantidade de ações e o nome do arquivo.
 
 ### 2.3 Criar bot em branco
-Nome de arquivo `novo_bot.json`. Cria o objeto com `ID` e `NAME` **propositalmente vazios** (para obrigar a pessoa a definir o ID real antes de exportar e evitar colisão com outro bot no destino), os campos de configuração vazios (`CONF_DELIVERY_TIME`, `CONF_DELIVERY_QUEUE`, `TIME_ANSWER`, `TIMEOUT_DELAY`, `TIMEOUT_ACTION`, `TIMEOUT_DESTINY`, `TIMEOUT_MESSAGE`), os **espelhos numéricos** (`'0'`…`'8'`, mesma ordem), e as quatro listas `BOT_STATES`, `BOT_TRANSITIONS`, `BOT_CONDITIONS`, `BOT_ACTIONS` vazias. Depois mostra o resumo e **abre o editor** direto.
+Nome de arquivo `novo_bot.json`. Cria exatamente este objeto (todos os valores escalares são a **string vazia**; `ID` e `NAME` ficam **propositalmente vazios** para obrigar a pessoa a definir o ID real antes de exportar e evitar colisão com outro bot no destino):
+```js
+{ ID:'', '0':'',  NAME:'', '1':'',  CONF_DELIVERY_TIME:'', '2':'',  CONF_DELIVERY_QUEUE:'', '3':'',
+  TIME_ANSWER:'', '4':'',  TIMEOUT_DELAY:'', '5':'',  TIMEOUT_ACTION:'', '6':'',
+  TIMEOUT_DESTINY:'', '7':'',  TIMEOUT_MESSAGE:'', '8':'',
+  BOT_STATES:[], BOT_TRANSITIONS:[], BOT_CONDITIONS:[], BOT_ACTIONS:[] }
+```
+(O nome de cada espelho numérico está na tabela da seção 1 do contrato.) O bot em branco **não tem nenhum estado**: o primeiro "+ Estado" do editor cria o estado `0`. Depois mostra o resumo e **abre o editor** direto.
 
 ### 2.4 Editar
 Botão que abre o editor visual sobre o bot carregado (o mesmo editor da extensão, sem as funções que dependem da Orpen: salvar na Orpen, listas de cadastros do ambiente). Edições alteram o objeto em memória (`state.botCarregado`).
@@ -79,7 +86,7 @@ O log aparece numa seção "Resultado" (uma linha por item, com "•"). Existe u
    - Outros tipos: lista vazia.
 3. **Nova ação "Mensagem"** (tipo 1) com `message_text` = texto da pergunta, inserida **imediatamente antes** do menu, na mesma transição. A ação nasce com o formato completo dos registros (chave nomeada + espelho numérico `'0'`, `'1'`, `'2'`).
 4. **O menu** passa a ser `{"message_type":"menu","menu_type":"list","options":[...]}`, gravado em `message_option_text` com indentação de 2 espaços, **substituindo** `ACTION_DATA` inteiro da ação (a chave `message_option_text` é a única que sobra).
-5. **Renumerar os IDs** de todas as ações da transição, em sequência a partir do maior ID existente no bot, na nova ordem; espelho `'0'` junto com `ID`.
+5. **Renumerar os IDs** de todas as ações da transição na nova ordem (mensagem nova, menu, demais), em sequência a partir de **(maior ID de ação existente no bot) + 1**, que continua subindo a cada ação (de todas as transições convertidas); o espelho `'0'` acompanha `ID`. A ação "Mensagem" nova também consome um número dessa sequência. Os IDs são strings.
 
 Só **um menu por transição** é convertido (o primeiro). Ações de transições sem menu antigo não são tocadas (mantêm os IDs); as das transições convertidas **trocam de ID**. O array final de ações sai **agrupado por transição, em ordem crescente do ID da transição** (ver risco "Ordem final das ações").
 
@@ -110,7 +117,7 @@ Só **um menu por transição** é convertido (o primeiro). Ações de transiç�
 | Item | Situação |
 |---|---|
 | Sem validação de estrutura | Hoje qualquer JSON válido vira "bot". Uma lista ausente pode quebrar a transformação (`data.BOT_ACTIONS.forEach`) com erro não tratado. Recomendado: validar na importação e recusar com mensagem. |
-| `Math.max` de lista vazia | A transformação calcula o maior ID de ação com `Math.max(...)`; com `BOT_ACTIONS` vazio isso dá `-Infinity` e novos IDs `NaN`. Tratar lista vazia (nada a converter). |
+| `Math.max` de lista vazia | A transformação calcula o maior ID de ação com `Math.max(...)`; com `BOT_ACTIONS` vazio isso dá `-Infinity` e novos IDs `NaN`. Tratar lista vazia (nada a converter). Reimplementar com maior = 0 quando não houver ações. |
 | Ordem final das ações | A transformação reagrupa **todas** as ações por transição (ordem crescente do ID da transição, porque as chaves são numéricas) e dentro de cada uma por ID; não reproduz a ordem física original do array. O motor lê por transição e ID, então não afeta o funcionamento, mas o arquivo muda de ordem mesmo sem menu a converter. |
 | IDs renumerados | Os IDs das ações das transições convertidas mudam. Não há nada que referencie ID de **ação** em outro lugar do bot, então é seguro; vale manter assim. |
 | Log com HTML | O log é inserido como HTML sem escape; o texto citado vem do bot (primeiros 50 caracteres). Usar `escapeHtml`/`textContent`. |

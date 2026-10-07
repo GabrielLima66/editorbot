@@ -26,11 +26,13 @@ Transições soltas: todas do **mesmo estado**; entram no fim do estado de desti
 
 - Guardar em `chrome.storage.sync` (limite 8 KB) ou `localStorage` (um por domínio). É `storage.local`.
 - Chamada a `chrome.*` sem `try/catch` (contexto invalidado após atualizar a extensão).
-- Janela não incluída na lista de blocos injetados: funciona avulsa, **morta na Orpen**.
+- `#copiar-overlay` é HTML estático: se sair da lista de blocos injetados (`js/orpen-bridge.js`), funciona avulso e fica **morto na Orpen**.
+- `colarTrecho` tem `mesmoBot=false` por padrão: quem chama calcula (host e botId iguais e não vazio).
+- Estados do trecho sempre ganham números **numéricos** novos (inclusive o 0 e os tipo "A1"); o 0 do destino nunca muda.
 - Remapear duas vezes os estados colados (aplicar o mapa só neles; o deslocamento só nos antigos).
 - Contar os colados como "renumerados" no aviso do Salvar (só os que já existiam).
 - `rem` na janela (usar px).
-- Esquecer que no modo avulso (sem Orpen) tudo precisa funcionar igual.
+- Sem `chrome.storage` (página avulsa fora da extensão) a janela abre, mas copiar mostra "Não foi possível guardar a cópia" e não há o que colar.
 
 ## Validar
 

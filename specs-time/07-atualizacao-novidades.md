@@ -31,13 +31,15 @@ A extensão é distribuída **sem loja**: a pessoa instala a pasta "sem compacta
 | Service worker (`background.js`) | compara a versão carregada com a do disco; é o único que pode `chrome.runtime.reload()` |
 | `atualizar.ps1` / `Atualizar.bat` | baixa a `release`, copia os arquivos para a pasta, registra o link `editorbot-atualizar://` |
 
-Repositório e ramo são **constantes** no código (`REPO`, `RAMO`); trocar de repositório exige editar `atualizacao.js` e `atualizar.ps1` juntos.
+Repositório e ramo são **constantes** no código: `REPO = 'GabrielLima66/editorbot'` e `RAMO = 'release'` (em `atualizacao.js` e `atualizar.ps1`, `$Repo`/`$Ramo`). Trocar de repositório exige editar os dois arquivos juntos. URLs derivadas: manifest publicado em `https://raw.githubusercontent.com/<REPO>/release/manifest.json`; histórico em `https://github.com/<REPO>/blob/release/CHANGELOG.md`; pacote em `https://github.com/<REPO>/archive/refs/heads/release.zip`.
+
+**Permissões da extensão que isto exige (`manifest.json`):** `permissions: ["storage"]` (usada pela área de cópia; a atualização usa o `localStorage` da página), `background.service_worker = "background.js"`, e `web_accessible_resources` incluindo `CHANGELOG.md` (senão o Novidades não consegue ler o histórico dentro da página da Orpen). A consulta ao GitHub é um `fetch` simples a `raw.githubusercontent.com`; não há `host_permissions`.
 
 ---
 
 ## 3. Comparar versões
 
-`compararVersoes(a, b)`: separa por `.`, converte cada parte para inteiro (**não numérico vira 0**, parte ausente vira 0), compara da esquerda para a direita e devolve negativo/zero/positivo. `0.8.19 > 0.8.9`; `1.0 == 1.0.0`. A **mesma** função existe em `background.js` (copiada, porque o worker não importa módulos da página) e a regra tem de ser idêntica nas duas.
+`compararVersoes(a, b)`: separa por `.`, converte cada parte com `parseInt(parte, 10)` (**sem número no começo vira 0**; `"8abc"` vira 8, `"0-beta"` vira 0; parte ausente vira 0), compara da esquerda para a direita e devolve negativo/zero/positivo. `0.8.19 > 0.8.9`; `1.0 == 1.0.0`. A **mesma** função existe em `background.js` (copiada, porque o worker não importa módulos da página) e a regra tem de ser idêntica nas duas.
 
 ---
 
@@ -84,7 +86,7 @@ Se o contexto da extensão foi invalidado (atualização anterior sem recarregar
 
 ## 6. Service worker (`background.js`)
 
-Escuta a mensagem `{tipo:'editorbot:verificar-disco', recarregar}`; qualquer outra é ignorada. Faz:
+Escuta a mensagem `{tipo:'editorbot:verificar-disco', recarregar}`; qualquer outra é ignorada. **Atenção ao padrão:** se `recarregar` for omitido ou qualquer valor diferente de `false`, o worker **recarrega a extensão** quando houver versão nova no disco. Quem só quer consultar precisa enviar `recarregar:false` explicitamente (é o que o editor faz durante a espera). A própria página da Orpen, ao carregar, envia a mensagem sem `recarregar:false` de propósito: assim a extensão se atualiza sozinha na próxima abertura. Faz:
 1. `carregada` = `chrome.runtime.getManifest().version` (a versão **em execução**).
 2. Lê `manifest.json` **do disco** (`fetch(chrome.runtime.getURL('manifest.json'), {cache:'no-store'})`) → `noDisco`.
 3. `atualizar = noDisco > carregada`.
@@ -98,6 +100,10 @@ Importante: o Chrome continua rodando a versão **carregada** mesmo depois de os
 ## 7. O atualizador do Windows (`atualizar.ps1`)
 
 Duas formas de rodar: **`Atualizar.bat`** (dois cliques na pasta) e o link `editorbot-atualizar://atualizar` (vem com `-Auto`: a janela fecha sozinha se deu certo, espera Enter se deu erro).
+
+`Atualizar.bat` tem só isto: desliga o eco, roda `powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0atualizar.ps1"`, e faz `pause` no fim.
+
+**Registro do protocolo** (só usuário atual, sem administrador): chave `HKCU\Software\Classes\editorbot-atualizar` com valor padrão `URL:Atualizador do Editor de Bot` e propriedade `URL Protocol` (vazia); subchave `shell\open\command` com valor padrão `"<PSHOME>\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "<pasta>\atualizar.ps1" -Auto`. Recriado a cada execução (idempotente). Remover: `atualizar.ps1 -RemoverAtalho`.
 
 Passos:
 1. **Recusa** rodar se a pasta tem `.git` (é o repositório de desenvolvimento: mandar usar `git pull`), ou se não há `manifest.json` ao lado. Nos dois casos, mensagem e código de saída 1.

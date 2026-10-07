@@ -2,7 +2,7 @@
 
 Status: implementada (referência: `js/fluxograma-export.js`, subprojeto `fluxograma/`, build em `vendor/fluxograma/`). Esta spec descreve o comportamento para o time poder manter, evoluir ou reimplementar sem o código Python do app desktop de onde o desenho foi portado.
 
-Pré-requisito: `00-contrato-de-entrada.md`. A spec histórica, com decisões de projeto e resultados de testes, está em `SPEC-exportar-fluxograma.md` (raiz do projeto).
+Pré-requisito: `00-contrato-de-entrada.md`. A spec histórica, com decisões de projeto e resultados de testes, está em `SPEC-exportar-fluxograma.md` (na pasta `codigo-de-referencia/` do pacote). Em caso de conflito entre ela e esta spec, **vale esta**.
 
 ---
 
@@ -34,7 +34,7 @@ Modo Técnico, PDF, painel de nomenclatura/renomeação manual, visualização i
    - Se o bot **não tem estados**: toast "Este bot ainda não tem estados: não há fluxograma para gerar." (checado **antes** de tudo, inclusive antes do pedido de salvar).
    - Se há **alterações não salvas**: diálogo "Salvar antes de gerar?" — "Este bot tem alterações que ainda não foram salvas. Para gerar o fluxograma, elas serão salvas na plataforma primeiro." Botões **Cancelar** (foco inicial; Esc também cancela; nada é salvo nem gerado) e **Salvar e gerar** (salva pelo mesmo caminho do botão Salvar; se o salvamento falhar, para — o próprio salvar já mostrou o erro).
 3. Durante a geração o botão fica desligado, com um spinner e o texto da etapa: "Montando o fluxograma…", "Organizando…", "Desenhando…", "Gerando a imagem…" (padrão "Gerando fluxograma…").
-4. A geração roda **em segundo plano**: o editor continua utilizável (só uma breve travada durante a captura). Fechar o modal do editor, ou abrir outro bot, **não cancela** a geração, porque ela usa um *snapshot* do bot.
+4. A geração roda **em segundo plano**: o editor continua utilizável (só uma breve travada durante a captura). Fechar o modal do editor, ou abrir outro bot, **não cancela** a geração, porque ela usa um *snapshot* do bot (`structuredClone` do bot em memória, feito **depois** do salvamento). Detalhe: depois de "Salvar e gerar", se o editor tiver **substituído** o objeto do bot em memória (recarregando-o do servidor), a geração é abandonada em silêncio; o snapshot é sempre do objeto que estava aberto antes de salvar.
 5. Ao terminar: **download automático** e toast "Fluxograma pronto: <arquivo>". Sem os cadastros do ambiente (coletor falhou): "Fluxograma pronto: <arquivo> (sem os nomes de fila/bot/calendário: cadastros da Orpen não carregados)". Em erro: toast "Erro ao gerar o fluxograma: <motivo em português>".
 6. Nome do arquivo: `fluxograma_<ID do bot>_<NOME do bot com caracteres fora de [a-zA-Z0-9_-] trocados por _>.<png|svg>` (`sem-id` / `sem-nome` quando ausentes).
 7. **Uma geração por vez** (um segundo clique é ignorado enquanto há uma em andamento).
@@ -104,7 +104,7 @@ Para cada estado (na ordem da lista) e para cada transição dele (na ordem anex
 | **1, 10 ou 11** (mensagem, menu, formulário) | Criar o nó `mensagem:<ID da ação>`; criar seta `noAtual → mensagem`; `noAtual = mensagem`. |
 | **2** (Troca Estado) | Destino = `destiny`. Se for texto não vazio contendo `{$` → nó `fila_dinamica` (a variável é o primeiro nome dentro de `{$...}`, letras/números/`_`). Senão, se o destino for **igual a um `STATE_NUMBER`** (comparação do valor cru) → o nó do estado. Senão → nó `orfao`. Criar seta `noAtual → destino`; `noAtual = destino`; marcar "houve transferência". |
 | **5** (Transf. Fila) | Destino `{$...}` → `fila_dinamica`; senão nó `fila:<destiny>`. Seta; `noAtual = destino`; "houve transferência". |
-| **4** (Transf. Agente) | Destino `{$...}` → `fila_dinamica`; senão nó `bot_externo:<destiny>`. Seta; `noAtual = destino`; "houve transferência". |
+| **4** (Transf. Agente) | Destino `{$...}` → `fila_dinamica`; senão nó `bot_externo:<destiny>`. Seta; `noAtual = destino`; "houve transferência". *Observação:* na Orpen a ação 4 transfere para um **agente ou bot** (o select tem os dois grupos), mas o app desktop de origem a trata sempre como transferência para bot; por **paridade**, o fluxograma faz o mesmo, e o nome real vem da lista de bots (se o ID for de agente, fica sem nome). |
 | **6** (Finalizar) | Não cria nó agora (ver depois do laço). |
 | qualquer outra | Ignorada (não gera nó nem seta). |
 
@@ -181,7 +181,7 @@ A condição de opção tem **prioridade** sobre o calendário.
 
 ### 7.4 Dados de cada nó e das setas
 
-Cada nó leva `{tipo, rotulo, referencia}` e, conforme o tipo: `estado` → `aguardaResposta` (verdadeiro se **alguma** transição do estado tem condição com `variable = message`); `mensagem` → `mensagem` (= rótulo) e `opcoesMenu`; `condicao` → `naoResolvida`; `calendario` → `naoResolvida`, `variavelCalendario`; `fila_dinamica` → `valoresObservados` (valores vistos nas ações 13; não aparecem na imagem). A posição inicial é `(0,0)` (o layout define depois).
+Cada nó leva `{tipo, rotulo, referencia}` e, conforme o tipo: `estado` → `aguardaResposta` (verdadeiro se **alguma** transição do estado tem condição com `variable = message`; calculado sobre o bot **completo**, antes de o Modo Cliente esconder transições); `mensagem` → `mensagem` (= rótulo) e `opcoesMenu`; `condicao` → `naoResolvida`; `calendario` → `naoResolvida`, `variavelCalendario`; `fila_dinamica` → `valoresObservados` (valores vistos nas ações 13; não aparecem na imagem). A posição inicial é `(0,0)` (o layout define depois).
 
 Cada seta tem id `e:<transicaoId>:<acaoId>:<origem>-<destino>` e dados `{isBackEdge, transicaoId, acaoId, estadoOrigemId}`, onde `estadoOrigemId` é o **estado a que a transição pertence** (a origem da primeira seta da transição que sai de um estado, calculada **antes** de inserir os intermediários).
 

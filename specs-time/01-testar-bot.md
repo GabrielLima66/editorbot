@@ -63,7 +63,7 @@ requisitosDeContexto(bot)             // o que o bot consulta de fora (aba Conte
 variaveisUsadas(bot)                  // variáveis guardadas que o bot usa
 nomeDoCadastro(variavel, id)          // '"Nome" (ID 227)' ou 'ID 227'
 trocarVariaveis(sessao, texto, mensagens?) // substitui {$x}
-escaparHtml(texto)
+escaparHtml(texto)                    // escape do SERVIDOR: troca & < > " (NÃO troca aspas simples); não confundir com escapeHtml da interface (contrato 00, seção 4)
 LIMITE_RODADAS = 25
 ```
 
@@ -387,7 +387,7 @@ Largura máx. 1120 px, altura `min(740px, 92vh)`, centralizada, com véu escuro.
 | Status | Banner |
 |---|---|
 | `aguardando` (18/20/22) | "**<nome da ação>**: o bot espera o retorno." Para 18 e 22, um campo de texto ("Resposta da IA + Enter (sucesso)" / "Mensagem devolvida + Enter (sucesso)"): **Enter com texto** responde callback com sucesso e esse texto; Enter vazio não faz nada. Botões **Callback: sucesso** / **Callback: falha** (usam o texto digitado, se houver). |
-| `aguardando-contexto` | "**Falta um dado para continuar:** <pergunta>". Se o dado tiver escolhas predefinidas (B5.3): **um botão por opção**; senão um campo de texto (Enter ou botão **Continuar** — este começa desligado e só liga com texto). |
+| `aguardando-contexto` | "**Falta um dado para continuar:** <pergunta>". Se o dado tiver escolhas predefinidas (B5.4): **um botão por opção**; senão um campo de texto (Enter ou botão **Continuar** — este começa desligado e só liga com texto). |
 | `encerrada` por parada | "**Parou no estado N**, o ponto de parada do teste. O bot ainda não rodou nele." Botões **Continuar daqui** e **Reiniciar**. |
 | `encerrada` (outros) | "**Conversa encerrada.** O bot não responde mais nesta conversa." Botão **Reiniciar**. |
 
@@ -445,7 +445,7 @@ Um item por estado, ordenado por número (um número de estado não numérico co
 Aparência: não visitado = apagado; visitado = destacado; atual = contorno e fundo da cor de destaque. O item atual rola para ficar visível (apenas dentro da lista).
 
 - **▶ "Começar o teste neste estado"**: define o estado de início e **reinicia**.
-- **⚑ "Parar o teste ao chegar neste estado"**: marca/desmarca a parada (só uma) e **reinicia**. Mesmo desmarcado após "Continuar daqui", o ⚑ continua marcado para os próximos reinícios.
+- **⚑ "Parar o teste ao chegar neste estado"**: marca/desmarca a parada (só uma) e **reinicia**. Depois de "Continuar daqui" a etiqueta *parada* some e a conversa segue sem parar nesta sessão; o ⚑ da lista continua marcado e vale de novo a cada reinício.
 - Depois de ▶ ou ⚑ o foco do teclado volta ao mesmo botão (a lista é refeita).
 - **Clicar na linha** (fora dos botões): "Ver no editor" (B9).
 
@@ -500,7 +500,7 @@ Efeito: minimiza; define a "rodada mostrada" (a da rodada/transição clicada; `
 
 # PARTE C · Critérios de aceitação
 
-Cada item deve virar um teste automatizado do simulador (Node, sem DOM), salvo os marcados **[UI]**. Os nomes entre colchetes são os testes de referência em `tests/editor/simulador.test.mjs`.
+Cada item deve virar um teste automatizado do simulador (Node, sem DOM), salvo os marcados **[UI]**. Os testes de referência estão em `tests/editor/simulador.test.mjs` (a numeração destes critérios não coincide com os nomes dos testes; procure pelo assunto).
 
 ## C1. Rodada e laço
 1. Duas transições no estado com a mesma condição: dispara a de **menor `PRIORITY`**, uma só.

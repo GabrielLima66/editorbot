@@ -3,6 +3,8 @@
 Este documento descreve **o que o time recebe pronto** e pode assumir. Nenhuma feature precisa saber como o bot é aberto, editado ou salvo na Orpen: isso é feito por uma camada que já existe (a "caixa-preta"). As specs das features só descrevem o que se faz **com** o bot que já está carregado.
 
 > Convenção de leitura: tudo que está em `código` é nome real usado no projeto. Todos os valores de ID e número vêm como **string** ("3", não 3).
+>
+> **Código de referência:** os nomes de arquivo citados (`js/...`, `tests/editor/...`, `fluxograma/...`) existem na pasta `codigo-de-referencia/` deste pacote, com a mesma estrutura do repositório. O time pode ler, copiar ou reaproveitar. Quando uma spec diz "ver o código", é lá.
 
 ---
 
@@ -26,7 +28,17 @@ Este documento descreve **o que o time recebe pronto** e pode assumir. Nenhuma f
 }
 ```
 
-Cada linha traz também chaves numéricas espelhadas (`"0"`, `"1"`...) com os mesmos valores das chaves nomeadas. **Ignore-as ao ler. Ao criar linhas novas, use a função pronta `withMirrors` (seção 4).**
+Cada linha traz também chaves numéricas espelhadas (`"0"`, `"1"`...) com os mesmos valores das chaves nomeadas. **Ignore-as ao ler. Ao criar linhas novas, use a função pronta `withMirrors` (seção 4).** A posição de cada chave nomeada é fixa por tabela:
+
+| Tabela | `"0"` | `"1"` | `"2"` | `"3"` | `"4"` | `"5"` | `"6"` |
+|---|---|---|---|---|---|---|---|
+| estado | `ID` | `STATE_NUMBER` | `ALIAS` | | | | |
+| transição | `ID` | `STATE` | `CONDITION` | `MESSAGE` | `TARGET_TYPE` | `TARGET` | `PRIORITY` |
+| condição | `ID` | `TRANSITION_ID` | `CONDITION_TYPE` | | | | |
+| ação | `ID` | `TRANSITION_ID` | `ACTION_TYPE` | | | | |
+| bot (raiz) | `ID` | `NAME` | `CONF_DELIVERY_TIME` | `CONF_DELIVERY_QUEUE` | `TIME_ANSWER` | `TIMEOUT_DELAY` | `TIMEOUT_ACTION` |
+
+No bot (raiz) continuam `"7"` = `TIMEOUT_DESTINY` e `"8"` = `TIMEOUT_MESSAGE`. `CONDITION_DATA` e `ACTION_DATA` não têm espelho numérico próprio: ficam como objeto nas chaves nomeadas. Uma linha só é válida para o servidor se as chaves numéricas e as nomeadas **dizem o mesmo**.
 
 ### Regras do modelo (valem para qualquer feature)
 
@@ -46,6 +58,8 @@ Cada linha traz também chaves numéricas espelhadas (`"0"`, `"1"`...) com os me
 
 `CONDITION_DATA` = `{ variable, value, type?, assistant_id? }`. O significado de `CONDITION_TYPE` depende da `variable`.
 
+**O campo `type` dentro de `CONDITION_DATA`:** o editor grava `type: '1'` ao criar condições de mensagem, e o gerador de tratamento do menu também o grava em `error_count`. **Quem decide a operação é o `CONDITION_TYPE` da condição** (tabela 2.2 e a coluna "`CONDITION_TYPE` significa" abaixo), não o `type`. A exceção é o assistente OpenAI (linha própria na tabela), em que o operador real fica em `type`. Regra prática: ao ler, não interprete `type` (exceto no assistente); ao criar uma condição, grave `type: '1'` como o editor faz.
+
 ### 2.1 Variáveis
 
 | `variable` | Rótulo na tela | `CONDITION_TYPE` significa | `value` |
@@ -54,7 +68,7 @@ Cada linha traz também chaves numéricas espelhadas (`"0"`, `"1"`...) com os me
 | `contact` | CONTATO | operador de contato (tabela 2.2) | conforme operador (ex.: IDs de labels) |
 | `error_count` | Contador de Erros | 1 igual, 6 maior, 7 maior-igual, 8 menor, 9 menor-igual | número |
 | `calendario` / `calendario_falso` | CALENDARIO (Verdadeiro/Falso) | **ID do calendário** | — |
-| `agent_on_queue` | AGENTES NA FILA | nome/ID da fila | — |
+| `agent_on_queue` | AGENTES NA FILA | o **ID/nome da fila** (o ID da fila é o próprio nome, como em `opcoesFilas()`) | — |
 | `agent_online` | AGENTE LOGADO | ID do agente (ou `{$variável}` em `value`) | — |
 | `agent_available_on_chat` | DISPONÍVEL CHAT | ID do agente | — |
 | `status_last_att` | Status Último Atendimento | ID do status CRM | — |
@@ -98,7 +112,7 @@ Cada linha traz também chaves numéricas espelhadas (`"0"`, `"1"`...) com os me
 |---|---|---|---|
 | 1 | Mensagem | `message_text` | Envia texto ao cliente. |
 | 2 | Troca Estado | `destiny` (nº do estado ou `{$variável}`) | Vai para o estado. |
-| 4 | Transf. Agente | `destiny` (ID do agente ou `{$variável}`) | Transfere e sai do bot. |
+| 4 | Transf. Agente | `destiny` (ID do agente, ID de **bot** ou `{$variável}`; o select do editor tem os dois grupos, "Agentes" e "Bots") | Transfere e sai do bot. |
 | 5 | Transf. Fila | `destiny` (nome da fila) | Transfere e sai do bot. |
 | 6 | Finalizar | `crm_status` | Encerra o atendimento. |
 | 7 | Executar Script | `script_name` (ID do script) | Roda um script do cliente; o retorno vira variáveis `<ID>_<campo>`. |
@@ -126,21 +140,32 @@ Cada linha traz também chaves numéricas espelhadas (`"0"`, `"1"`...) com os me
 
 ## 4. Funções prontas que as features podem chamar
 
-Não reimplemente. Estão em `js/` e têm testes.
+Não reimplemente: estão em `js/`, têm testes e são o que mantém o formato igual ao da Orpen. Abaixo, assinatura, retorno e se **mutam** o argumento. (O código completo está em `codigo-de-referencia/js/`.)
 
-| Função | Para quê |
+### Dados do bot
+
+| Função (arquivo) | Entrada → saída | Detalhe |
+|---|---|---|
+| `nextId(lista)` (`bot-view-interactions.js`) | lista de linhas (ex.: `bot.BOT_ACTIONS`) → string | `String(maior ID inteiro da lista + 1)`; lista vazia ou ausente → `"1"`. Não muta. |
+| `withMirrors(tipo, linha)` (idem) | `'state'`\|`'transition'`\|`'condition'`\|`'action'`, objeto → o **mesmo** objeto | **Muta** `linha`: para cada chave nomeada da tabela da seção 1, copia o valor para a chave numérica correspondente. |
+| `remapStateNumbers(bot, mapa)` (idem) | bot, `Map<antigo, novo>` (strings) → nada | **Muta** `bot`. Reescreve `STATE_NUMBER` dos estados, `STATE` das transições, os campos de estado das ações (seção 3), e `TIMEOUT_DESTINY` **somente quando** `TIMEOUT_ACTION === 'bot'`. Mapa vazio = não faz nada. Atualiza também os espelhos dessas chaves. |
+| `tipoDaCondicao(condicao)` (`orpen-adapter.js`) | condição → número | Tipo que será gravado: `1` para `assistant_analysis_status`, `2` para `assistant_analysis_text`; senão `Number(CONDITION_TYPE)` (se não for numérico devolve o valor cru, ou `0` se vazio). Tipo `0` = a condição **não é gravada** pelo servidor. |
+| `parseMenuModel(textoJson)` (`menu-builder.js`) | string → modelo | `{kind:'whatsapp_button', header, body, footer, buttons:[{id,title}]}`, ou `{kind:'whatsapp_list', header, body, footer, button, sections:[{title, rows:[{id,title,description}]}]}`, ou `{kind:'webchat', options:[{text,value}]}`, ou `{kind:'unknown', raw}`. Textos ausentes viram `''`. `interactive.type` diferente de `button` é lista. Não muta. |
+| `extrairItensMenu(modelo)` (idem) | modelo → `[{title, id, description}]` | Lista achatada de botões, linhas ou opções, na ordem. `unknown` → `[]`. |
+| `buildMenuJson(modelo)` (idem) | modelo → string | JSON do menu a partir do modelo (para menus **novos**; editar um existente é feito por `menu-modal.js`, que preserva o original). |
+| `listarPendencias(bot)` (`bot-view-interactions.js`) | bot → lista | Formato na seção 9.3. |
+
+### Tela
+
+| Função (arquivo) | Para quê |
 |---|---|
-| `nextId(lista)` | Próximo ID (maior + 1) de uma das quatro tabelas. |
-| `withMirrors(tipo, linha)` | Refaz as chaves numéricas espelhadas; `tipo` = `'state'`, `'transition'`, `'condition'` ou `'action'`. |
-| `remapStateNumbers(bot, mapa)` | Renumera estados e todas as referências (`STATE`, `destiny`, `callback_state`, `fallback_state`, `TIMEOUT_DESTINY`) de acordo com um `Map` antigo → novo. |
-| `tipoDaCondicao(condicao)` | Tipo que será gravado (usado para saber se uma condição será descartada). |
-| `escapeHtml(texto)` | **Obrigatório** em todo texto vindo do bot ou do usuário que entre em `innerHTML`. |
-| `parseMenuModel(json)` / `extrairItensMenu(modelo)` | Lê o JSON de menu da ação 10 (seção 5). |
-| `empilharEsc(fn)` | Registra tratamento da tecla Esc em pilha (quem abriu por último trata primeiro; devolver `false` passa para o de baixo). |
-| `getRootNode()` | Raiz do DOM da extensão (Shadow DOM). **Toda busca de elemento usa isto**, nunca `document`. |
-| `criarIcones()` | Desenha os ícones Lucide (`<i data-lucide="nome">`). |
-
----
+| `escapeHtml(texto)` (`utils.js`) | Escapa `& < > " '` (aspas simples viram `&#39;`). **Obrigatório** em todo texto vindo do bot ou do usuário que entre em `innerHTML`. `null`/`undefined` → `''`. (Atenção: o simulador do motor tem uma função própria, `escaparHtml`, que **não** escapa aspas simples porque imita o servidor; não confundir.) |
+| `getRootNode()` (`dom-root.js`) | Raiz do DOM da extensão (o `ShadowRoot`); na página avulsa é o `document`. **Toda busca de elemento usa isto**, nunca `document`. |
+| `$(seletor)` (`utils.js`) | Atalho: `getRootNode().querySelector(seletor)`. |
+| `empilharEsc(fn)` (`dom-root.js`) | Registra tratamento da tecla Esc numa **pilha**. Quem registrou por último trata primeiro; se `fn(evento)` devolver `false`, o Esc passa para o de baixo; qualquer outro retorno consome a tecla. Devolve a função que remove o tratamento (chame ao fechar a janela). |
+| `criarIcones()` (`dom-root.js`) | Desenha os ícones Lucide (`<i data-lucide="nome">`) dentro da raiz ativa. Chame depois de inserir HTML novo. |
+| `mostrarToast(texto)` (`utils.js`) | Aviso transitório (~3,2 s) no canto da tela; o texto entra via `textContent`. |
+| `marcarCamposSemAutopreenchimento(elemento)` (`dom-root.js`) | Marca campos de uma janela nova para os gerenciadores de senha não oferecerem preenchimento. Chame em toda janela com `input`/`textarea`. |
 
 ## 5. JSON do menu (ação 10)
 
@@ -156,8 +181,10 @@ Três formatos reconhecidos; qualquer outro vira "formato não reconhecido".
   "action": { "button": "Ver opções", "sections": [ { "title": "", "rows": [ { "id": "l1", "title": "Linha 1", "description": "" } ] } ] } } }
 
 // WebChat
-{ "message_type": "menu", "menu_type": "list", "text": "Escolha", "options": [ { "text": "Vendas", "value": "vendas" } ] }
+{ "message_type": "menu", "menu_type": "list", "options": [ { "text": "Vendas", "value": "vendas" } ] }
 ```
+
+O menu WebChat **não tem texto da pergunta**: o texto é uma ação "Mensagem" (tipo 1) logo antes do menu. Se um JSON antigo trouxer outras chaves (ex.: `text`), elas são preservadas ao editar, mas o editor não as usa.
 
 Quando o cliente toca num botão ou numa linha do WhatsApp, o bot recebe como mensagem **o `id` do item** (não o título). Para o WebChat não está confirmado se chega o `value` ou o `text`: as features tratam isso como uma opção configurável.
 
@@ -202,12 +229,51 @@ As features que desenham sobre o editor (Testar bot, Localizar, Copiar/colar) de
 
 ---
 
+Os seletores e atributos `data-*` que a busca usa para levar a pessoa até um campo (`mudar-campo-acao`, `mudar-condicao-valor`, `.estado-alias`, `.menu-resumo`, `editar-menu`, `.condicao-operador`...) estão listados na tabela da seção 8.1 de `02-localizar.md`.
+
 ## 8. Convenções obrigatórias de implementação
 
-1. **Sem acesso a `document`**: use `getRootNode()`; o editor roda dentro de um Shadow DOM.
+1. **Sem acesso a `document`**: use `getRootNode()`; o editor roda dentro de um Shadow DOM. *Exceções conhecidas:* o iframe do fluxograma é anexado ao `document.body` da página (precisa estar fora do Shadow DOM para o Chrome pintá-lo) e a pilha de Esc escuta o `document`.
 2. **Tamanhos em `px`** em qualquer janela ou painel que não esteja dentro do editor: a página da Orpen redefine a fonte base para 10px, e `rem` ficaria ~38% menor.
-3. **Cores só por tokens** (`var(--accent)`, `var(--text)`, `var(--success)`, `var(--danger)`, `var(--warn)`, `var(--obd-bg)`, `var(--obd-surface)`, `var(--obd-border)`...). Isso garante tema claro e escuro.
+3. **Cores só por tokens** (`var(--accent)`, `var(--text)`, `var(--success)`, `var(--danger)`, `var(--warn)`, `var(--obd-bg)`, `var(--obd-surface)`, `var(--obd-border)`...). Isso garante tema claro e escuro. Os valores dos tokens para os dois temas estão no começo de `css/styles.css`. *Exceção:* a imagem do fluxograma e as cores por tipo de resultado da busca têm valores fixos definidos nas respectivas specs (a imagem exportada não muda com o tema).
 4. **Todo texto vindo de fora** passa por `escapeHtml` antes de entrar em `innerHTML`, inclusive em atributos `data-*`.
 5. **Features só leem o bot**. Quem altera o bot é o editor (mutations de `bot-view-interactions.js`). Exceção: Copiar/colar, que altera o bot **em memória** por funções puras próprias e nunca grava sozinha.
 6. **Nada grava na Orpen** exceto o botão Salvar do editor.
 7. **Módulos puros primeiro**: a lógica de cada feature vive num módulo sem DOM (testável em Node); a tela é uma camada fina por cima.
+
+---
+
+## 9. Como uma feature se liga ao editor (API de integração)
+
+O editor é uma camada pronta; cada feature só precisa de **um ponto de entrada** e de alguns utilitários.
+
+### 9.1 Ponto de entrada
+Cada feature expõe uma função `initX()` (`initBusca`, `initTesteBot`, `initCopiarColar`, ...), chamada **uma vez** quando o editor é montado. Ela:
+1. insere seu(s) botão(ões) em `.bv-header` (os existentes são inseridos antes do `#btn-fechar-bot-view`; o de busca antes do botão de fechar, o de teste antes do botão de busca);
+2. cria sua janela ou painel sob demanda (nunca no HTML estático do editor, ver seção 9.4);
+3. registra seus ouvintes (teclado, `input`/`change` em `#bv-estados`, `MutationObserver`).
+
+O editor abre sobre o bot por `abrirBotView(bot)` e fecha por `fecharBotView()`; ao fechar, toda feature deve fechar sua janela, soltar ouvintes e **parar timers**.
+
+### 9.2 Estado compartilhado (`state`, em `js/state.js`)
+| Campo | Conteúdo |
+|---|---|
+| `state.botCarregado` | o bot em edição (seção 1). Quem altera é o editor; features **leem** (exceção: Copiar/colar). |
+| `state.ambienteOrpen` | cadastros lidos da Orpen (alimenta as funções `opcoes*()` da seção 6); `null` no modo avulso. |
+| `state.baselineSalvo` | payload do bot como está salvo no servidor; se o payload atual for diferente, há **alteração não salva**. |
+| `state.nomeArquivoOriginal`, `state.botTransformado` | só da página avulsa (spec 06). |
+
+### 9.3 Pendências (campos a revisar)
+`listarPendencias(bot)` devolve a lista de campos de cadastro **vazios** que a pessoa precisa preencher; `abrirPendenciasModal(lista, textos?)` mostra a janela (`textos = {titulo, dica}` opcional). Cada item:
+```js
+{ estadoNumero:'4', estadoAlias:'HOME', transicaoPrioridade:'1',
+  tipoItem:'Ação' | 'Condição', posicao: 2,        // posição (1, 2...) dentro da transição
+  tipoLabel:'Transf. Fila', campoLabel:'Número da fila / bot / agente' }
+```
+Quais campos contam como pendência está em `CAMPOS_PENDENCIA_POR_TIPO` (`js/dictionaries.js`): ações 4, 5, 6, 7, 9, 12, 14, 15, 17, 18 (conta e assistente), 22, mais `assistant_id` vazio em condições. Estados de destino **não** entram (resolvem-se dentro do bot). As pendências **avisam, não bloqueiam** (o único bloqueio do Salvar sobre isso está na spec 04, seção 7).
+
+### 9.4 Janelas (modais) da extensão
+O HTML do editor é entregue em **blocos** extraídos de `bot_transform.html` pelo script de entrada (`content/bootstrap.js`; a extração e a lista de blocos estão em `js/orpen-bridge.js`): hoje `#bot-view-overlay`, `#pendencias-overlay` e `#copiar-overlay`. Uma janela que existe como HTML estático em `bot_transform.html` **precisa estar nessa lista**, senão funciona na página avulsa e fica inexistente dentro da Orpen (foi o bug do botão Copiar/colar morto). Janelas criadas por JavaScript na hora de abrir (Menu, Gerar tratamento, Novidades, confirmação do fluxograma) **não** precisam estar na lista.
+
+### 9.5 Salvar e alteração não salva
+Salvar é do editor (botão Salvar). Features que precisam saber receberão **funções** de quem as chama, por exemplo `gerarFluxograma({ formato, salvar, temAlteracoesNaoSalvas, atualizarBotao })`: `salvar()` devolve uma promessa de `true/false` e já mostra o próprio erro; `temAlteracoesNaoSalvas()` devolve booleano. A confirmação "Salvar antes de gerar?" é uma janela da própria feature (`confirmarSalvar()` em `fluxograma-export.js`).

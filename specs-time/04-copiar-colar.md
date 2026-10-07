@@ -48,7 +48,7 @@ Colar **só altera o bot em memória**. Nada vai para a Orpen até a pessoa clic
 
 - As linhas são **cópias profundas** sem as chaves numéricas espelhadas. **IDs e espelhos guardados não são confiáveis**: ao colar, tudo ganha ID novo (`nextId`) e os espelhos são refeitos (`withMirrors`).
 - `indice` serve para decidir, ao colar **no mesmo bot**, se uma ligação para um estado que não foi copiado ainda é válida (seção 5.4).
-- Um trecho só é válido se `formato` e `tipo` baterem e `linhas.transicoes`/`linhas.estados` forem listas.
+- Um trecho só é válido se `formato` e `tipo` baterem e `linhas.transicoes`/`linhas.estados` forem listas. *Lacuna conhecida:* o código **não** exige que `linhas.condicoes` e `linhas.acoes` sejam listas, e um trecho sem elas passa na validação e quebra ao colar. Recomendado: validar as quatro listas.
 - **Copiar transições** exige que todas sejam do **mesmo estado**.
 
 ---
@@ -59,18 +59,18 @@ Colar **só altera o bot em memória**. Nada vai para a Orpen até a pessoa clic
 
 Um botão **"Copiar / colar"** na barra "Transições" (ao lado de "Adicionar") abre uma janela com duas abas. Um **pontinho laranja** no botão e na aba "Colar" avisa que há algo copiado esperando. A janela abre direto na aba **Colar** se houver estados copiados; senão, na **Copiar**.
 
-A janela é criada por JavaScript na própria extensão (não faz parte do HTML estático) e **precisa estar na lista de blocos que a extensão injeta**; um modal fora dessa lista funciona na página avulsa e fica morto na Orpen. Tamanhos em **px**.
+A janela é o bloco de HTML estático `#copiar-overlay` (em `bot_transform.html`), preenchido por `js/copiar-colar.js`. Ele **precisa estar na lista de blocos que a extensão injeta** (`js/orpen-bridge.js`, ver contrato 00 seção 9.4); um bloco fora da lista funciona na página avulsa e fica morto na Orpen. Tamanhos em **px**. Clicar no fundo da janela também a fecha.
 
 ### 4.2 Aba "Copiar deste bot"
 - À esquerda, a lista de estados: número, nome, quantidade de transições, com **caixa de marcar**; **busca** por número ou nome (sem acento nem maiúscula); "Selecionar os filtrados" e "Limpar seleção". Os marcados persistem enquanto a busca muda.
 - À direita, o resumo do que será copiado: estados, quantidade de transições, condições e ações, e **quais estados fora da seleção são apontados** pelos copiados (ligações de Troca Estado, retorno de IA/áudio/automação). Avisa que em outro bot elas ficam em branco e neste mesmo bot continuam valendo.
-- Botão **Copiar N estados** (desligado sem seleção). Ao copiar: fecha, mostra toast e acende o indicador.
+- Botão **Copiar** (desligado com 0 marcados) que vira **Copiar N estados** com N ≥ 1. Ao copiar: fecha, mostra toast e acende o indicador.
 
 ### 4.3 Aba "Colar neste bot"
 - Sem nada copiado: mensagem explicando como copiar. Com **transições** copiadas: avisa que são transições soltas e que se colam dentro de um estado ("Colar transições").
 - Com **estados** copiados: à esquerda, a lista **"No fim da lista"** (marcada, "nenhum estado é renumerado") e uma opção **"depois de N"** para cada estado do bot de destino (busca igual à da outra aba; estados com número **não numérico** ficam desativados). À direita, a **prévia** (seção 6).
 - Botão **Colar** (desligado se a validação falhar). Um link **Esquecer** limpa a área de cópia.
-- Depois de colar: janela fecha, o editor refaz a lista, o primeiro estado colado abre e rola até o topo com destaque, toast "N estados colados; M estados mudaram de número. Ainda não salvo.", e se sobrarem pendências abre a lista (seção 7).
+- Depois de colar: janela fecha, o editor refaz a lista, o primeiro estado colado abre e rola até o topo com destaque, toast "N estados colados; M estados mudaram de número. Ainda não salvo." (com 1 estado diz "Estado colado"; a parte "mudaram de número" só aparece se M > 0), e se sobrarem pendências abre a lista (seção 7).
 
 ### 4.4 Transições soltas
 - Um ícone **copiar** na barra de cada transição.
@@ -79,6 +79,27 @@ A janela é criada por JavaScript na própria extensão (não faz parte do HTML 
 ---
 
 ## 5. Regras de colagem de estados (`colarTrecho`)
+
+### 5.0 Interface das funções (módulo puro `js/trechos.js`, sem DOM)
+
+```js
+extrairTrecho(bot, { estados: ['3','4'] } | { transicoes: ['12','15'] }, { host, botId, botNome }) → trecho
+   // não altera o bot; lança Error se nada selecionado ou se as transições forem de estados diferentes
+trechoValido(trecho) → boolean
+colarTrecho(bot, trecho, { estadoDestino, depoisDe = null, mesmoBot = false, esvaziarAmbiente = false }) → resultado
+   // MUTA bot; lança Error('Trecho inválido.') / 'Estado de referência não existe neste bot.' / 'Estado de destino não existe neste bot.'
+simularColagem(bot, trecho, mesmasOpcoes) → { ok, erros: string[], resultado, mudancas }
+   // trabalha numa cópia; não altera o bot
+```
+- `estadoDestino`: obrigatório para trechos de transições (número do estado que as recebe).
+- `depoisDe`: número (string) do estado depois do qual os colados entram; sem ele entram no fim.
+- `mesmoBot`: **quem chama** calcula (seção 5.4); o padrão é `false`, e nesse caso toda referência a estado não copiado é esvaziada.
+- `esvaziarAmbiente`: `true` quando o host de origem difere do atual (seção 5.5).
+- `resultado` = `{ estadosNovos: ['5','6'], transicoesNovas: [ids], soltas: [{transitionId, actionId, campo, valorOriginal}], ambiente: [{transitionId, itemId, tipoItem, campo}], deslocados: [{de, para}] }`.
+- `mudancas` = estados que **já existiam** e mudaram de número, no formato usado pelo aviso de renumeração do Salvar.
+
+### 5.0.1 Numeração dos estados colados
+Os estados do trecho são ordenados pelo número original (numérico crescente) e recebem números **numéricos** consecutivos (`N+1…` ou o maior existente + 1…). Isso vale também para o estado `0` e para números não numéricos do trecho (`"A1"`): no bot de destino todos ganham número numérico novo; o estado `0` do destino **nunca** é afetado. Colar um estado que era o `0` de outro bot não substitui nem muda o `0` do destino.
 
 ### 5.1 Onde entram
 - **No fim:** os estados colados recebem os números seguintes ao **maior número numérico** existente. Ninguém é renumerado.
@@ -113,7 +134,7 @@ Antes de colar, **ensaiar a colagem numa cópia do bot** e só aplicar no bot de
 - números de estado continuam únicos;
 - toda transição aponta para um estado existente;
 - nenhuma ligação nova aponta para estado inexistente (variáveis `{$x}` são aceitas);
-- o timeout (`TIMEOUT_DESTINY`) continua apontando para um estado existente;
+- o timeout (`TIMEOUT_DESTINY`) continua apontando para um estado existente, **verificado só quando `TIMEOUT_ACTION` é `"bot"`** (nos outros modos esse campo guarda fila ou status, e a renumeração também só o reescreve nesse modo);
 - o estado **0 não muda** (continua o mesmo estado);
 - se a numeração era contínua (0, 1, 2…), continua contínua;
 - os estados continuam em ordem crescente no array.
@@ -126,7 +147,7 @@ A prévia mostra: os números com que os estados entram; **quais estados existen
 
 ## 7. Pendências depois de colar
 
-Reaproveitar a tela de pendências do editor com textos próprios: título "Para conferir depois de colar" e a explicação de que os campos ficaram em branco por apontarem para algo que não existe aqui. Cada linha: `Estado [n] nome → Transição nº p → Ação/Condição nº i (tipo): <campo>`. Para ligações de estado: "Estado de destino (era o estado N no bot de origem, que não foi copiado)". Para cadastros: o rótulo do campo.
+Reaproveitar a tela de pendências do editor com textos próprios: título "Para conferir depois de colar" e a explicação de que os campos ficaram em branco por apontarem para algo que não existe aqui. Cada linha: `Estado [n] nome → Transição nº p → Ação/Condição nº i (tipo): configurar <campo>`. Para condições o "tipo" é sempre a palavra "Condição". Para ligações de estado o rótulo depende do campo: "Estado de destino" (ação 2), "Estado de retorno (callback)" e "Estado de falha (fallback)" (ações 18, 20, 22), seguido de "(era o estado N no bot de origem, que não foi copiado)". Para cadastros: o rótulo do campo (`CAMPOS_PENDENCIA_POR_TIPO`).
 
 **O Salvar bloqueia** uma condição de cadastro (fila, agente, calendário, status CRM, entrada) **sem o cadastro escolhido**: o servidor a descartaria (tipo 0) e a transição passaria a valer sempre. A mensagem diz em qual estado e transição.
 
@@ -150,7 +171,7 @@ Reaproveitar a tela de pendências do editor com textos próprios: título "Para
 14. **[UI]** O botão abre a janela dentro da extensão (Shadow DOM só com os blocos injetados), com os dois blocos de lista funcionando; Esc fecha; o pontinho acende com algo copiado e outra aba é avisada.
 15. **[UI]** Busca na lista (sem acento), "selecionar filtrados", e a marcação persiste ao filtrar.
 16. **[UI]** Colar no meio mostra a prévia dos estados que mudam de número, bloqueia o botão quando o ensaio falha, e depois de colar o editor abre o primeiro estado novo.
-17. **[UI]** Sem o estado da Orpen (modo avulso) a janela abre e colar funciona.
+17. **[UI]** Sem o ambiente da Orpen (modo avulso) a janela abre. Atenção: a área de cópia usa `chrome.storage.local`; se a página não tiver acesso a `chrome.storage` (página avulsa aberta fora da extensão), **copiar mostra "Não foi possível guardar a cópia"** e não há o que colar. Colar só funciona avulso se o storage existir.
 
 ## 9. Riscos e pontos em aberto
 
@@ -160,3 +181,5 @@ Reaproveitar a tela de pendências do editor com textos próprios: título "Para
 | Scripts | O ID do script vai embutido em textos como `{$7_campo}` e em nomes de variáveis; em outro ambiente isso **não** é esvaziado (está no meio do texto). Limitação conhecida. |
 | Transição colada em outro estado | Uma Troca Estado que apontava para o estado de origem passa a apontar para o de destino (decisão de projeto, com teste). Revisar se o uso real pedir o contrário. |
 | Renumeração e atendimentos em andamento | Quem está num número que mudou passa a seguir outro estado, e failover de entradas e inatividade não são atualizados. O aviso do Salvar e a prévia deixam isso claro; a escolha padrão ("No fim") evita o problema. |
+| Desempenho | A aba Copiar recalcula o resumo (extrai o trecho) a cada clique numa caixa de marcar; em bots muito grandes pode pesar. |
+| "Mesmo bot" | Calculado só na tela (host e `botId` iguais e não vazio), não nas funções puras. Quem usar `colarTrecho` direto precisa passar `mesmoBot`. |

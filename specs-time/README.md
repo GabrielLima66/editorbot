@@ -1,5 +1,7 @@
 # Specs das features (pacote para o time)
 
+> **Primeira vez aqui? Leia `COMECE-AQUI.md`** (contexto, ordem de leitura, o que não precisa saber) e consulte `GLOSSARIO.md` quando um termo não for conhecido. Para assistentes de código (Claude): `ia/LEIA-ME-CLAUDE.md`.
+
 Estas specs descrevem **o que cada feature faz**, com precisão suficiente para o time implementar sem depender do código da Orpen. O que mexe direto com a Orpen (abrir, editar, salvar e interpretar o bot) **não está aqui**: é uma camada que já existe e que as features só consomem (ver o contrato).
 
 ## Como ler
@@ -27,4 +29,4 @@ A pasta `ia/` tem, para as mesmas features, um resumo do **cerne**: a ideia cent
 
 ## Código de referência
 
-A implementação atual de cada feature está em `js/` (nomes citados em cada spec) e os testes em `tests/editor/`. Rode `node --test "tests/editor/*.test.mjs"` para ver o comportamento esperado funcionando.
+A implementação atual de cada feature está em `codigo-de-referencia/` (mesma estrutura do repositório: `js/`, `tests/editor/`, `fluxograma/`...; os caminhos citados nas specs são relativos a ela). Dentro dela, `node --test "tests/editor/*.test.mjs"` mostra o comportamento esperado funcionando. **Atenção:** a pasta `codigo-de-referencia/` só existe na cópia entregue ao time (Desktop); no repositório o código já está na raiz.

@@ -28,7 +28,7 @@ Passos 1–5 puros (Node); 6–8 precisam de navegador.
 
 ## Regras do grafo que mais importam
 
-- Por transição, percorrer as ações em ordem: **1/10/11** criam `mensagem:<ID da ação>`; **2** vai a estado (ou `fila_dinamica` se tem `{$`, ou `orfao` se o estado não existe); **5** → `fila:<n>`; **4** → `bot_externo:<n>`; **6** (sem transferência na transição) → nó único `encerrado`. As demais ações **não geram nó**.
+- Por transição, percorrer as ações em ordem: **1/10/11** criam `mensagem:<ID da ação>`; **2** vai a estado (ou `fila_dinamica` se tem `{$`, ou `orfao` se o estado não existe); **5** → `fila:<n>`; **4** → `bot_externo:<n>` (por paridade com o desktop, mesmo sendo agente-ou-bot na Orpen; nome só da lista de bots); **6** (sem transferência na transição) → nó único `encerrado`. As demais ações **não geram nó**.
 - `fila`, `bot_externo`, `fila_dinamica`, `encerrado`, `orfao` são **compartilhados**; `mensagem` é um por ação.
 - **Back edge** = a última seta que chega num estado **cinza** durante a DFS; DFS só sobre estados, pilha LIFO, partida ordenada `("0" primeiro, dígitos, resto)`.
 - **Modo Cliente** esconde a transição com `error_count` (tipo ≠ 8, 9), com ação 8, ou com `#TESTE`/`#OK#` em algum texto.
