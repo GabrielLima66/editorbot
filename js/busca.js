@@ -454,6 +454,7 @@ export function initBusca() {
 
   document.addEventListener('keydown', (e) => {
     if (!visivel()) return;
+    if (!$r('#tb-overlay')?.classList.contains('hidden') && $r('#tb-overlay')) return; // modal de teste aberto
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'f') {
       e.preventDefault();
       abrirBusca();
