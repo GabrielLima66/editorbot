@@ -152,7 +152,7 @@ function dadosDaAcao(a) {
 // Condição do assistente OpenAI: a raiz é 1 (status) ou 2 (conteúdo), como o
 // modal nativo grava (bot.php:2317, 3694-3697); o operador fica no data.
 // Corrige também condições salvas antes com o operador na raiz.
-function tipoDaCondicao(c) {
+export function tipoDaCondicao(c) {
   const variavel = c.CONDITION_DATA?.variable;
   if (variavel === 'assistant_analysis_status') return 1;
   if (variavel === 'assistant_analysis_text') return 2;

@@ -1,5 +1,11 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.17] - 2026-10-07
+* **Testar o bot no editor**: um botão novo no cabeçalho (ícone de robô) abre uma conversa de teste, sem salvar nada e sem criar atendimento. À esquerda fica a lista de estados, mostrando onde a conversa está e por onde já passou; ao lado, a aba Conversa (você escreve como o cliente e os menus aparecem com botões clicáveis), a aba Detalhes (cada transição e condição que o motor avaliou, com ✓ e ✗) e a aba Contexto (dados que o simulador não tem, como calendário, fila e agente).
+* **Segue as regras do motor da Orpen**: vale a primeira transição por prioridade cujas condições passam, a troca de estado vale na rodada seguinte, e transição sem condição de mensagem dispara sozinha (com um teto de 25 rodadas e aviso). "Igual a" diferencia maiúsculas e "Contém" só ignora maiúsculas em letras sem acento. Quando falta um dado que o simulador não tem, o teste pausa e pergunta, em vez de assumir "falso". Ações de IA, áudio e automação pausam até você responder o callback (Enter envia o texto como sucesso).
+* **Aviso sobre "Diferente de" e "Não contém"**: no motor atual essas duas condições nunca são verdadeiras. O teste mostra o aviso quando aparecem.
+* **Localizar**: Ctrl+F não abre mais o Localizar por baixo da janela de teste.
+
 ## [0.8.16] - 2026-10-06
 * **Localizar acha calendários**: um novo filtro "Calendários" busca nas condições de calendário pelo nome do calendário (e pelo ID), sem diferenciar acento. Clicar no resultado abre o estado, rola até a condição e destaca o campo do calendário.
 
