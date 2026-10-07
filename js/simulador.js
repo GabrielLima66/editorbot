@@ -28,8 +28,20 @@
 import { VARIABLE_LABELS, TEXT_OPERATORS, CONTACT_OPERATORS, ERROR_COUNT_OPERATORS, ACTION_TYPE_LABELS, VARIABLE_KIND, CAMPOS_ESTADO_POR_TIPO } from './dictionaries.js';
 import { parseMenuModel, extrairItensMenu } from './menu-builder.js';
 import { tipoDaCondicao } from './orpen-adapter.js';
+import { opcoesCalendarios, opcoesFilas, opcoesAgentes, opcoesCrmStatus, opcoesEntradasCondicao } from './orpen-env.js';
 
 export const LIMITE_RODADAS = 25;
+
+// Nome do cadastro (calendário, fila, agente...) como o editor mostra, vindo do ambiente da Orpen; sem o
+// ambiente (ou com um ID que não está nele) só o ID existe.
+const CADASTRO_POR_VARIAVEL = {
+  calendario: opcoesCalendarios, calendario_falso: opcoesCalendarios, agent_on_queue: opcoesFilas,
+  agent_online: opcoesAgentes, agent_available_on_chat: opcoesAgentes, status_last_att: opcoesCrmStatus, entrance: opcoesEntradasCondicao,
+};
+export function nomeDoCadastro(variavel, id) {
+  const nome = CADASTRO_POR_VARIAVEL[variavel]?.().find((o) => String(o.value) === String(id))?.label;
+  return nome && nome !== String(id) ? `"${nome}" (ID ${id})` : `ID ${id}`;
+}
 
 // Variáveis que têm tratamento próprio (não passam pelo operador de texto).
 const VARIABLE_KIND_TODAS = {
@@ -281,14 +293,14 @@ function avaliarCondicao(sessao, c, mensagens) {
       const v = Number(d.value);
       return ret({ 1: n == v, 6: n > v, 7: n >= v, 8: n < v, 9: n <= v }[tipo] ?? false);
     }
-    case 'calendario': return ret(externa(sessao, `calendario:${tipo}`, `Calendário ${tipo}: o momento do teste está dentro do período?`) === 'sim');
-    case 'calendario_falso': return ret(externa(sessao, `calendario:${tipo}`, `Calendário ${tipo}: o momento do teste está dentro do período?`) !== 'sim');
-    case 'agent_on_queue': return ret(externa(sessao, `agent_on_queue:${tipo}`, `Fila ${tipo}: há agente logado e disponível?`) === 'sim');
+    case 'calendario': return ret(externa(sessao, `calendario:${tipo}`, `Calendário ${nomeDoCadastro('calendario', tipo)}: o momento do teste está dentro do período?`) === 'sim');
+    case 'calendario_falso': return ret(externa(sessao, `calendario:${tipo}`, `Calendário ${nomeDoCadastro('calendario', tipo)}: o momento do teste está dentro do período?`) !== 'sim');
+    case 'agent_on_queue': return ret(externa(sessao, `agent_on_queue:${tipo}`, `Fila ${nomeDoCadastro('agent_on_queue', tipo)}: há agente logado e disponível?`) === 'sim');
     case 'agent_online': {
       const agente = /^\d+$/.test(tipo) && tipo !== '0' ? tipo : valor;
-      return ret(externa(sessao, `agent_online:${agente}`, `Agente ${agente}: está logado?`) === 'sim');
+      return ret(externa(sessao, `agent_online:${agente}`, `Agente ${nomeDoCadastro('agent_online', agente)}: está logado?`) === 'sim');
     }
-    case 'agent_available_on_chat': return ret(externa(sessao, `agent_available_on_chat:${tipo}`, `Agente ${tipo}: está disponível no chat?`) === 'sim');
+    case 'agent_available_on_chat': return ret(externa(sessao, `agent_available_on_chat:${tipo}`, `Agente ${nomeDoCadastro('agent_available_on_chat', tipo)}: está disponível no chat?`) === 'sim');
     case 'status_last_att': return ret(String(externa(sessao, 'status_last_att', 'ID do status do último atendimento do cliente', 'texto')) === tipo);
     case 'opt_in': { const tem = externa(sessao, 'opt_in', 'O contato tem Opt-in?') === 'sim'; return ret(tipo === '1' ? tem : !tem); }
     case 'uci': { const tem = externa(sessao, 'uci', 'O contato tem UCI?') === 'sim'; return ret(tipo === '1' ? tem : !tem); }
@@ -330,7 +342,7 @@ function descreverCondicao(c) {
   let op = '';
   if (kind === 'error_count') op = ERROR_COUNT_OPERATORS[tipo] || '';
   else if (!kind || kind === 'text' || kind === 'contact') op = TEXT_OPERATORS[tipo] || CONTACT_OPERATORS[tipo] || (tipo === '0' ? 'sempre' : `tipo ${tipo}`);
-  else op = `ID ${tipo}`;
+  else op = nomeDoCadastro(d.variable, tipo);
   const valor = d.value !== undefined && d.value !== '' ? ` "${String(d.value).replace(/\n/g, ' / ')}"` : '';
   return `${rotuloVar} ${op}${valor}`.trim();
 }
@@ -560,10 +572,10 @@ export function requisitosDeContexto(bot) {
   (bot.BOT_CONDITIONS || []).forEach((c) => {
     const tipo = String(c.CONDITION_TYPE ?? '0');
     switch (c.CONDITION_DATA?.variable) {
-      case 'calendario': case 'calendario_falso': add(`calendario:${tipo}`, `Calendário ${tipo}: dentro do período agora?`); break;
-      case 'agent_on_queue': add(`agent_on_queue:${tipo}`, `Fila ${tipo}: há agente disponível?`); break;
-      case 'agent_online': add(`agent_online:${tipo}`, `Agente ${tipo}: está logado?`); break;
-      case 'agent_available_on_chat': add(`agent_available_on_chat:${tipo}`, `Agente ${tipo}: disponível no chat?`); break;
+      case 'calendario': case 'calendario_falso': add(`calendario:${tipo}`, `Calendário ${nomeDoCadastro('calendario', tipo)}: dentro do período agora?`); break;
+      case 'agent_on_queue': add(`agent_on_queue:${tipo}`, `Fila ${nomeDoCadastro('agent_on_queue', tipo)}: há agente disponível?`); break;
+      case 'agent_online': add(`agent_online:${tipo}`, `Agente ${nomeDoCadastro('agent_online', tipo)}: está logado?`); break;
+      case 'agent_available_on_chat': add(`agent_available_on_chat:${tipo}`, `Agente ${nomeDoCadastro('agent_available_on_chat', tipo)}: disponível no chat?`); break;
       case 'opt_in': add('opt_in', 'O contato tem Opt-in?'); break;
       case 'uci': add('uci', 'O contato tem UCI?'); break;
       case 'status_last_att': add('status_last_att', 'ID do status do último atendimento', 'texto'); break;

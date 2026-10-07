@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.19] - 2026-10-07
+* **O teste aparece no editor**: o botão "Ver no editor" minimiza o teste num mini-chat no canto (sem cobrir o Salvar) e deixa o editor livre. Nele ficam marcados os estados por onde a conversa passou, o estado atual ("teste: aqui"), a transição que disparou e o resultado de cada condição (verde, vermelha ou laranja quando falta um dado). Na aba Detalhes, cada rodada e cada transição têm "Ver no editor", e clicar num estado da lista também leva até ele.
+* **Nomes no lugar de IDs**: o teste mostra o nome do calendário, da fila, do agente e do status (com o ID entre parênteses) nas perguntas, na aba Contexto e nos detalhes. Sem o cadastro do ambiente, continua o ID.
+* **Ajustes**: fechar o editor fecha o teste junto; o aviso "o bot mudou" aparece também no mini-chat; com o Localizar aberto o mini-chat passa para a esquerda.
+
 ## [0.8.18] - 2026-10-07
 * **Testar só uma parte do fluxo**: na lista de estados do "Testar bot", o botão ▶ começa o teste naquele estado e o ⚑ marca onde parar. Ao chegar no estado de parada o teste pausa, antes de o bot rodar nele, e você escolhe "Continuar daqui" ou "Reiniciar". Na aba Contexto, "Ponto de partida" permite informar o contador de erros e as variáveis que o cliente já teria guardado ao chegar no estado inicial (as usadas nos textos e nas condições do bot, inclusive as da automação).
 * **Ajustes do teste**: o ponto de partida vale só para o bot em que foi escolhido; "Aplicar e reiniciar" volta para a aba Conversa; o teclado mantém o foco nos botões ▶ e ⚑.

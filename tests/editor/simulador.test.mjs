@@ -157,7 +157,7 @@ test('dados que o simulador não tem pausam a sessão em vez de virar "falso"; a
   enviarMensagem(s, 'oi');
   assert.equal(s.status, 'aguardando-contexto');
   assert.deepEqual(textos(s), []);
-  assert.match(s.requisitos[0].rotulo, /Calendário 227/);
+  assert.match(s.requisitos[0].rotulo, /Calendário ID 227/);
   definirExterna(s, 'calendario:227', 'sim');
   continuar(s);
   assert.deepEqual(textos(s), ['aberto']);
@@ -509,4 +509,43 @@ test('variaveisUsadas inclui as variáveis da automação usadas em condição (
   assert.deepEqual(variaveisUsadas(b), ['automate_status']);
   const s = criarSessao(b, { variaveis: { automate_status: 'success' } });
   assert.deepEqual(diz(s, 'x'), ['ok'], 'o valor pré-preenchido alimenta a condição');
+});
+
+// ---- nomes dos cadastros (calendário, fila, agente) no lugar do ID ----
+const { state: estadoGlobal } = await js('state.js');
+const { nomeDoCadastro } = S;
+
+test('calendário, fila e agente aparecem pelo nome quando o ambiente da Orpen os tem', () => {
+  estadoGlobal.ambienteOrpen = {
+    calendars: [{ id: '227', name: 'Horário comercial' }],
+    queues: [{ id: 'SUPORTE', name: 'Suporte N1' }],
+    agents: [{ id: '7', name: 'Maria' }],
+  };
+  try {
+    assert.equal(nomeDoCadastro('calendario', '227'), '"Horário comercial" (ID 227)');
+    assert.equal(nomeDoCadastro('calendario_falso', '227'), '"Horário comercial" (ID 227)');
+    assert.equal(nomeDoCadastro('agent_on_queue', 'SUPORTE'), '"Suporte N1" (ID SUPORTE)');
+    assert.equal(nomeDoCadastro('agent_online', '7'), '"Maria" (ID 7)');
+    assert.equal(nomeDoCadastro('calendario', '999'), 'ID 999', 'fora do cadastro: só o ID');
+
+    const b = bot({ estados: ['0', '1'], transicoes: [['0', 1, [['calendario', 227, '']], [msg('aberto'), troca(1)]]] });
+    const s = criarSessao(b);
+    enviarMensagem(s, 'oi');
+    assert.match(s.requisitos[0].rotulo, /Horário comercial/, 'a pergunta do teste usa o nome');
+    assert.match(s.rodadas.at(-1)?.tentativas?.[0]?.condicoes?.[0]?.descricao ?? s.requisitos[0].rotulo, /Horário comercial/);
+    assert.ok(requisitosDeContexto(b).some((r) => r.rotulo.includes('Horário comercial')), 'a aba Contexto usa o nome');
+    definirExterna(s, 'calendario:227', 'sim');
+    continuar(s);
+    assert.match(s.rodadas[0].tentativas[0].condicoes[0].descricao, /Horário comercial/, 'o trace usa o nome');
+  } finally {
+    estadoGlobal.ambienteOrpen = null;
+  }
+});
+
+test('sem o ambiente da Orpen o teste mostra o ID, como antes', () => {
+  estadoGlobal.ambienteOrpen = null;
+  const b = bot({ transicoes: [['0', 1, [['calendario', 227, '']], [msg('aberto')]]] });
+  const s = criarSessao(b);
+  enviarMensagem(s, 'oi');
+  assert.match(s.requisitos[0].rotulo, /Calendário ID 227/);
 });
