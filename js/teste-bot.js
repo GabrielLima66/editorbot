@@ -11,7 +11,7 @@ import { state } from './state.js';
 import { escapeHtml } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import {
-  criarSessao, enviarMensagem, continuar, definirExterna, responderCallback, simularTimeout, requisitosDeContexto,
+  criarSessao, enviarMensagem, continuar, continuarDaParada, definirExterna, responderCallback, simularTimeout, requisitosDeContexto, variaveisUsadas,
 } from './simulador.js';
 import { opcoesCrmStatus, opcoesEntradasCondicao } from './orpen-env.js';
 
@@ -20,7 +20,8 @@ const modalEl = () => $r('#tb-overlay');
 
 // webchatEnvia: o que o bot recebe quando o visitante clica numa opção de menu do WebChat. Não se sabe
 // pelo código da Orpen (o widget fica fora do repositório), então é escolha de quem testa.
-const tb = { aberto: false, sessao: null, assinatura: '', aba: 'conversa', soltarEsc: null, webchatEnvia: 'value' };
+// inicio: ponto de partida do teste (estado, parada, variáveis e erros que o cliente já teria); vale ao reiniciar.
+const tb = { aberto: false, sessao: null, assinatura: '', aba: 'conversa', soltarEsc: null, webchatEnvia: 'value', inicio: { botId: null, estado: '0', parada: null, variaveis: {}, erros: 0 } };
 
 const ABAS = [
   { id: 'conversa', rotulo: 'Conversa' },
@@ -53,10 +54,26 @@ function iniciar() {
   const bot = state.botCarregado;
   // Mantém o contexto escolhido, menos as respostas dadas só para uma rodada (chave ...:rN).
   const externas = tb.sessao ? Object.fromEntries(Object.entries(tb.sessao.contexto.externas).filter(([k]) => !/:r\d+$/.test(k))) : {};
-  tb.sessao = criarSessao(bot, tb.sessao ? { externas, contato: tb.sessao.contexto.contato } : {});
+  tb.sessao = criarSessao(bot, {
+    externas,
+    contato: tb.sessao ? tb.sessao.contexto.contato : undefined,
+    inicio: tb.inicio.estado,
+    parada: tb.inicio.parada,
+    variaveis: tb.inicio.variaveis,
+    erros: tb.inicio.erros,
+  });
   tb.assinatura = assinaturaDoBot(bot);
-  const estado0 = (bot.BOT_STATES || []).find((s) => String(s.STATE_NUMBER) === '0');
-  if (estado0) tb.sessao.eventos.push({ tipo: 'sistema', nivel: 'info', texto: `Conversa nova no estado 0 (${estado0.ALIAS || 'sem nome'}). Escreva como o cliente.` });
+  const estado = (bot.BOT_STATES || []).find((s) => String(s.STATE_NUMBER) === String(tb.inicio.estado));
+  if (estado) {
+    const meio = String(tb.inicio.estado) !== '0';
+    const partes = [meio ? `Teste começando no meio do fluxo, no estado ${tb.inicio.estado} (${estado.ALIAS || 'sem nome'}).` : `Conversa nova no estado 0 (${estado.ALIAS || 'sem nome'}).`];
+    const nVars = Object.keys(tb.inicio.variaveis).length;
+    if (nVars) partes.push(`Com ${plural(nVars, 'variável já guardada', 'variáveis já guardadas')}.`);
+    if (tb.inicio.erros) partes.push(`Contador de erros em ${tb.inicio.erros}.`);
+    if (tb.inicio.parada !== null) partes.push(`O teste para ao chegar no estado ${tb.inicio.parada}.`);
+    partes.push('Escreva como o cliente.');
+    tb.sessao.eventos.push({ tipo: 'sistema', nivel: 'info', texto: partes.join(' ') });
+  }
 }
 
 export function abrirTeste() {
@@ -66,6 +83,13 @@ export function abrirTeste() {
   tb.aberto = true;
   tb.aba = 'conversa';
   tb.sessao = null;
+  // O ponto de partida é de um bot só: ao abrir outro, começa do zero (senão estado, parada e variáveis vazariam).
+  const idBot = String(bot.ID ?? '');
+  if (tb.inicio.botId !== idBot) tb.inicio = { botId: idBot, estado: '0', parada: null, variaveis: {}, erros: 0 };
+  // O bot pode ter mudado desde a última vez: início e parada que não existem mais voltam ao padrão.
+  const existe = (n) => (bot.BOT_STATES || []).some((s) => String(s.STATE_NUMBER) === String(n));
+  if (!existe(tb.inicio.estado)) tb.inicio.estado = '0';
+  if (tb.inicio.parada !== null && !existe(tb.inicio.parada)) tb.inicio.parada = null;
   iniciar();
   modalEl().classList.remove('hidden');
   if (!tb.soltarEsc) tb.soltarEsc = empilharEsc(fechar);
@@ -126,10 +150,16 @@ function montar() {
     if (e.target === m) { if (comecouNoFundo) fechar(); return; }
     const aba = e.target.closest('.tb-aba');
     if (aba) { tb.aba = aba.dataset.aba; desenhar(); return; }
+    // Testar só um trecho: ▶ começa neste estado, ⚑ marca onde parar. Os dois reiniciam a conversa.
+    const comecar = e.target.closest('[data-tb-inicio]');
+    if (comecar) { tb.inicio.estado = comecar.dataset.tbInicio; iniciar(); desenhar(); devolverFoco('data-tb-inicio', comecar.dataset.tbInicio); return; }
+    const parar = e.target.closest('[data-tb-parada]');
+    if (parar) { const n = parar.dataset.tbParada; tb.inicio.parada = tb.inicio.parada === n ? null : n; iniciar(); desenhar(); devolverFoco('data-tb-parada', n); return; }
     const acao = e.target.closest('[data-tb]')?.dataset.tb;
     if (acao === 'fechar') fechar();
-    else if (acao === 'reiniciar') { iniciar(); desenhar(); $r('#tb-entrada')?.focus(); }
+    else if (acao === 'reiniciar') { tb.aba = 'conversa'; iniciar(); desenhar(); $r('#tb-entrada')?.focus(); }
     else if (acao === 'timeout') { simularTimeout(tb.sessao); desenhar(); }
+    else if (acao === 'continuar-parada') { continuarDaParada(tb.sessao); desenhar(); }
     else if (acao === 'cb-ok' || acao === 'cb-falha') callback(acao === 'cb-ok', $r('#tb-cb-texto')?.value.trim() || '');
     else if (acao === 'ctx-opcao') responderContexto(e.target.closest('[data-tb]').dataset.valor);
     else if (acao === 'ctx-texto') responderContexto($r('#tb-ctx-valor')?.value.trim());
@@ -192,9 +222,21 @@ function montar() {
       else definirExterna(tb.sessao, el.dataset.ctx, v);
     } else if (el.dataset.contato) {
       tb.sessao.contexto.contato[el.dataset.contato] = el.value;
+    } else if (el.dataset.inicioVar !== undefined) {
+      const v = el.value.trim();
+      if (v === '') delete tb.inicio.variaveis[el.dataset.inicioVar];
+      else tb.inicio.variaveis[el.dataset.inicioVar] = v;
+    } else if (el.dataset.inicioErros !== undefined) {
+      tb.inicio.erros = Math.max(0, parseInt(el.value, 10) || 0);
+      el.value = String(tb.inicio.erros);
     }
   });
   criarIcones();
+}
+
+// A lista é refeita a cada clique em ▶/⚑: devolve o foco do teclado ao botão que foi acionado.
+function devolverFoco(atributo, valor) {
+  [...modalEl().querySelectorAll(`[${atributo}]`)].find((b) => b.getAttribute(atributo) === valor)?.focus();
 }
 
 function callback(ok, texto) {
@@ -252,9 +294,13 @@ function desenharEstados(s) {
     const vezes = s.visitas[n] || 0;
     const classe = `tb-estado${atual ? ' atual' : ''}${vezes ? ' visitado' : ''}`;
     const marca = atual
-      ? `<span class="tb-aqui">${s.status === 'encerrada' ? 'fim' : s.status === 'aguardando' ? 'espera' : 'aqui'}</span>`
+      ? `<span class="tb-aqui">${s.motivoFim === 'parada' ? 'parou' : s.status === 'encerrada' ? 'fim' : s.status === 'aguardando' ? 'espera' : 'aqui'}</span>`
       : (vezes ? `<span class="tb-visitas" title="Passou por aqui ${plural(vezes, 'vez', 'vezes')}">${vezes > 1 ? `×${vezes}` : '✓'}</span>` : '');
-    return `<li class="${classe}" data-estado="${escapeHtml(n)}"><span class="tb-num">${escapeHtml(n)}</span><span class="tb-alias" title="${escapeHtml(e.ALIAS)}">${escapeHtml(e.ALIAS || 'Sem nome')}</span>${marca}</li>`;
+    const ehInicio = String(tb.inicio.estado) === n;
+    const ehParada = tb.inicio.parada === n;
+    const tags = `${ehInicio && n !== '0' ? '<span class="tb-tag" title="O teste começou aqui">início</span>' : ''}${s.parada === n ? '<span class="tb-tag parada" title="O teste para ao chegar aqui">parada</span>' : ''}`;
+    const acoesEstado = `<span class="tb-acoes-estado"><button type="button" class="tb-mini${ehInicio ? ' ativo' : ''}" data-tb-inicio="${escapeHtml(n)}" title="Começar o teste neste estado (reinicia a conversa)" aria-label="Começar o teste no estado ${escapeHtml(n)}">▶</button><button type="button" class="tb-mini${ehParada ? ' ativo' : ''}" data-tb-parada="${escapeHtml(n)}" aria-pressed="${ehParada}" title="${ehParada ? 'Tirar o ponto de parada (reinicia a conversa)' : 'Parar o teste ao chegar neste estado (reinicia a conversa)'}" aria-label="Ponto de parada no estado ${escapeHtml(n)}">⚑</button></span>`;
+    return `<li class="${classe}" data-estado="${escapeHtml(n)}"><span class="tb-num">${escapeHtml(n)}</span><span class="tb-alias" title="${escapeHtml(e.ALIAS)}">${escapeHtml(e.ALIAS || 'Sem nome')}</span>${tags}${acoesEstado}${marca}</li>`;
   }).join('');
   lista.querySelector('.atual')?.scrollIntoView({ block: 'nearest' });
 }
@@ -301,6 +347,8 @@ function desenharBanner(s) {
     html = opcoes
       ? `<div><strong>Falta um dado para continuar:</strong> ${escapeHtml(r.rotulo)}</div><div class="tb-banner-acoes">${opcoes.map((o) => `<button type="button" class="tb-btn" data-tb="ctx-opcao" data-valor="${escapeHtml(o.value)}">${escapeHtml(o.label)}</button>`).join('')}</div>`
       : `<div><strong>Falta um dado para continuar:</strong> ${escapeHtml(r.rotulo)} <input id="tb-ctx-valor" class="tb-entrada tb-pequeno" placeholder="Digite e aperte Enter"></div><div class="tb-banner-acoes"><button type="button" class="tb-btn" data-tb="ctx-texto" disabled>Continuar</button></div>`;
+  } else if (s.status === 'encerrada' && s.motivoFim === 'parada') {
+    html = `<div><strong>Parou no estado ${escapeHtml(s.estado)}</strong>, o ponto de parada do teste. O bot ainda não rodou nele.</div><div class="tb-banner-acoes"><button type="button" class="tb-btn" data-tb="continuar-parada">Continuar daqui</button><button type="button" class="tb-btn" data-tb="reiniciar">Reiniciar</button></div>`;
   } else if (s.status === 'encerrada') {
     html = '<div><strong>Conversa encerrada.</strong> O bot não responde mais nesta conversa.</div><div class="tb-banner-acoes"><button type="button" class="tb-btn" data-tb="reiniciar">Reiniciar</button></div>';
   }
@@ -350,6 +398,11 @@ function desenharContexto(s) {
       <button type="button" class="tb-op" data-tb-webchat="value" aria-pressed="${tb.webchatEnvia === 'value'}">O value da opção (ID)</button>
       <button type="button" class="tb-op" data-tb-webchat="texto" aria-pressed="${tb.webchatEnvia === 'texto'}">O texto da opção</button>
     </div><small class="tb-dica">Não confirmado no código da Orpen. Confira num WebChat real e escolha como ele se comporta. No WhatsApp o bot sempre recebe o ID do botão.</small></div>
+    <h4>Ponto de partida</h4>
+    <p class="tb-dica">Para testar só um trecho, use ▶ (começar neste estado) e ⚑ (parar ao chegar) na lista de estados. Aqui você diz o que o cliente já teria guardado ao chegar no estado inicial. Vale quando a conversa é reiniciada.</p>
+    <label class="tb-ctx"><span>Contador de erros</span><input type="number" min="0" data-inicio-erros value="${escapeHtml(String(tb.inicio.erros))}"></label>
+    ${variaveisUsadas(s.bot).map((nome) => `<label class="tb-ctx"><span>Variável {$${escapeHtml(nome)}}</span><input data-inicio-var="${escapeHtml(nome)}" value="${escapeHtml(tb.inicio.variaveis[nome] ?? '')}"></label>`).join('')}
+    <div class="tb-ctx"><button type="button" class="tb-btn" data-tb="reiniciar">Aplicar e reiniciar</button></div>
     <h4>O que este bot consulta</h4>
     ${reqs.length ? reqs.map(campo).join('') : '<p class="tb-vazio">Este bot não consulta nada fora dele.</p>'}`;
   marcarCamposSemAutopreenchimento(el);

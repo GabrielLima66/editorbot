@@ -407,3 +407,106 @@ test('Timeout com a sessão esperando um dado do contexto não deixa a tela sem 
   assert.deepEqual(s.requisitos, []);
   assert.deepEqual(diz(s, 'x'), ['no 3']);
 });
+
+// ---- fase 2: testar só uma parte do fluxo ----
+const { continuarDaParada, variaveisUsadas } = S;
+
+const fluxoDe3 = () => bot({ estados: ['0', '1', '2', '3'], transicoes: [
+  ['0', 1, [['message', 1, 'a']], [msg('E0'), troca(1)]],
+  ['1', 1, [['message', 1, 'b']], [msg('E1'), troca(2)]],
+  ['2', 1, [['message', 1, 'c']], [msg('E2'), troca(3)]],
+  ['3', 1, [['message', 1, 'd']], [msg('E3')]],
+] });
+
+test('começa de outro estado: a primeira mensagem é avaliada nas transições dele', () => {
+  const s = criarSessao(fluxoDe3(), { inicio: '2' });
+  assert.equal(s.estado, '2');
+  assert.deepEqual(s.caminho, ['2']);
+  assert.deepEqual(diz(s, 'a'), [], '"a" é do estado 0: aqui não casa');
+  assert.deepEqual(diz(s, 'c'), ['E2']);
+  assert.deepEqual(s.caminho, ['2', '3']);
+});
+
+test('estado de início que não existe encerra com aviso', () => {
+  const s = criarSessao(fluxoDe3(), { inicio: '9' });
+  assert.equal(s.status, 'encerrada');
+  assert.ok(s.eventos.some((e) => /estado 9/.test(e.texto)));
+});
+
+test('variáveis e contador de erros já guardados valem desde o começo', () => {
+  const b = bot({ estados: ['0', '1'], transicoes: [
+    ['0', 1, [['plano', 1, 'gold'], ['error_count', 7, '2']], [msg('Oi {$nome}, plano {$plano}, erros {$error_count}'), troca(1)]],
+  ] });
+  const s = criarSessao(b, { variaveis: { plano: 'gold', nome: 'Ana' }, erros: 2 });
+  assert.deepEqual(diz(s, 'qualquer'), ['Oi Ana, plano gold, erros 2']);
+  const vazio = criarSessao(b, {});
+  assert.deepEqual(diz(vazio, 'qualquer'), [], 'sem o contexto a condição não casa');
+});
+
+test('ponto de parada: o teste para ao chegar no estado, antes de o bot rodar nele', () => {
+  const s = criarSessao(fluxoDe3(), { parada: '2' });
+  assert.deepEqual(diz(s, 'a'), ['E0']);
+  assert.equal(s.status, 'ativa');
+  assert.deepEqual(diz(s, 'b'), ['E0', 'E1'], 'as ações da transição que chegou ao estado de parada ainda rodam');
+  assert.equal(s.status, 'encerrada');
+  assert.equal(s.motivoFim, 'parada');
+  assert.equal(s.estado, '2');
+  assert.ok(s.eventos.some((e) => /ponto de parada/.test(e.texto)));
+  assert.deepEqual(diz(s, 'c'), ['E0', 'E1'], 'parado: nada mais acontece');
+});
+
+test('continuar depois da parada segue do estado de parada e o ponto some', () => {
+  const s = criarSessao(fluxoDe3(), { inicio: '1', parada: '2' });
+  enviarMensagem(s, 'b');
+  assert.equal(s.motivoFim, 'parada');
+  continuarDaParada(s);
+  assert.equal(s.status, 'ativa');
+  assert.equal(s.parada, null);
+  assert.deepEqual(diz(s, 'c'), ['E1', 'E2']);
+  assert.deepEqual(s.caminho, ['1', '2', '3']);
+});
+
+test('parada também vale para o retorno de callback e o timeout', () => {
+  const ia = bot({ estados: ['0', '1'], transicoes: [['0', 1, [['message', 2, '']], [['18', { openai: 'call_assistant', assistant_id: 'x', callback_state: '1' }]]]] });
+  const s = criarSessao(ia, { parada: '1' });
+  enviarMensagem(s, 'oi');
+  responderCallback(s, { ok: true });
+  assert.equal(s.motivoFim, 'parada');
+  const t = criarSessao(bot({ estados: ['0', '3'], timeout: { TIMEOUT_ACTION: 'bot', TIMEOUT_DESTINY: '3' } }), { parada: '3' });
+  simularTimeout(t);
+  assert.equal(t.motivoFim, 'parada');
+});
+
+test('começar no próprio ponto de parada não para antes de rodar', () => {
+  const s = criarSessao(fluxoDe3(), { inicio: '1', parada: '1' });
+  assert.equal(s.status, 'ativa');
+});
+
+test('variaveisUsadas: {$x} nos textos e variáveis de condição que não são do motor', () => {
+  const b = bot({ estados: ['0', '1'], transicoes: [
+    ['0', 1, [['plano', 1, 'gold'], ['message', 1, 'x'], ['error_count', 7, '1'], ['calendario', 5, '']], [msg('Oi {$nome} {$contact_first_name} {$message_escaped}'), ['13', { bot_variables_text: '{"cpf":"{$cpf_digitado}"}' }]]],
+  ] });
+  assert.deepEqual(variaveisUsadas(b), ['cpf_digitado', 'nome', 'plano']);
+});
+
+test('parada na mesma transição que pausou o bot (IA): continuar daqui mantém o callback pendente', () => {
+  const b = bot({ estados: ['0', '1', '2'], transicoes: [
+    ['0', 1, [['message', 2, '']], [troca(1), ['18', { openai: 'call_assistant', assistant_id: 'x', callback_state: '2' }]]],
+    ['1', 1, [['message', 1, 'oi']], [msg('no 1')]],
+  ] });
+  const s = criarSessao(b, { parada: '1' });
+  enviarMensagem(s, 'oi');
+  assert.equal(s.motivoFim, 'parada');
+  continuarDaParada(s);
+  assert.equal(s.status, 'aguardando', 'o bot ainda espera o retorno da IA');
+  assert.ok(s.pausa);
+  responderCallback(s, { ok: true });
+  assert.equal(s.estado, '2');
+});
+
+test('variaveisUsadas inclui as variáveis da automação usadas em condição (automate_status)', () => {
+  const b = bot({ estados: ['0', '1'], transicoes: [['0', 1, [['automate_status', 1, 'success']], [msg('ok'), troca(1)]]] });
+  assert.deepEqual(variaveisUsadas(b), ['automate_status']);
+  const s = criarSessao(b, { variaveis: { automate_status: 'success' } });
+  assert.deepEqual(diz(s, 'x'), ['ok'], 'o valor pré-preenchido alimenta a condição');
+});
