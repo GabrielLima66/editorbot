@@ -1622,3 +1622,32 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .tb-tag { flex-shrink: 0; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 9999px; color: var(--accent); background: var(--fx-acento-hover-bg); border: 1px solid var(--fx-acento-borda); }
 .tb-tag.parada { color: var(--warn); background: var(--alerta-confirma-bg); border-color: var(--alerta-confirma-borda); }
 @media (max-width: 760px) { .tb-corpo { grid-template-columns: 1fr; } .tb-estados { display: none; } }
+
+/* ---- Teste minimizado e marcas no editor (js/teste-bot.js) ---- */
+/* padding de baixo: deixa o rodapé do editor (Salvar, Baixar) livre */
+.tb-overlay.minimizado { background: transparent; pointer-events: none; align-items: flex-end; justify-content: flex-end; padding: 16px 16px 92px; }
+.tb-overlay.minimizado .tb-painel { pointer-events: auto; width: 400px; max-width: calc(100vw - 32px); height: min(480px, 70vh); box-shadow: 0 8px 32px var(--dlg-sombra); }
+.tb-overlay.minimizado .tb-corpo { grid-template-columns: 1fr; }
+.tb-overlay.minimizado .tb-estados, .tb-overlay.minimizado .tb-abas,
+.tb-overlay.minimizado [data-aba-corpo="detalhes"], .tb-overlay.minimizado [data-aba-corpo="contexto"],
+.tb-overlay.minimizado [data-tb="timeout"], .tb-overlay.minimizado .tb-min { display: none !important; }
+.tb-overlay.minimizado [data-aba-corpo="conversa"] { display: flex !important; }
+.tb-overlay.minimizado .tb-topo { padding: 8px 12px; gap: 6px; }
+.tb-overlay.minimizado .tb-titulo { font-size: 14px; }
+.tb-overlay.minimizado .tb-caminho { padding: 6px 12px; }
+.tb-overlay:not(.minimizado) .tb-amp { display: none; }
+.tb-overlay.minimizado .tb-alterado { font-size: 10px; padding: 1px 8px; }
+/* 4) com o Localizar aberto (à direita), o mini-chat passa para a esquerda */
+#bot-view-overlay.busca-aberta .tb-overlay.minimizado { justify-content: flex-start; }
+.tb-ver { margin-left: 8px; padding: 1px 8px; font-size: 11px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--fx-acento-borda); border-radius: 9999px; cursor: pointer; }
+.tb-ver:hover { background: var(--fx-acento-hover-bg); }
+.tb-estado { cursor: pointer; }
+
+#bot-view-overlay .estado-wrap.sim-visitado { border-color: var(--success); }
+#bot-view-overlay .estado-wrap.sim-atual { border-color: var(--accent); box-shadow: 0 0 0 2px var(--foco-anel); }
+#bot-view-overlay .estado-wrap.sim-atual .estado-resumo::after { content: " · teste: aqui"; font-weight: 700; color: var(--accent); }
+#bot-view-overlay .estado-body .estado-row.sim-disparou { border-left-color: var(--success); }
+#bot-view-overlay .estado-body .estado-row.sim-falhou { border-left-color: var(--text-faint); }
+#bot-view-overlay .condicao-item.sim-ok { border-color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--item-bg)); }
+#bot-view-overlay .condicao-item.sim-nao { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--item-bg)); }
+#bot-view-overlay .condicao-item.sim-talvez { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, var(--item-bg)); }

@@ -21,7 +21,7 @@ const modalEl = () => $r('#tb-overlay');
 // webchatEnvia: o que o bot recebe quando o visitante clica numa opção de menu do WebChat. Não se sabe
 // pelo código da Orpen (o widget fica fora do repositório), então é escolha de quem testa.
 // inicio: ponto de partida do teste (estado, parada, variáveis e erros que o cliente já teria); vale ao reiniciar.
-const tb = { aberto: false, sessao: null, assinatura: '', aba: 'conversa', soltarEsc: null, webchatEnvia: 'value', inicio: { botId: null, estado: '0', parada: null, variaveis: {}, erros: 0 } };
+const tb = { aberto: false, sessao: null, assinatura: '', aba: 'conversa', soltarEsc: null, webchatEnvia: 'value', minimizado: false, rodadaMarcada: null, ultimoEstadoRolado: null, inicio: { botId: null, estado: '0', parada: null, variaveis: {}, erros: 0 } };
 
 const ABAS = [
   { id: 'conversa', rotulo: 'Conversa' },
@@ -52,6 +52,8 @@ const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
 function iniciar() {
   const bot = state.botCarregado;
+  tb.rodadaMarcada = null;
+  tb.ultimoEstadoRolado = null;
   // Mantém o contexto escolhido, menos as respostas dadas só para uma rodada (chave ...:rN).
   const externas = tb.sessao ? Object.fromEntries(Object.entries(tb.sessao.contexto.externas).filter(([k]) => !/:r\d+$/.test(k))) : {};
   tb.sessao = criarSessao(bot, {
@@ -83,6 +85,9 @@ export function abrirTeste() {
   tb.aberto = true;
   tb.aba = 'conversa';
   tb.sessao = null;
+  tb.rodadaMarcada = null;
+  tb.ultimoEstadoRolado = null;
+  definirMinimizado(false);
   // O ponto de partida é de um bot só: ao abrir outro, começa do zero (senão estado, parada e variáveis vazariam).
   const idBot = String(bot.ID ?? '');
   if (tb.inicio.botId !== idBot) tb.inicio = { botId: idBot, estado: '0', parada: null, variaveis: {}, erros: 0 };
@@ -92,13 +97,15 @@ export function abrirTeste() {
   if (tb.inicio.parada !== null && !existe(tb.inicio.parada)) tb.inicio.parada = null;
   iniciar();
   modalEl().classList.remove('hidden');
-  if (!tb.soltarEsc) tb.soltarEsc = empilharEsc(fechar);
+  if (!tb.soltarEsc) tb.soltarEsc = empilharEsc(() => (tb.minimizado ? false : fechar()));
   desenhar();
   $r('#tb-entrada')?.focus();
 }
 
 function fechar() {
   tb.aberto = false;
+  definirMinimizado(false);
+  limparMarcas();
   modalEl()?.classList.add('hidden');
   if (tb.soltarEsc) { tb.soltarEsc(); tb.soltarEsc = null; }
 }
@@ -114,10 +121,12 @@ function montar() {
       <div class="tb-painel" role="dialog" aria-modal="true" aria-labelledby="tb-titulo">
         <div class="tb-topo">
           <h2 id="tb-titulo" class="tb-titulo">Testar bot</h2>
-          <span id="tb-alterado" class="tb-alterado hidden">O bot mudou depois do início do teste</span>
+          <span id="tb-alterado" class="tb-alterado hidden">O bot mudou depois do início do teste: reinicie para valer</span>
           <button type="button" class="tb-btn" data-tb="reiniciar" title="Começa uma conversa nova (mantém o contexto)"><i data-lucide="rotate-ccw"></i> Reiniciar</button>
           <button type="button" class="tb-btn" data-tb="timeout" title="Simula o tempo esgotado do bot (ação configurada em Timeout)"><i data-lucide="timer"></i> Timeout</button>
-          <button type="button" class="tb-fechar" data-tb="fechar" title="Fechar (Esc)" aria-label="Fechar"><i data-lucide="x"></i></button>
+          <button type="button" class="tb-btn tb-min" data-tb="minimizar" title="Mostra só o chat no canto e deixa o editor livre, com o caminho do teste marcado nele"><i data-lucide="minimize-2"></i> <span class="tb-min-txt">Ver no editor</span></button>
+          <button type="button" class="tb-btn tb-amp" data-tb="ampliar" title="Volta para a janela completa do teste"><i data-lucide="maximize-2"></i> Ampliar</button>
+          <button type="button" class="tb-fechar" data-tb="fechar" title="Fechar o teste (Esc)" aria-label="Fechar o teste"><i data-lucide="x"></i></button>
         </div>
         <div class="tb-corpo">
           <aside class="tb-estados">
@@ -150,6 +159,11 @@ function montar() {
     if (e.target === m) { if (comecouNoFundo) fechar(); return; }
     const aba = e.target.closest('.tb-aba');
     if (aba) { tb.aba = aba.dataset.aba; desenhar(); return; }
+    // Do trace ou da lista de estados para o editor: minimiza o teste e leva até o estado ou a transição.
+    const ver = e.target.closest('[data-tb-ver]');
+    if (ver) { verNoEditor({ estado: ver.dataset.estado, transicao: ver.dataset.transicao, rodada: ver.dataset.rodada ? Number(ver.dataset.rodada) : null }); return; }
+    const linha = e.target.closest('.tb-estado');
+    if (linha && !e.target.closest('button')) { verNoEditor({ estado: linha.dataset.estado, transicao: null, rodada: null }); return; }
     // Testar só um trecho: ▶ começa neste estado, ⚑ marca onde parar. Os dois reiniciam a conversa.
     const comecar = e.target.closest('[data-tb-inicio]');
     if (comecar) { tb.inicio.estado = comecar.dataset.tbInicio; iniciar(); desenhar(); devolverFoco('data-tb-inicio', comecar.dataset.tbInicio); return; }
@@ -158,8 +172,10 @@ function montar() {
     const acao = e.target.closest('[data-tb]')?.dataset.tb;
     if (acao === 'fechar') fechar();
     else if (acao === 'reiniciar') { tb.aba = 'conversa'; iniciar(); desenhar(); $r('#tb-entrada')?.focus(); }
-    else if (acao === 'timeout') { simularTimeout(tb.sessao); desenhar(); }
-    else if (acao === 'continuar-parada') { continuarDaParada(tb.sessao); desenhar(); }
+    else if (acao === 'timeout') { tb.rodadaMarcada = null; simularTimeout(tb.sessao); desenhar(); }
+    else if (acao === 'continuar-parada') { tb.rodadaMarcada = null; continuarDaParada(tb.sessao); desenhar(); }
+    else if (acao === 'minimizar') { tb.rodadaMarcada = null; definirMinimizado(true); marcarNoEditor(true); }
+    else if (acao === 'ampliar') { definirMinimizado(false); }
     else if (acao === 'cb-ok' || acao === 'cb-falha') callback(acao === 'cb-ok', $r('#tb-cb-texto')?.value.trim() || '');
     else if (acao === 'ctx-opcao') responderContexto(e.target.closest('[data-tb]').dataset.valor);
     else if (acao === 'ctx-texto') responderContexto($r('#tb-ctx-valor')?.value.trim());
@@ -240,12 +256,14 @@ function devolverFoco(atributo, valor) {
 }
 
 function callback(ok, texto) {
+  tb.rodadaMarcada = null;
   responderCallback(tb.sessao, { ok, texto });
   desenhar();
 }
 
 function responderContexto(valor) {
   if (!valor) return;
+  tb.rodadaMarcada = null;
   definirExterna(tb.sessao, tb.sessao.requisitos[0]?.chave, valor);
   continuar(tb.sessao);
   desenhar();
@@ -259,6 +277,7 @@ function atualizarEnviar() {
 
 function enviar(texto, exibir) {
   if (!tb.sessao) return;
+  tb.rodadaMarcada = null;
   enviarMensagem(tb.sessao, texto, exibir);
   desenhar();
   $r('#tb-entrada')?.focus();
@@ -272,7 +291,7 @@ function desenhar() {
   const s = tb.sessao;
   m.querySelectorAll('.tb-aba').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.aba === tb.aba)));
   m.querySelectorAll('[data-aba-corpo]').forEach((c) => c.classList.toggle('hidden', c.dataset.abaCorpo !== tb.aba));
-  $r('#tb-alterado').classList.toggle('hidden', assinaturaDoBot(state.botCarregado) === tb.assinatura);
+  atualizarAviso();
   desenharEstados(s);
   desenharCaminho(s);
   desenharChat(s);
@@ -283,6 +302,7 @@ function desenhar() {
   $r('#tb-entrada').disabled = !livre;
   atualizarEnviar();
   criarIcones();
+  marcarNoEditor(false);
 }
 
 function desenharEstados(s) {
@@ -363,11 +383,11 @@ function desenharDetalhes(s) {
   const icone = (r) => (r === true ? '<span class="tb-ok">✓</span>' : r === false ? '<span class="tb-nao">✗</span>' : '<span class="tb-talvez">?</span>');
   el.innerHTML = [...s.rodadas].reverse().map((r) => `
     <section class="tb-rodada">
-      <h4>Rodada ${r.n} · estado ${escapeHtml(r.estado)}${r.estadoDepois !== r.estado ? ` → ${escapeHtml(r.estadoDepois)}` : ''}</h4>
+      <h4>Rodada ${r.n} · estado ${escapeHtml(r.estado)}${r.estadoDepois !== r.estado ? ` → ${escapeHtml(r.estadoDepois)}` : ''} <button type="button" class="tb-ver" data-tb-ver data-estado="${escapeHtml(r.estado)}" data-rodada="${r.n}" title="Mostra este estado no editor, com o resultado desta rodada">Ver no editor</button></h4>
       ${r.mensagens.length ? `<p class="tb-msgs">Cliente: ${r.mensagens.map((m) => `“${escapeHtml(m)}”`).join(', ')}</p>` : '<p class="tb-msgs">Sem mensagem nova do cliente (rodada automática)</p>'}
       ${r.tentativas.map((t) => `
         <div class="tb-trans${t.aprovada ? ' disparou' : ''}">
-          <div class="tb-trans-cab">Transição ${escapeHtml(t.prioridade)} ${t.aprovada ? '<b>disparou</b>' : '<span class="tb-nao-disparou">não casou</span>'}</div>
+          <div class="tb-trans-cab">Transição ${escapeHtml(t.prioridade)} ${t.aprovada ? '<b>disparou</b>' : '<span class="tb-nao-disparou">não casou</span>'} <button type="button" class="tb-ver" data-tb-ver data-estado="${escapeHtml(r.estado)}" data-transicao="${escapeHtml(t.transicaoId)}" data-rodada="${r.n}" title="Leva até esta transição no editor">Ver no editor</button></div>
           ${t.condicoes.length ? t.condicoes.map((c) => `<div class="tb-cond">${icone(c.resultado)} ${escapeHtml(c.descricao)} <small>${escapeHtml(c.motivo)}</small></div>`).join('') : '<div class="tb-cond"><span class="tb-ok">✓</span> sem condições (sempre)</div>'}
         </div>`).join('') || '<p class="tb-vazio">Este estado não tem transições.</p>'}
       ${r.acoes.length ? `<ul class="tb-acoes">${r.acoes.map((a) => `<li>${escapeHtml(a.nome)}: ${escapeHtml(a.efeito)}</li>`).join('')}</ul>` : ''}
@@ -408,6 +428,89 @@ function desenharContexto(s) {
   marcarCamposSemAutopreenchimento(el);
 }
 
+// ---- marcas no editor ---------------------------------------------------------
+
+const cssEsc = (v) => (typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(String(v)) : String(v).replace(/"/g, '\\"'));
+
+function definirMinimizado(sim) {
+  tb.minimizado = sim;
+  modalEl()?.classList.toggle('minimizado', sim);
+  if (sim) $r('#tb-entrada')?.focus();
+}
+
+const CLASSES_SIM = ['sim-visitado', 'sim-atual', 'sim-disparou', 'sim-falhou', 'sim-ok', 'sim-nao', 'sim-talvez'];
+
+function atualizarAviso() {
+  const aviso = $r('#tb-alterado');
+  if (aviso && tb.sessao) aviso.classList.toggle('hidden', assinaturaDoBot(state.botCarregado) === tb.assinatura);
+}
+
+function limparMarcas() {
+  const lista = $r('#bv-estados');
+  if (!lista) return;
+  CLASSES_SIM.forEach((c) => lista.querySelectorAll(`.${c}`).forEach((el) => el.classList.remove(c)));
+}
+
+function abrirNoEditor(wrap) {
+  const corpo = wrap?.querySelector('.estado-body');
+  if (!corpo || !corpo.classList.contains('hidden')) return;
+  corpo.classList.remove('hidden');
+  wrap.classList.add('estado-expandido');
+  wrap.querySelector('.estado-chevron')?.classList.add('rotate-180');
+}
+
+/**
+ * Marca no editor por onde o teste passou: estados visitados, o estado atual, a transição que
+ * disparou na rodada mostrada e o resultado de cada condição (verde, vermelho ou "?").
+ * `rolar`: leva a tela até o estado atual (só no modo minimizado, com o editor à vista).
+ */
+function marcarNoEditor(rolar) {
+  const lista = $r('#bv-estados');
+  const s = tb.sessao;
+  if (!lista || !s || !tb.aberto) return;
+  limparMarcas();
+  const estadoWrap = (n) => lista.querySelector(`.estado-wrap[data-estado-numero="${cssEsc(n)}"]`);
+  Object.keys(s.visitas).forEach((n) => estadoWrap(n)?.classList.add('sim-visitado'));
+  const atual = estadoWrap(s.estado);
+  atual?.classList.add('sim-atual');
+  const r = tb.rodadaMarcada ? s.rodadas.find((x) => x.n === tb.rodadaMarcada) : s.rodadas[s.rodadas.length - 1];
+  if (r) {
+    r.tentativas.forEach((t) => {
+      const linha = lista.querySelector(`.estado-row[data-transition-id="${cssEsc(t.transicaoId)}"]`);
+      if (!linha) return;
+      linha.classList.add(t.aprovada ? 'sim-disparou' : 'sim-falhou');
+      t.condicoes.forEach((c) => {
+        const item = linha.querySelector(`[data-condition-id="${cssEsc(c.id)}"]`)?.closest('.condicao-item');
+        item?.classList.add(c.resultado === true ? 'sim-ok' : c.resultado === false ? 'sim-nao' : 'sim-talvez');
+      });
+    });
+  }
+  // Só abre o card e rola quando a pessoa está olhando o editor (minimizado) e o estado mudou, ou por
+  // pedido explícito. Com a janela cheia, ou num re-render do editor, não reabre o que ela recolheu.
+  if (atual && (rolar || (tb.minimizado && tb.ultimoEstadoRolado !== String(s.estado)))) {
+    abrirNoEditor(atual);
+    atual.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    tb.ultimoEstadoRolado = String(s.estado);
+  }
+}
+
+/** Leva até um estado (ou transição) no editor, deixando o teste minimizado no canto. */
+function verNoEditor({ estado, transicao, rodada }) {
+  tb.rodadaMarcada = rodada;
+  definirMinimizado(true);
+  marcarNoEditor(false);
+  const lista = $r('#bv-estados');
+  const wrap = lista?.querySelector(`.estado-wrap[data-estado-numero="${cssEsc(estado)}"]`);
+  if (!wrap) return;
+  abrirNoEditor(wrap);
+  const alvo = transicao ? lista.querySelector(`.estado-row[data-transition-id="${cssEsc(transicao)}"]`) || wrap : wrap;
+  alvo.scrollIntoView({ block: transicao ? 'center' : 'start', behavior: 'smooth' });
+  alvo.classList.remove('bs-alvo');
+  void alvo.offsetWidth;
+  alvo.classList.add('bs-alvo');
+  setTimeout(() => alvo.classList.remove('bs-alvo'), 1600);
+}
+
 // ---- ligação ---------------------------------------------------------------
 
 /** Ligado uma vez (initBotViewWiring): botão no cabeçalho do editor. */
@@ -417,4 +520,22 @@ export function initTesteBot() {
   if (!antes || $r('#btn-bv-testar')) return;
   antes.insertAdjacentHTML('beforebegin', '<button id="btn-bv-testar" type="button" class="bv-btn-testar" title="Testar o bot (simula uma conversa, sem salvar)" aria-label="Testar o bot"><i data-lucide="bot-message-square"></i></button>');
   $r('#btn-bv-testar').addEventListener('click', abrirTeste);
+  // Fechar o editor (X, Esc, clique no fundo) fecha o teste junto: minimizado ele não cobre mais o editor.
+  const overlayEditor = $r('#bot-view-overlay');
+  if (overlayEditor) {
+    new MutationObserver(() => { if (tb.aberto && overlayEditor.classList.contains('hidden')) fechar(); })
+      .observe(overlayEditor, { attributes: true, attributeFilter: ['class'] });
+  }
+  // Qualquer re-render do editor apaga as marcas: refaz enquanto o teste está aberto.
+  const estados = $r('#bv-estados');
+  if (estados) {
+    // Editou o bot com o teste aberto (minimizado dá para editar): acende o aviso.
+    ['input', 'change'].forEach((ev) => estados.addEventListener(ev, () => { if (tb.aberto) setTimeout(atualizarAviso, 0); }));
+    let timer = 0;
+    new MutationObserver(() => {
+      if (!tb.aberto) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => marcarNoEditor(false), 120);
+    }).observe(estados, { childList: true });
+  }
 }
