@@ -24,7 +24,7 @@ Tudo é **string**. Cada linha tem chaves numéricas espelhadas ("0","1"...): ig
 4. **Estado 0 é a entrada.** Nunca renumerar nem apagar sem avisar.
 5. **O ID de cadastro vale só na instalação de origem.** Fila, agente, calendário, anexo, conta OpenAI, label... Copiar para outro ambiente = esvaziar.
 6. **`{$variável}` não é cadastro** nem número de estado: preservar em qualquer lugar.
-7. **Features só leem o bot.** Quem grava é o Salvar do editor. Copiar/colar muda a memória, nunca o servidor.
+7. **Só o Salvar do editor grava no servidor.** Em memória, quem **altera** o bot: o editor, Copiar/colar, o Menu (cria/remove ações "Mensagem" ao trocar de tipo), o Gerar tratamento (cria estado, transições, condições e ações) e a página avulsa (spec 06). Testar bot, Localizar, Fluxograma e Atualização **só leem**.
 
 ## Armadilhas recorrentes
 

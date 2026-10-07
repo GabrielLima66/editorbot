@@ -48,6 +48,8 @@ Nome de arquivo `novo_bot.json`. Cria exatamente este objeto (todos os valores e
 (O nome de cada espelho numérico está na tabela da seção 1 do contrato.) O bot em branco **não tem nenhum estado**: o primeiro "+ Estado" do editor cria o estado `0`. Depois mostra o resumo e **abre o editor** direto.
 
 ### 2.4 Editar
+**Como a página é aberta:** a extensão **não tem botão nem ícone** que a abra; `bot_transform.html` é um recurso interno (também é de onde a extensão tira o HTML do editor sobre a Orpen). Hoje abre-se pelo endereço `chrome-extension://<ID da extensão>/bot_transform.html`. O ponto de entrada na interface é uma **decisão em aberto** para o time. **Onde ficam os botões:** a área de soltar arquivo, "Criar bot em branco", o resumo e a janela de transformações estão na página; o botão **Backup JSON** (`#btn-bv-baixar`) é do **editor** aberto sobre o bot, e o **Baixar JSON convertido** (`#btn-download`) fica na seção de resultado da página.
+
 Botão que abre o editor visual sobre o bot carregado (o mesmo editor da extensão, sem as funções que dependem da Orpen: salvar na Orpen, listas de cadastros do ambiente). Edições alteram o objeto em memória (`state.botCarregado`).
 
 ### 2.5 Baixar (bot editado)
@@ -55,7 +57,7 @@ Botão que abre o editor visual sobre o bot carregado (o mesmo editor da extens�
 - **Antes de baixar**, calcula as **pendências** (campos que apontam para algo que não existe / ficou vazio, a mesma lista usada ao colar e ao salvar no editor). Baixa **mesmo assim**; depois mostra a janela de pendências se houver alguma. As pendências **avisam, não bloqueiam**.
 
 ### 2.6 Trocar de arquivo
-Zera o bot em memória, limpa o campo de arquivo, esconde resumo e resultado, volta para a tela inicial. **Sem confirmação** (qualquer edição não baixada se perde).
+Zera `state.botCarregado`, limpa o campo de arquivo, esconde o resumo e a seção de resultado e volta para a tela inicial. **Não** zera `state.botTransformado` nem `state.nomeArquivoOriginal` na memória (o botão de baixar o convertido some junto com a seção de resultado; o nome é sobrescrito no próximo arquivo). **Sem confirmação** (qualquer edição não baixada se perde).
 
 ---
 
@@ -86,7 +88,7 @@ O log aparece numa seção "Resultado" (uma linha por item, com "•"). Existe u
    - Outros tipos: lista vazia.
 3. **Nova ação "Mensagem"** (tipo 1) com `message_text` = texto da pergunta, inserida **imediatamente antes** do menu, na mesma transição. A ação nasce com o formato completo dos registros (chave nomeada + espelho numérico `'0'`, `'1'`, `'2'`).
 4. **O menu** passa a ser `{"message_type":"menu","menu_type":"list","options":[...]}`, gravado em `message_option_text` com indentação de 2 espaços, **substituindo** `ACTION_DATA` inteiro da ação (a chave `message_option_text` é a única que sobra).
-5. **Renumerar os IDs** de todas as ações da transição na nova ordem (mensagem nova, menu, demais), em sequência a partir de **(maior ID de ação existente no bot) + 1**, que continua subindo a cada ação (de todas as transições convertidas); o espelho `'0'` acompanha `ID`. A ação "Mensagem" nova também consome um número dessa sequência. Os IDs são strings.
+5. **Renumerar os IDs** de todas as ações da transição na nova ordem (mensagem nova, menu, demais). O contador começa em **(maior ID de ação existente no bot)** e é incrementado antes de cada uso: o primeiro número vai para a **ação "Mensagem" nova no momento em que ela é criada** (maior + 1), e **em seguida** a transição é renumerada por inteiro com os números seguintes (**maior + 2, maior + 3, ...**). Portanto o primeiro ID realmente gravado na transição convertida é **maior + 2** e o número maior + 1 fica sem uso (há um buraco). O contador segue subindo entre as transições convertidas; o espelho `'0'` acompanha `ID`; os IDs são strings. Os testes só devem exigir "únicos e sequenciais dentro da transição", não o valor exato do primeiro.
 
 Só **um menu por transição** é convertido (o primeiro). Ações de transições sem menu antigo não são tocadas (mantêm os IDs); as das transições convertidas **trocam de ID**. O array final de ações sai **agrupado por transição, em ordem crescente do ID da transição** (ver risco "Ordem final das ações").
 

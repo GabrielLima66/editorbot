@@ -113,7 +113,7 @@ No bot (raiz) continuam `"7"` = `TIMEOUT_DESTINY` e `"8"` = `TIMEOUT_MESSAGE`. `
 | 1 | Mensagem | `message_text` | Envia texto ao cliente. |
 | 2 | Troca Estado | `destiny` (nº do estado ou `{$variável}`) | Vai para o estado. |
 | 4 | Transf. Agente | `destiny` (ID do agente, ID de **bot** ou `{$variável}`; o select do editor tem os dois grupos, "Agentes" e "Bots") | Transfere e sai do bot. |
-| 5 | Transf. Fila | `destiny` (nome da fila) | Transfere e sai do bot. |
+| 5 | Transf. Fila | `destiny` (nome da fila; o select do editor aceita também bots e agentes, e a tela de pendências chama o campo "Número da fila / bot / agente") | Transfere e sai do bot. |
 | 6 | Finalizar | `crm_status` | Encerra o atendimento. |
 | 7 | Executar Script | `script_name` (ID do script) | Roda um script do cliente; o retorno vira variáveis `<ID>_<campo>`. |
 | 8 | Contador de Erros | `error_count`: `"add"` ou `"reset"` | Soma 1 ou zera o contador do atendimento. |
@@ -237,7 +237,7 @@ Os seletores e atributos `data-*` que a busca usa para levar a pessoa até um ca
 2. **Tamanhos em `px`** em qualquer janela ou painel que não esteja dentro do editor: a página da Orpen redefine a fonte base para 10px, e `rem` ficaria ~38% menor.
 3. **Cores só por tokens** (`var(--accent)`, `var(--text)`, `var(--success)`, `var(--danger)`, `var(--warn)`, `var(--obd-bg)`, `var(--obd-surface)`, `var(--obd-border)`...). Isso garante tema claro e escuro. Os valores dos tokens para os dois temas estão no começo de `css/styles.css`. *Exceção:* a imagem do fluxograma e as cores por tipo de resultado da busca têm valores fixos definidos nas respectivas specs (a imagem exportada não muda com o tema).
 4. **Todo texto vindo de fora** passa por `escapeHtml` antes de entrar em `innerHTML`, inclusive em atributos `data-*`.
-5. **Features só leem o bot**. Quem altera o bot é o editor (mutations de `bot-view-interactions.js`). Exceção: Copiar/colar, que altera o bot **em memória** por funções puras próprias e nunca grava sozinha.
+5. **Features que não editam só leem o bot.** Quem **altera** o bot em memória: o **editor** (todas as edições), **Copiar/colar** (cola estados), o **Menu** (cria e remove ações "Mensagem" ao trocar de tipo), o **Gerar tratamento** (cria estado, transições, condições e ações) e a página avulsa (spec 06, que edita e transforma o JSON). Todas por funções próprias e **sem gravar sozinhas**. Testar bot, Localizar, Fluxograma e Atualização/Novidades **só leem**. Salvar na Orpen é sempre o botão Salvar do editor.
 6. **Nada grava na Orpen** exceto o botão Salvar do editor.
 7. **Módulos puros primeiro**: a lógica de cada feature vive num módulo sem DOM (testável em Node); a tela é uma camada fina por cima.
 
@@ -248,7 +248,7 @@ Os seletores e atributos `data-*` que a busca usa para levar a pessoa até um ca
 O editor é uma camada pronta; cada feature só precisa de **um ponto de entrada** e de alguns utilitários.
 
 ### 9.1 Ponto de entrada
-Cada feature expõe uma função `initX()` (`initBusca`, `initTesteBot`, `initCopiarColar`, ...), chamada **uma vez** quando o editor é montado. Ela:
+As features de tela do cabeçalho expõem uma função `initX()` (`initBusca`, `initTesteBot`, `initCopiarColar`), chamada **uma vez** quando o editor é montado. *Exceções:* o **fluxograma** não tem `initX`: o seletor PNG/SVG e o botão são inseridos no rodapé (ao lado de "Backup JSON") por `js/orpen-bridge.js`, e o módulo só é carregado no primeiro clique; **Menu**, **Novidades** e **Atualização** são acionados por botões que já existem no editor (cartão da ação 10, botão da versão no rodapé). Para as que têm `initX`: Ela:
 1. insere seu(s) botão(ões) em `.bv-header` (os existentes são inseridos antes do `#btn-fechar-bot-view`; o de busca antes do botão de fechar, o de teste antes do botão de busca);
 2. cria sua janela ou painel sob demanda (nunca no HTML estático do editor, ver seção 9.4);
 3. registra seus ouvintes (teclado, `input`/`change` em `#bv-estados`, `MutationObserver`).

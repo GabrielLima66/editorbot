@@ -45,7 +45,7 @@ Ordem fixa dos blocos e dos filtros: **Textos enviados, Condições, Calendário
 | `calendarios` | Calendários | `calendar-clock` | `#2563EB` (azul) | condições das variáveis `calendario` e `calendario_falso` |
 | `estados` | Estados | `circle-dot` | `#D97706` (laranja) | `ALIAS` (nome) de cada estado |
 
-Os `<campo>` possíveis em `a:<ID da ação>:<campo>` são as chaves de `ACTION_DATA` que guardam texto: `message_text` (ações 1, 21), `message_content` (ação 20) e, para o menu, o rótulo do campo (cabeçalho, corpo, rodapé, botão da lista, título/descrição de cada item). O mesmo `<campo>` é o valor do atributo `data-campo` do elemento na tela.
+Os `<campo>` possíveis em `a:<ID da ação>:<campo>` são só as chaves de `ACTION_DATA` que guardam texto de ações comuns: `message_text` (ações 1 e 21) e `message_content` (ação 20); o mesmo `<campo>` é o valor do atributo `data-campo` do elemento na tela. **O menu (ação 10) é outro caso:** a chave é `m:<ID da ação>:<rótulo do campo>` (cabeçalho, corpo, rodapé, botão da lista, título ou descrição de cada item) e o elemento de destino é o resumo do menu (`.menu-resumo`), que **não** tem `data-campo`.
 
 Dica (tooltip) de cada filtro: textos = "Mensagens e menus que o bot envia"; condições = "Valores que o cliente digita"; calendários = "Condições de calendário, pelo nome ou ID do calendário"; estados = "Nomes dos estados".
 
@@ -245,7 +245,7 @@ Dependências que **não podem mudar** sem aviso: os seletores da seção 8.1 e 
 
 ## 11. Critérios de aceitação
 
-Itens de 1 a 14 são testáveis em Node (extraindo a coleta e a correspondência em funções puras); os de tela são **[UI]**.
+Itens de 1 a 14 são testáveis em Node, **mas hoje não há teste para eles**: no código, `normalizar`, `ocorrencias` e `coletar` (em `js/busca.js`) são funções internas, não exportadas, e `coletar` lê o DOM (`valoresNaTela`). Só `textoDeCalendario` é exportada e testada. A implementação nova deve **separar a coleta e a correspondência em funções puras exportadas** (a coleta recebendo o bot e um mapa de valores da tela) para esses itens virarem testes; os de tela são **[UI]**.
 
 **Correspondência**
 1. "horario" encontra "Horário de atendimento" e devolve posições do texto **original** (selecionando "Horário").

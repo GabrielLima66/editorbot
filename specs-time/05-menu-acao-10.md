@@ -48,6 +48,7 @@ cabeçalho 60 · corpo 1024 · rodapé 60 · título do botão 20 · ID do botã
 `ID` (botão ou linha) e `valor` (WebChat) vazios são **gerados do texto**, trocando espaços por `_` ("Falar com atendente" → "Falar_com_atendente"). Preenchido, fica como está. O cliente recebe o **ID** no bot, não o título; por isso o texto pode mudar sem quebrar as condições.
 
 ### 3.3 Fidelidade: "Salvar edita o JSON original"
+*Detalhes que só existem no código (`js/menu-modal.js`: `atualizarMenuPreservando`, `BASE_JSON`, `indentacaoDe`):* a indentação do original é detectada pela regra `/\n( +)"/` (espaços; **um JSON indentado com TAB é regravado minificado**); menus novos ou de tipo trocado partem de uma estrutura mínima por tipo (`{interactive:{type:'button', body:{text:''}, action:{buttons:[]}}}`; o equivalente de lista com `action:{button:'', sections:[]}`; e `{message_type:'menu', menu_type:'list', options:[]}` no WebChat); cabeçalho novo é gravado como `{type:'text', text}` e rodapé como `{text}`; a gravação só acontece se algo mudou.
 - Salvar **edita o JSON original** em vez de montar um novo: só textos e IDs mexidos mudam; campos opcionais (cabeçalho, rodapé, descrição) só são criados se já existiam ou foram preenchidos; qualquer outra chave do original é preservada; a indentação é a do original.
 - **Salvar sem mudar nada não grava nada** (o texto fica byte a byte igual).
 - Nunca apagar campos vazios que já existiam, nem inventar campos novos vazios.
@@ -93,7 +94,7 @@ Regras:
 - O **limite vem antes do fallback**: senão o fallback captura tudo e o limite nunca dispara.
 - O fallback **reenvia o menu** com uma cópia do `message_option_text` original, byte a byte (uma Troca Estado de volta não reenviaria nada até a próxima mensagem do cliente).
 - O contador **só é incrementado** no fallback. O gerador **não usa** a opção "Zerar" do contador; as transições das opções não zeram nada (decisão a rever pelo time se o contador precisar voltar a zero depois de um acerto).
-- **Ligação com a origem (última etapa):** se a transição do menu já tem uma "Troca Estado" **depois** do menu, o destino dela passa a ser o estado novo. Se não tem, uma "Troca Estado" para o estado novo é inserida **logo depois do menu**, e as ações dessa transição são renumeradas em sequência (a ordem de execução vem do ID).
+- **Ligação com a origem (última etapa):** se a transição do menu já tem uma "Troca Estado" **depois** do menu (a primeira que existir), o destino dela passa a ser o estado novo. Se não tem, uma "Troca Estado" para o estado novo é inserida **logo depois do menu**, e as ações dessa transição são renumeradas em sequência (a ordem de execução vem do ID).
 
 Formato dos registros (idêntico ao que a Orpen grava; sempre pelos mesmos caminhos do editor, `nextId`/`withMirrors`):
 ```js
@@ -121,7 +122,7 @@ Exemplo, menu de botões com `Vendas` e `Suporte` (IDs `Vendas` e `Suporte`), li
 E, na transição original do estado 4, depois da ação 10 do menu, entra a ação 2 com `destiny:'7'`.
 
 ### 6.2 Diálogo "Gerar tratamento do menu"
-- **Nome do estado** (até 80 caracteres), **Limite de erros** (número, padrão **2**; mínimo 1 garantido pelo código, máximo 20 só no campo), e o grupo **"Ao atingir o limite"** com a lista de ações da seção 6.3 e uma caixa de **mensagem** (some quando a ação é "Deixar em branco").
+- **Nome do estado** (até 80 caracteres), **Limite de erros** (número, padrão **2**; o campo tem min 1 e max 20, mas o código só trata o valor ao gerar: `Math.max(1, número || 2)`, então digitar **0 ou vazio vira 2**; acima de 20 não é barrado; `gerarTratamento` sozinho não valida nada), e o grupo **"Ao atingir o limite"** com a lista de ações da seção 6.3 e uma caixa de **mensagem** (some quando a ação é "Deixar em branco").
 - Uma **prévia** das transições: uma linha por opção ("`<id>` texto → você completa"), "Erros ≥ n → <ação>" e "Qualquer outra resposta → erros +1, reenvia o menu" (no WebChat com texto, "reenvia mensagem e menu").
 - Botões Cancelar e **Gerar**. Esc cancela.
 - Ao gerar: cria tudo, fecha, o editor refaz a lista, o **estado novo abre expandido** e um aviso diz: `Estado "<nome>" criado com <N+2> transições. Complete o que cada opção faz e salve o bot.`
@@ -135,14 +136,14 @@ E, na transição original do estado 4, depois da ação 10 do menu, entra a aç
 | **Deixar em branco (completo depois)** | nenhuma ação |
 
 - A ação 1 só é criada se o texto da mensagem não estiver vazio.
-- Mensagens padrão (trocam junto com a opção enquanto a pessoa não editar o texto):
+- Mensagens padrão (trocam junto com a opção enquanto a caixa contiver uma das mensagens padrão **ou estiver vazia**; ao esvaziar a caixa, a próxima troca de opção a preenche de novo):
   - fila: "Não consegui identificar a opção escolhida. Vou te transferir para um de nossos atendentes."
   - finalizar: "Não consegui identificar a opção escolhida. Seu atendimento será encerrado."
   - estado: "Não consegui identificar a opção escolhida."
 - Fila, status ou estado "Escolher depois" criam a ação com o campo vazio; ela aparece nas pendências do editor. Com cadastros do ambiente disponíveis a escolha é uma lista; sem eles (modo avulso) é um campo de texto.
 
 ### 6.4 Quando a transição já tem uma Troca Estado depois do menu
-O diálogo mostra um aviso fixo ("Esta transição já leva para `<n> · <nome>`. Ao gerar, o destino passa a ser o estado novo.") e o botão passa a se chamar **"Gerar e trocar destino"**. Não há segunda confirmação: clicar nele é a confirmação.
+Considera-se a **primeira** ação "Troca Estado" (tipo 2) que vem depois do menu na mesma transição. Se o destino dela for uma `{$variável}`, **também é sobrescrito, sem aviso especial**. O diálogo mostra um aviso fixo ("Esta transição já leva para `<n> · <nome>`. Ao gerar, o destino passa a ser o estado novo.") e o botão passa a se chamar **"Gerar e trocar destino"**. Não há segunda confirmação: clicar nele é a confirmação.
 
 ### 6.5 Rodar duas vezes
 Gerar de novo cria **outro** estado (o nome ganha ` 2`) e troca de novo o destino. Não existe detecção de tratamento já criado.

@@ -31,16 +31,22 @@ As **detalhadas** (01, 02, 03) fogem do padrão do sistema, então estão escrit
 
 ## 4. Como cada spec está organizada
 
-Todas terminam do mesmo jeito: **critérios de aceitação** (casos que viram teste) e **riscos / pontos em aberto** (coisas que o código atual faz de um jeito discutível ou que ainda não existem). Leia os riscos antes de implementar: eles dizem onde NÃO copiar o comportamento atual às cegas.
+As specs 01 a 07 terminam do mesmo jeito: **critérios de aceitação** (casos que viram teste) e **riscos / pontos em aberto** (coisas que o código atual faz de um jeito discutível ou que ainda não existem). Leia os riscos antes de implementar: eles dizem onde NÃO copiar o comportamento atual às cegas.
 
 ## 5. O código de referência
 
 A pasta `codigo-de-referencia/` tem o código atual **com a mesma estrutura do repositório** (`js/`, `tests/editor/`, `css/`, `fluxograma/`, `content/`...). Os nomes de arquivo citados nas specs (`js/trechos.js`, `tests/editor/simulador.test.mjs`...) são caminhos dentro dela. Use para:
 - **tirar dúvida** do que uma spec não diz (o código é a verdade do que existe hoje);
 - **reaproveitar** as funções puras (simulador, busca, trechos, pipeline do fluxograma);
-- **rodar os testes**: `node --test "tests/editor/*.test.mjs"` (sem instalar nada; use um Node recente). Na cópia do pacote rodam **140 testes, todos passando**; no repositório original rodam 152, porque 12 usam exports de bots reais de clientes (`fluxograma/tests/golden_local/`, que não vai no pacote). No fluxograma: `cd fluxograma && npm install && npx vitest run`.
+- **rodar os testes**: `node --test "tests/editor/*.test.mjs"` (sem instalar nada; testado com Node 24, qualquer versão que tenha `node --test` e ES modules deve servir). Na cópia do pacote rodam **140 testes, todos passando**; no repositório original rodam 152, porque 12 usam exports de bots reais de clientes (`fluxograma/tests/golden_local/`, que não vai no pacote). No fluxograma: `cd fluxograma && npm install && npx vitest run`.
 
-Se spec e código divergirem, **vale a spec** quando ela estiver marcada como decisão de produto, e **vale o código** quando a spec só descrever "como é hoje" (e abra um chamado para corrigir a spec).
+Se spec e código divergirem: o **código** é a verdade do que existe hoje; a **spec** é a verdade do que se quer, e os trechos de "Riscos / pontos em aberto" e "Ainda não implementado" dizem onde elas diferem de propósito. Nos demais casos, trate a divergência como erro da spec e avise quem mantém o pacote.
+
+### Arquivos de apoio em `codigo-de-referencia/` que são **históricos**
+
+`SPEC-*.md` (busca, editor-ui, state-engine, adapter, interceptor, tema, tratamento-de-menu, exportar-fluxograma), `bot-engine-spec.md` e `DOCUMENTACAO_EXTENSAO.md` são anteriores a estas specs. Servem de contexto e de histórico de decisões, mas **podem estar desatualizados**; quando divergirem destas specs, valem estas (ex.: o `SPEC-tratamento-menu.md` diz que trocar o destino "pede confirmação", e hoje o código só avisa; vale a spec 05, seção 6.4).
+
+Para carregar a extensão no Chrome e ver tudo funcionando: `chrome://extensions` → modo desenvolvedor → "Carregar sem compactação" → escolher a pasta `codigo-de-referencia/` (ela tem `manifest.json`, `icons/` e `vendor/`).
 
 ## 6. Regras que valem para tudo (resumo; o detalhe está no contrato, seção 8)
 
@@ -48,7 +54,7 @@ Se spec e código divergirem, **vale a spec** quando ela estiver marcada como de
 - Tamanhos de janelas e painéis em **px**, não `rem` (a página da Orpen muda a fonte base para 10 px).
 - Cores só por **tokens** (`var(--accent)`...), para funcionar nos temas claro e escuro.
 - Todo texto que vem do bot ou da pessoa passa por **`escapeHtml`** antes de entrar em `innerHTML`.
-- Features **só leem** o bot; quem altera é o editor (exceção: Copiar/colar, em memória).
+- Features que não editam **só leem** o bot. Quem altera em memória: o editor, Copiar/colar, Menu, Gerar tratamento e a página avulsa (detalhe no contrato, seção 8.5).
 - **Nada grava na Orpen** exceto o botão Salvar.
 - Lógica em módulos **puros** (sem DOM, testáveis em Node); a tela é uma camada fina por cima.
 

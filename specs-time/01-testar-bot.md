@@ -197,7 +197,7 @@ Para as outras variáveis, a candidata é o valor guardado, sem escape.
 
 ### Efeito colateral comum
 
-Nos operadores 1 e 2, para **cada candidata examinada**, gravar `extra.message = trim(removerTags(decodificarHtml(candidata)))`.
+Nos operadores 1 e 2, para **cada candidata examinada**, gravar `extra.message = trim(removerTags(decodificarHtml(candidata)))`. Definições (no código: `decodificarHtml` e `tirarTags` em `js/simulador.js`): `decodificarHtml` troca, **nesta ordem**, `&lt;`→`<`, `&gt;`→`>`, `&quot;`→`"`, `&#39;` e `&#039;`→`'`, e por último `&amp;`→`&`; `removerTags` apaga tudo que casa com `<[^>]*>` (menor-que, qualquer coisa que não seja `>`, maior-que).
 
 ### Tabela
 
@@ -261,7 +261,7 @@ Ordem: por `ID`. Cada ação registra no trace uma linha `{id, tipo, nome, efeit
 | 1 Mensagem | Evento do bot (texto), `message_text` com variáveis trocadas. |
 | 10 Mensagem Options | Evento do bot (menu): `parseMenuModel` do JSON (variáveis trocadas antes) e `extrairItensMenu`. |
 | 11 Mensagem Form | Evento de texto `[formulário enviado]`. |
-| 2 Troca Estado | `estado = trim(trocarVariaveis(destiny))`. Vale na **próxima rodada**. Se o estado não existe: evento de erro "…aponta para o estado "N", que não existe: o bot fica parado." |
+| 2 Troca Estado | `estado = trim(trocarVariaveis(destiny))`. Vale na **próxima rodada**. Se o estado não existe: evento de erro "…aponta para o estado "N", que não existe: o bot fica parado." Mesmo assim `estado` **passa a valer N** (o número inexistente); na próxima mensagem a rodada registra o evento de erro "O bot está no estado N, que não existe. Nada acontece." (e repete a cada mensagem). |
 | 4, 5 Transferir | Evento de sistema ("Transferido para o agente/fila X. Fim do bot nesta conversa."); `status = 'encerrada'`. As ações seguintes **da mesma transição ainda rodam**. |
 | 6 Finalizar | Evento de sistema; `status = 'encerrada'`. |
 | 7 Script | Se `externas['script:<ID>']` tiver JSON: gravar cada chave em `extra['<ID>_<chave>']` (valores como texto). Se não tiver: aviso "não foi executado… Informe o retorno em Contexto". JSON inválido: aviso. |

@@ -79,3 +79,25 @@ Termos que aparecem nas specs. Ordem alfabética dentro de cada grupo.
 | **Back edge** | Seta que volta para um estado já "em andamento" (laço), desenhada diferente. |
 | **dagre / React Flow** | Bibliotecas de layout automático e de desenho de nós e setas. |
 | **Nonce / MessageChannel** | Mecanismo de segurança e de mensagens entre a extensão e o iframe que desenha o fluxograma. |
+
+## Copiar e colar (spec 04)
+
+| Termo | Significado |
+|---|---|
+| **Trecho** | O que é copiado: um objeto com os estados (ou transições) escolhidos, com suas condições e ações, e o `índice` de todos os estados do bot de origem. |
+| **Área de cópia** | Onde o trecho fica guardado: `chrome.storage.local` da extensão (uma só cópia por vez, vale para todos os domínios). |
+| **Ensaio (`simularColagem`)** | Colar numa **cópia** do bot só para verificar se algo quebraria; o bot de verdade só muda se o ensaio passar. |
+| **Soltas** | Ligações para estados que não foram copiados e que, por isso, ficaram em branco. |
+| **ID de linha** | O `ID` da linha do estado na tabela (diferente do `STATE_NUMBER`, que é o número que as ligações usam). |
+| **Mesmo bot** | Origem e destino com o mesmo `host` (endereço com porta) e o mesmo `ID` de bot. Nesse caso ligações para estados não copiados podem ser mantidas. |
+| **Variáveis de cadastro** | Variáveis de condição cujo valor é um ID de cadastro do ambiente (fila, agente, calendário, status CRM, entrada...); lista na tabela 2.1 do contrato. |
+
+## Menu e atualização (specs 05 e 07)
+
+| Termo | Significado |
+|---|---|
+| **Fallback** | Dois usos: (1) estado de **erro** das ações 18, 20 e 22 (`fallback_state`); (2) no tratamento de menu, a transição de "qualquer outra resposta", que conta o erro e reenvia o menu. O contexto diz qual. |
+| **`release`** | Ramo do GitHub que só recebe versões fechadas; é dele que o aviso de versão nova e o atualizador leem. |
+| **Protocolo registrado (`editorbot-atualizar://`)** | Endereço especial que o Windows aprende a abrir com o `atualizar.ps1` (registrado em `HKCU`, só para o usuário atual). |
+| **`robocopy`** | Comando do Windows que o atualizador usa para espelhar pastas. |
+| **Chave nomeada** | Campo de uma linha com nome (`ID`, `STATE_NUMBER`...), em oposição à chave numérica espelhada (`"0"`, `"1"`...). |

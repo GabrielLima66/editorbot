@@ -17,7 +17,7 @@ Página **sem Orpen**: carrega um `.json` de bot (ou cria um em branco), deixa e
 
 ## Transformação "menu WhatsApp → WebChat"
 
-Por transição (ações ordenadas por ID): primeira ação 10 com `{"interactive":…}` → (a) cria ação 1 com `body.text` **antes** do menu; (b) opções: botões → `{text:reply.title, value:reply.id}`; lista → todas as linhas de todas as seções, em ordem; (c) menu vira `{"message_type":"menu","menu_type":"list","options":[…]}` (indentado, 2 espaços), substituindo `ACTION_DATA` inteiro; (d) renumera os IDs das ações da transição a partir do maior ID do bot. Um menu por transição. Log: `Transição <id>: "<50 chars>…" (<n> opções)`.
+Por transição (ações ordenadas por ID): primeira ação 10 com `{"interactive":…}` → (a) cria ação 1 com `body.text` **antes** do menu; (b) opções: botões → `{text:reply.title, value:reply.id}`; lista → todas as linhas de todas as seções, em ordem; (c) menu vira `{"message_type":"menu","menu_type":"list","options":[…]}` (indentado, 2 espaços), substituindo `ACTION_DATA` inteiro; (d) renumera os IDs das ações da transição: o contador começa no maior ID do bot e é incrementado antes de cada uso; a ação 1 nova consome o primeiro número (maior+1) e a transição é renumerada com os seguintes, então o primeiro ID gravado é **maior+2** (há um buraco). Um menu por transição. Log: `Transição <id>: "<50 chars>…" (<n> opções)`.
 
 ## Armadilhas
 
@@ -26,7 +26,8 @@ Por transição (ações ordenadas por ID): primeira ação 10 com `{"interactiv
 - Log inserido como HTML sem escape (o texto vem do bot).
 - Esquecer o espelho `'0'` ao mudar `ID`.
 - Descartar o resultado da transformação ao fechar a janela (ele fica em `botTransformado`).
-- Perder edição ao trocar de arquivo (sem aviso hoje).
+- Perder edição ao trocar de arquivo (sem aviso hoje). A troca não zera `botTransformado` na memória, só esconde o resultado.
+- A página **não tem ponto de entrada** na interface da extensão (abre-se por `chrome-extension://<id>/bot_transform.html`); o botão "Backup JSON" é do editor, o "Baixar JSON convertido" é da página.
 
 ## Validar
 

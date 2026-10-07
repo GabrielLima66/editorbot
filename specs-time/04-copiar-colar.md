@@ -99,7 +99,7 @@ simularColagem(bot, trecho, mesmasOpcoes) → { ok, erros: string[], resultado, 
 - `mudancas` = estados que **já existiam** e mudaram de número, no formato usado pelo aviso de renumeração do Salvar.
 
 ### 5.0.1 Numeração dos estados colados
-Os estados do trecho são ordenados pelo número original (numérico crescente) e recebem números **numéricos** consecutivos (`N+1…` ou o maior existente + 1…). Isso vale também para o estado `0` e para números não numéricos do trecho (`"A1"`): no bot de destino todos ganham número numérico novo; o estado `0` do destino **nunca** é afetado. Colar um estado que era o `0` de outro bot não substitui nem muda o `0` do destino.
+Os estados do trecho são ordenados pelo número original (numérico crescente; **números não numéricos como `"A1"` não têm posição definida** em `js/trechos.js`, que usa `parseInt(a) - parseInt(b)` e dá `NaN`. Recomendado para a implementação nova: não numéricos **depois** dos numéricos, na ordem em que aparecem; a tela já ordena assim) e recebem números **numéricos** consecutivos (`N+1…` ou o maior existente + 1…). Isso vale também para o estado `0` e para números não numéricos do trecho (`"A1"`): no bot de destino todos ganham número numérico novo; o estado `0` do destino **nunca** é afetado. Colar um estado que era o `0` de outro bot não substitui nem muda o `0` do destino.
 
 ### 5.1 Onde entram
 - **No fim:** os estados colados recebem os números seguintes ao **maior número numérico** existente. Ninguém é renumerado.
@@ -118,7 +118,7 @@ Para cada uma na ação colada:
   - em outro bot, ou se mudou → **vira vazia** e entra na lista de "soltas" (aponta para outro estado sem aviso, se mantiver).
 
 ### 5.4 "Mesmo bot"
-Mesmo `host` e mesmo `botId` não vazio entre a origem do trecho e o bot aberto.
+Mesmo `host` e mesmo `botId` não vazio entre a origem do trecho e o bot aberto. Aqui `host` é `location.host` da página (**com a porta**, se houver) e `botId` é o `ID` do bot carregado (`bot.ID`); ambos são gravados em `origem` ao copiar e comparados como texto.
 
 ### 5.5 Outro ambiente
 Quando o `host` da origem difere do atual, **esvaziar** os campos que guardam cadastro (contrato, seção 3, e a lista usada na tela de pendências): ações 4, 5, 6, 7, 9, 12, 14, 15, 17, 18, 22 (campos listados no contrato) e labels da ação 16; em condições, o `CONDITION_TYPE` das variáveis de cadastro (fila, agente, calendário, status CRM, entrada), a lista de labels (tipo 18) e `assistant_id`. **Preservar `{$variável}`.** Cada campo esvaziado vira uma pendência. No mesmo ambiente nada é esvaziado.

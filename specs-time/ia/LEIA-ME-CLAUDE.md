@@ -13,7 +13,7 @@ Esta pasta `ia/` tem, para cada feature, um **resumo do cerne**: a ideia central
 ## Regras de trabalho
 
 - **Não invente comportamento.** Se a spec e o código não dizem, pergunte ou registre como lacuna; não escolha em silêncio.
-- **Siga as convenções do contrato** (seção 8 da spec 00): `getRootNode()` em vez de `document`; px em janelas; tokens de cor; `escapeHtml` em todo texto externo; features só leem o bot.
+- **Siga as convenções do contrato** (seção 8 da spec 00): `getRootNode()` em vez de `document`; px em janelas; tokens de cor; `escapeHtml` em todo texto externo; features que não editam (Testar bot, Localizar, Fluxograma, Atualização) só leem o bot, e só o Salvar do editor grava no servidor.
 - **Reaproveite as funções prontas** (`nextId`, `withMirrors`, `remapStateNumbers`, `tipoDaCondicao`, `parseMenuModel`...) em vez de reescrevê-las. Assinaturas na seção 4 da spec 00.
 - **Lógica em módulo puro + teste em Node primeiro**; depois a tela.
 - **Não corrija o simulador do motor "para ficar certo"**: as manias (igualdade frouxa, "0" vira vazio, aspas simples sem escape, "Diferente de" sempre falso) são fiéis ao servidor de propósito.

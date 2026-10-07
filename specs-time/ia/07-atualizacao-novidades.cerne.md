@@ -29,7 +29,8 @@ página recarrega (1,2 s depois)
 6. **`manifest.json` é copiado por último** pelo atualizador: falha no meio mantém a versão antiga.
 7. **O atualizador recusa pasta com `.git`** (repo de desenvolvimento) e pasta sem `manifest.json`.
 8. **Novidades lê o CHANGELOG da instalação**, não da internet. Todo texto passa por `escapeHtml` antes de virar `<code>`/`<strong>`.
-9. `compararVersoes` existe em **dois** lugares (página e worker): manter idênticas. Partes ausentes/não numéricas valem 0.
+9. `compararVersoes` existe em **dois** lugares (página e worker): manter idênticas. Partes ausentes/não numéricas valem 0 (`parseInt`). O `atualizar.ps1` usa `[version]` do PowerShell (outra regra: `1.0` ≠ `1.0.0`, mínimo 2 partes); com versões `X.Y.Z` as três dão o mesmo resultado, então mantenha sempre três números.
+10. Onde está a integração: botão `#bv-versao` ("vX · Novidades") e a chamada `avisarSeHouverNovaVersao(...)` em `js/orpen-bridge.js` (~linhas 157-177); a verificação do disco a cada carga da página está em `content/bootstrap.js` (~linha 37), enviada **sem** `recarregar:false` de propósito.
 
 ## Tempos
 

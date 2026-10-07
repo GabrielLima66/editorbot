@@ -29,7 +29,7 @@ Modo Técnico, PDF, painel de nomenclatura/renomeação manual, visualização i
 
 ## 2. Experiência de uso
 
-1. Rodapé do editor, à esquerda de "Backup JSON": um seletor **PNG | SVG** (dica: "Formato do fluxograma. SVG: melhor para abrir no navegador.") e o botão **Gerar fluxograma** (ícone `workflow`; dica: "Gerar o fluxograma deste bot (como está salvo na plataforma)").
+1. Rodapé do editor, à esquerda de "Backup JSON" (este HTML é inserido por `js/orpen-bridge.js`, com `#bv-fluxograma-grupo`, `#bv-fluxograma-formato`, `#btn-bv-fluxograma`, `#btn-bv-fluxograma-icon`, `#btn-bv-fluxograma-spinner` e `#btn-bv-fluxograma-label`; **não** é um bloco de `bot_transform.html` nem passa por um `initX`; o módulo `js/fluxograma-export.js` só é carregado no primeiro clique): um seletor **PNG | SVG** (dica: "Formato do fluxograma. SVG: melhor para abrir no navegador.") e o botão **Gerar fluxograma** (ícone `workflow`; dica: "Gerar o fluxograma deste bot (como está salvo na plataforma)").
 2. Clique:
    - Se o bot **não tem estados**: toast "Este bot ainda não tem estados: não há fluxograma para gerar." (checado **antes** de tudo, inclusive antes do pedido de salvar).
    - Se há **alterações não salvas**: diálogo "Salvar antes de gerar?" — "Este bot tem alterações que ainda não foram salvas. Para gerar o fluxograma, elas serão salvas na plataforma primeiro." Botões **Cancelar** (foco inicial; Esc também cancela; nada é salvo nem gerado) e **Salvar e gerar** (salva pelo mesmo caminho do botão Salvar; se o salvamento falhar, para — o próprio salvar já mostrou o erro).
@@ -319,6 +319,8 @@ Capturar só o conteúdo desenhado (a camada `.react-flow__viewport`), **sem** b
 - Diagrama sem nós: erro "Diagrama vazio."
 
 ---
+
+> **Formato dos cadastros que entram no fluxograma.** O fluxograma recebe `ambiente = { queues, bots, calendars }`, cada um uma lista de `{ id, name }` (é o formato bruto de `state.ambienteOrpen`, **diferente** do `{ value, label }` das funções `opcoes*()` do contrato). `name` da fila já vem pronto para exibição (o coletor entrega "[NAME] BEE_NAME"); o do bot vem com o prefixo `"[Bot] "` (removido no fluxograma, que mostra `[<id>] <nome>`); itens com `id` ou `name` vazios são ignorados. Sem `ambiente` (modo avulso) o desenho sai sem nomes e o aviso diz que os cadastros não foram carregados. `atualizarBotao()` é uma função da camada do editor que apenas **desliga o botão enquanto `state.fluxogramaGerando` for verdadeiro** e restaura a dica; a feature a chama antes e depois de gerar.
 
 ## 13. Como roda dentro da extensão
 

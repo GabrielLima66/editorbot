@@ -4,6 +4,8 @@ Status: implementada (referência: `js/atualizacao.js`, `js/novidades.js`, `back
 
 Pré-requisito: `00-contrato-de-entrada.md` (convenções do rodapé do editor, `empilharEsc`, `getRootNode`).
 
+**Onde a integração está no código:** `js/orpen-bridge.js` (linhas ~157-177) cria o botão da versão no rodapé — `#bv-versao`, texto "v<versão> · Novidades", versão lida de `chrome.runtime.getManifest().version` —, chama `avisarSeHouverNovaVersao(botView, versao, temAlteracoesNaoSalvas)` e liga o clique a `abrirNovidades(versao)`. A verificação automática do disco a cada carga da página da Orpen é feita por `content/bootstrap.js` (linha ~37), que envia `{tipo:'editorbot:verificar-disco'}` **sem** `recarregar:false`.
+
 ---
 
 ## 1. Objetivo
@@ -39,7 +41,7 @@ Repositório e ramo são **constantes** no código: `REPO = 'GabrielLima66/edito
 
 ## 3. Comparar versões
 
-`compararVersoes(a, b)`: separa por `.`, converte cada parte com `parseInt(parte, 10)` (**sem número no começo vira 0**; `"8abc"` vira 8, `"0-beta"` vira 0; parte ausente vira 0), compara da esquerda para a direita e devolve negativo/zero/positivo. `0.8.19 > 0.8.9`; `1.0 == 1.0.0`. A **mesma** função existe em `background.js` (copiada, porque o worker não importa módulos da página) e a regra tem de ser idêntica nas duas.
+`compararVersoes(a, b)`: separa por `.`, converte cada parte com `parseInt(parte, 10)` (**sem número no começo vira 0**; `"8abc"` vira 8, `"0-beta"` vira 0; parte ausente vira 0), compara da esquerda para a direita e devolve negativo/zero/positivo. `0.8.19 > 0.8.9`; `1.0 == 1.0.0`. A **mesma** função existe em `background.js` (copiada, porque o worker não importa módulos da página) e a regra tem de ser idêntica nas duas. **O `atualizar.ps1` usa outra regra:** compara com `[version]` do PowerShell, que exige de 2 a 4 números separados por ponto (falha com versão de 1 parte) e trata `1.0` e `1.0.0` como **diferentes** (`1.0` é menor que `1.0.0`). Com o padrão `X.Y.Z` do projeto as três regras dão o mesmo resultado; manter sempre três números.
 
 ---
 
