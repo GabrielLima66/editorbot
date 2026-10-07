@@ -1,5 +1,9 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.18] - 2026-10-07
+* **Testar só uma parte do fluxo**: na lista de estados do "Testar bot", o botão ▶ começa o teste naquele estado e o ⚑ marca onde parar. Ao chegar no estado de parada o teste pausa, antes de o bot rodar nele, e você escolhe "Continuar daqui" ou "Reiniciar". Na aba Contexto, "Ponto de partida" permite informar o contador de erros e as variáveis que o cliente já teria guardado ao chegar no estado inicial (as usadas nos textos e nas condições do bot, inclusive as da automação).
+* **Ajustes do teste**: o ponto de partida vale só para o bot em que foi escolhido; "Aplicar e reiniciar" volta para a aba Conversa; o teclado mantém o foco nos botões ▶ e ⚑.
+
 ## [0.8.17] - 2026-10-07
 * **Testar o bot no editor**: um botão novo no cabeçalho (ícone de robô) abre uma conversa de teste, sem salvar nada e sem criar atendimento. À esquerda fica a lista de estados, mostrando onde a conversa está e por onde já passou; ao lado, a aba Conversa (você escreve como o cliente e os menus aparecem com botões clicáveis), a aba Detalhes (cada transição e condição que o motor avaliou, com ✓ e ✗) e a aba Contexto (dados que o simulador não tem, como calendário, fila e agente).
 * **Segue as regras do motor da Orpen**: vale a primeira transição por prioridade cujas condições passam, a troca de estado vale na rodada seguinte, e transição sem condição de mensagem dispara sozinha (com um teto de 25 rodadas e aviso). "Igual a" diferencia maiúsculas e "Contém" só ignora maiúsculas em letras sem acento. Quando falta um dado que o simulador não tem, o teste pausa e pergunta, em vez de assumir "falso". Ações de IA, áudio e automação pausam até você responder o callback (Enter envia o texto como sucesso).

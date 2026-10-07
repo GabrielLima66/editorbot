@@ -1614,4 +1614,11 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .tb-op:hover { background: var(--hover-bg); }
 .tb-op[aria-pressed="true"] { color: var(--sobre-cor); background: var(--primary); border-color: var(--primary); }
 .tb-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.tb-acoes-estado { display: flex; gap: 2px; flex-shrink: 0; }
+.tb-mini { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; color: var(--text-muted); border-radius: 6px; opacity: 0; cursor: pointer; transition: opacity 0.12s, background-color 0.12s; }
+.tb-estado:hover .tb-mini, .tb-estado:focus-within .tb-mini, .tb-mini.ativo { opacity: 1; }
+.tb-mini:hover { background: var(--hover-bg); color: var(--text); }
+.tb-mini.ativo { color: var(--accent); }
+.tb-tag { flex-shrink: 0; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 9999px; color: var(--accent); background: var(--fx-acento-hover-bg); border: 1px solid var(--fx-acento-borda); }
+.tb-tag.parada { color: var(--warn); background: var(--alerta-confirma-bg); border-color: var(--alerta-confirma-borda); }
 @media (max-width: 760px) { .tb-corpo { grid-template-columns: 1fr; } .tb-estados { display: none; } }

@@ -90,6 +90,9 @@ const EMAIL = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-zA-Z]{2,
  * Cria uma sessão de teste a partir do bot (foto: o bot original não é alterado).
  * `contexto.externas` guarda o que o simulador não sabe (calendário, fila...);
  * `contexto.contato` guarda dados do cliente usados em {$variáveis}.
+ * Testar só uma parte do fluxo: `contexto.inicio` (estado em que a conversa começa, padrão 0),
+ * `contexto.variaveis` e `contexto.erros` (o que o cliente já teria guardado até ali) e
+ * `contexto.parada` (estado em que o teste para ao chegar, antes de o bot rodar nele).
  */
 export function criarSessao(bot, contexto = {}) {
   const foto = {
@@ -103,30 +106,55 @@ export function criarSessao(bot, contexto = {}) {
     TIMEOUT_DESTINY: bot.TIMEOUT_DESTINY ?? '',
     TIMEOUT_MESSAGE: bot.TIMEOUT_MESSAGE ?? '',
   };
+  const inicio = String(contexto.inicio ?? '0');
   const sessao = {
     bot: foto,
-    estado: '0',
+    estado: inicio,
     status: 'ativa', // ativa | aguardando | aguardando-contexto | encerrada
-    erros: 0,
-    extra: {},
+    motivoFim: null, // 'parada' quando o teste parou no ponto de parada
+    parada: contexto.parada === undefined || contexto.parada === null || contexto.parada === '' ? null : String(contexto.parada),
+    erros: Number(contexto.erros) || 0,
+    extra: Object.fromEntries(Object.entries(contexto.variaveis || {}).filter(([, v]) => v !== '' && v !== undefined)),
     contexto: {
+      variaveis: { ...(contexto.variaveis || {}) },
       externas: { ...(contexto.externas || {}) },
       contato: { nome: 'Cliente Teste', remetente: '5511999990000', ...(contexto.contato || {}) },
     },
     eventos: [],
     rodadas: [],
-    caminho: ['0'],
-    visitas: { 0: 1 },
+    caminho: [inicio],
+    visitas: { [inicio]: 1 },
     pausa: null,
     pendentes: null,
     requisitos: [],
     rodadaN: 0,
   };
-  if (!foto.BOT_STATES.some((s) => String(s.STATE_NUMBER) === '0')) {
+  if (!foto.BOT_STATES.some((s) => String(s.STATE_NUMBER) === inicio)) {
     sessao.status = 'encerrada';
-    sistema(sessao, 'Este bot não tem o estado 0, onde toda conversa nova começa.', 'erro');
+    sistema(sessao, inicio === '0' ? 'Este bot não tem o estado 0, onde toda conversa nova começa.' : `Este bot não tem o estado ${inicio}, escolhido como início do teste.`, 'erro');
   }
   return sessao;
+}
+
+// Para o teste ao chegar no estado de parada, antes de o bot rodar nele.
+function verificarParada(sessao) {
+  if (sessao.parada === null || sessao.status === 'encerrada') return;
+  if (String(sessao.estado) !== sessao.parada) return;
+  sessao.status = 'encerrada';
+  sessao.motivoFim = 'parada';
+  sistema(sessao, `Chegou ao estado ${sessao.estado}, o ponto de parada do teste. O bot ainda não rodou nele.`);
+}
+
+/** Depois de parar no ponto de parada: segue a partir dele (o ponto de parada some). */
+export function continuarDaParada(sessao) {
+  if (sessao.motivoFim !== 'parada') return;
+  sessao.parada = null;
+  sessao.motivoFim = null;
+  // A mesma transição que chegou ao estado de parada pode ter pausado o bot (IA, áudio, automação):
+  // o callback continua pendente.
+  if (sessao.pausa) { sessao.status = 'aguardando'; return; }
+  sessao.status = 'ativa';
+  processar(sessao, []);
 }
 
 function sistema(sessao, texto, nivel = 'info') {
@@ -431,6 +459,7 @@ function executarRodada(sessao, mensagens) {
   if (String(rodada.estadoDepois) !== String(rodada.estado)) {
     sessao.caminho.push(String(rodada.estadoDepois));
     sessao.visitas[rodada.estadoDepois] = (sessao.visitas[rodada.estadoDepois] || 0) + 1;
+    verificarParada(sessao);
   }
   return { disparou: !!escolhida, pausaContexto: false, rodada };
 }
@@ -497,6 +526,7 @@ export function responderCallback(sessao, { ok = true, status, texto = '' } = {}
     sessao.estado = String(destino);
     sessao.caminho.push(String(destino));
     sessao.visitas[destino] = (sessao.visitas[destino] || 0) + 1;
+    verificarParada(sessao);
   }
   processar(sessao, []);
 }
@@ -518,6 +548,7 @@ export function simularTimeout(sessao) {
       sessao.pendentes = null;
     }
     sistema(sessao, `Timeout: o bot vai para o estado ${destino}.`);
+    verificarParada(sessao);
     processar(sessao, []);
   } else sistema(sessao, 'Este bot não tem ação de timeout configurada.', 'aviso');
 }
@@ -563,4 +594,31 @@ export function destinosDoEstado(bot, numero) {
     (CAMPOS_ESTADO_POR_TIPO[a.ACTION_TYPE] || []).forEach((campo) => { const v = a.ACTION_DATA?.[campo]; if (v !== undefined && v !== '' && /^\d+$/.test(String(v))) alvos.add(String(v)); });
   });
   return [...alvos];
+}
+
+// Variáveis com valor próprio do motor (trocarVariaveis) e variáveis de condição com tratamento próprio.
+const VARIAVEIS_DO_MOTOR = new Set([
+  'name_pref_agent', 'pref_agent', 'sys_conversation', 'sys_attendance', 'sys_protocol', 'sys_agent', 'sender', 'source',
+  'contact_number', 'contact', 'contact_name', 'contact_first_name', 'contact_last_name', 'contact_observations',
+  'email_subject', 'uci', 'old_attendance', 'entrance_type', 'entrance', 'message_escaped', 'message', 'error_count',
+]);
+
+/**
+ * Variáveis guardadas que o bot usa ({$x} nos textos e variáveis de condição que não são do motor):
+ * é o que o cliente já teria acumulado ao chegar a um estado do meio do fluxo.
+ */
+export function variaveisUsadas(bot) {
+  const nomes = new Set();
+  const procurar = (v) => {
+    if (typeof v === 'string') [...v.matchAll(/\{\$([a-zA-Z_0-9]+)\}/g)].forEach((m) => nomes.add(m[1]));
+    else if (v && typeof v === 'object') Object.values(v).forEach(procurar);
+  };
+  (bot.BOT_ACTIONS || []).forEach((a) => procurar(a.ACTION_DATA));
+  (bot.BOT_CONDITIONS || []).forEach((c) => {
+    procurar(c.CONDITION_DATA?.value);
+    const v = c.CONDITION_DATA?.variable;
+    const daAutomacao = String(v).startsWith('automate_'); // automate_status/message/thread_id ficam em extra_data
+    if (v && (!(v in VARIABLE_KIND) || daAutomacao) && !String(v).startsWith('assistant_analysis') && !VARIAVEIS_DO_MOTOR.has(v)) nomes.add(v);
+  });
+  return [...nomes].filter((n) => !VARIAVEIS_DO_MOTOR.has(n.toLowerCase())).sort();
 }
