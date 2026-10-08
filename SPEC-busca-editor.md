@@ -15,13 +15,14 @@ Um painel **"Localizar"** encaixado à direita, fora do modal do editor. Ele abr
 
 ### Tipos de resultado
 
-O campo de busca fica no topo, acima dos filtros. A busca corre nos quatro tipos de uma vez e a lista vem completa, separada em um bloco por tipo, para nunca misturar o que o bot envia com o que o cliente digita. Cada filtro mostra ao lado a quantidade encontrada naquele tipo; clicar num filtro deixa só aquele bloco, clicar de novo volta para todos. Cada tipo tem cor e ícone próprios:
+O campo de busca fica no topo, acima dos filtros. A busca corre nos cinco tipos de uma vez e a lista vem completa, separada em um bloco por tipo, para nunca misturar o que o bot envia com o que o cliente digita. Cada filtro mostra ao lado a quantidade encontrada naquele tipo; clicar num filtro deixa só aquele bloco, clicar de novo volta para todos. Cada tipo tem cor e ícone próprios:
 
 | Tipo | Onde busca | Cor |
 |---|---|---|
 | **Textos enviados** | Mensagem (1), mensagem de áudio (20), forma de contato (21) e menus (cabeçalho, corpo, rodapé, botões, opções e descrições, botão da lista; JSON cru se o formato não for reconhecido) | roxo |
 | **Condições** | Valor das condições; o rótulo mostra variável e operador ("MENSAGEM Contém") | verde-azulado |
 | **Calendários** | Condições de calendário (variáveis calendario e calendario_falso), pelo nome do calendário no ambiente e pelo ID; sem o cadastro do ambiente só o ID. O resultado leva ao campo do calendário e o destaca, sem abrir a lista | azul |
+| **Scripts** | Ação Executar Script (tipo 7), pelo nome do script de integração no ambiente e pelo ID; sem o cadastro do ambiente só o ID. O resultado leva ao campo "Script" e o destaca, sem abrir a lista | rosa |
 | **Estados** | Nome dos estados | laranja |
 
 ### Busca

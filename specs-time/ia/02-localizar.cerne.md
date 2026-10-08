@@ -4,7 +4,7 @@ Spec completa: `../02-localizar.md`. Código: `js/busca.js`, estilos `.bs-*`. An
 
 ## Em uma frase
 
-Busca em **todo o bot de uma vez**, em quatro tipos separados (Textos enviados, Condições, Calendários, Estados), e **leva até o campo** com o termo selecionado. Só lê; nunca altera o bot.
+Busca em **todo o bot de uma vez**, em cinco tipos separados (Textos enviados, Condições, Calendários, Scripts, Estados), e **leva até o campo** com o termo selecionado. Só lê; nunca altera o bot.
 
 ## O que explica o desenho
 
