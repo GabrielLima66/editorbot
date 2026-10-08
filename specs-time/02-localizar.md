@@ -15,7 +15,7 @@ Serve, por exemplo, para trocar um horário, um telefone ou o nome da empresa; r
 ### Dentro do escopo
 
 - Painel de busca encaixado ao lado do editor.
-- Busca em quatro tipos de conteúdo, em blocos separados.
+- Busca em cinco tipos de conteúdo, em blocos separados.
 - Navegação entre resultados, com destaque e foco no campo.
 - Atualização ao vivo enquanto se edita.
 
@@ -34,20 +34,23 @@ Serve, por exemplo, para trocar um horário, um telefone ou o nome da empresa; r
 
 ---
 
-## 2. Os quatro tipos de resultado
+## 2. Os cinco tipos de resultado
 
-Ordem fixa dos blocos e dos filtros: **Textos enviados, Condições, Calendários, Estados**.
+Ordem fixa dos blocos e dos filtros: **Textos enviados, Condições, Calendários, Scripts, Estados**.
 
 | Id | Rótulo | Ícone (Lucide) | Cor | Onde busca |
 |---|---|---|---|---|
 | `textos` | Textos enviados | `message-square` | primária (roxo) | `message_text` da ação 1 (rótulo "Mensagem"); `message_content` da ação 20 ("Mensagem de áudio"); `message_text` da ação 21 ("Forma de contato"); e os textos do menu da ação 10 (seção 3) |
 | `condicoes` | Condições | `split` | `#0E9384` (verde-azulado) | `CONDITION_DATA.value` quando for **texto** (string) |
 | `calendarios` | Calendários | `calendar-clock` | `#2563EB` (azul) | condições das variáveis `calendario` e `calendario_falso` |
+| `scripts` | Scripts | `plug-zap` | `#DB2777` (rosa) | ação 7 "Executar Script" (`ACTION_DATA.script_name`); ver abaixo |
 | `estados` | Estados | `circle-dot` | `#D97706` (laranja) | `ALIAS` (nome) de cada estado |
+
+**Scripts:** o texto pesquisado é `"<nome> (ID <id>)"` (nome vindo de `opcoesScripts()`) ou `"ID <id>"` sem cadastro; `script_name` vazio não entra; o rótulo do resultado é "Executar Script"; alvo `{ tipo: 'script', id: <ID da ação> }`, elemento `[data-action-id=<ID>][data-campo="script_name"]`, chave `s:<ID da ação>:<n>`. Como o calendário, só leva e pisca: nunca é focado. Consequência: digitar "id" casa com todos os scripts. Teste: `tests/editor/busca-script.test.mjs`.
 
 Os `<campo>` possíveis em `a:<ID da ação>:<campo>` são só as chaves de `ACTION_DATA` que guardam texto de ações comuns: `message_text` (ações 1 e 21) e `message_content` (ação 20); o mesmo `<campo>` é o valor do atributo `data-campo` do elemento na tela. **O menu (ação 10) é outro caso:** a chave é `m:<ID da ação>:<rótulo do campo>` (cabeçalho, corpo, rodapé, botão da lista, título ou descrição de cada item) e o elemento de destino é o resumo do menu (`.menu-resumo`), que **não** tem `data-campo`.
 
-Dica (tooltip) de cada filtro: textos = "Mensagens e menus que o bot envia"; condições = "Valores que o cliente digita"; calendários = "Condições de calendário, pelo nome ou ID do calendário"; estados = "Nomes dos estados".
+Dica (tooltip) de cada filtro: textos = "Mensagens e menus que o bot envia"; condições = "Valores que o cliente digita"; calendários = "Condições de calendário, pelo nome ou ID do calendário"; scripts = "Ação Executar Script, pelo nome ou ID do script de integração"; estados = "Nomes dos estados".
 
 ---
 
@@ -181,14 +184,14 @@ Chaves (usadas para manter a posição ao refazer a busca):
 
 1. **Topo:** ícone de lupa, título "Localizar", botão X (dica "Fechar (Esc)").
 2. **Campo de busca** (`type="search"`, sem corretor ortográfico, sem autopreenchimento) e dois botões de opção: **Aa** (diferenciar maiúsculas e minúsculas) e **palavra inteira** (ícone `whole-word`). Ambos alternam `aria-pressed` e refazem a busca.
-3. **Filtros:** quatro botões (um por tipo) com o rótulo e a **quantidade** de resultados daquele tipo (vazia se não há termo). Clicar num filtro deixa só aquele tipo; clicar de novo volta a todos. O filtro marcado pinta o painel na cor do tipo. Quebra de linha permitida (os quatro podem ocupar duas linhas).
+3. **Filtros:** cinco botões (um por tipo) com o rótulo e a **quantidade** de resultados daquele tipo (vazia se não há termo). Clicar num filtro deixa só aquele tipo; clicar de novo volta a todos. O filtro marcado pinta o painel na cor do tipo. Quebra de linha permitida (os cinco podem ocupar duas linhas).
 4. **Navegação:** contador à esquerda, setas ▲ ▼ à direita.
 5. **Lista de resultados** (rolável).
 6. **Rodapé:** "Clique num resultado para editar o texto direto no campo."
 
 ### 7.4 A lista
 
-- **Sem termo:** com filtro, "<dica do tipo>. Digite para buscar."; sem filtro, "Digite para buscar em textos enviados, condições, calendários e nomes de estados."
+- **Sem termo:** com filtro, "<dica do tipo>. Digite para buscar."; sem filtro, "Digite para buscar em textos enviados, condições, calendários, scripts e nomes de estados."
 - **Termo sem resultado:** se há filtro e os **outros** têm resultados: "Nenhum resultado em <tipo>. Os outros filtros têm resultados."; senão "Nenhum resultado."
 - **Sem filtro (todos):** um **bloco por tipo** que tenha resultado: título com ícone, nome e quantidade, na cor do tipo.
 - **Dentro do bloco:** um grupo por estado, com cabeçalho `<número> <nome do estado ou "Sem nome"> <quantidade no bloco>`.

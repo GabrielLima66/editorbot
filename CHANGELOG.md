@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.20] - 2026-10-08
+* **Localizar acha scripts de integração**: um novo filtro "Scripts" busca nas ações "Executar Script" pelo nome do script (e pelo ID), sem diferenciar acento. Clicar no resultado abre o estado, rola até o campo "Script" e o destaca.
+
 ## [0.8.19] - 2026-10-07
 * **O teste aparece no editor**: o botão "Ver no editor" minimiza o teste num mini-chat no canto (sem cobrir o Salvar) e deixa o editor livre. Nele ficam marcados os estados por onde a conversa passou, o estado atual ("teste: aqui"), a transição que disparou e o resultado de cada condição (verde, vermelha ou laranja quando falta um dado). Na aba Detalhes, cada rodada e cada transição têm "Ver no editor", e clicar num estado da lista também leva até ele.
 * **Nomes no lugar de IDs**: o teste mostra o nome do calendário, da fila, do agente e do status (com o ID entre parênteses) nas perguntas, na aba Contexto e nos detalhes. Sem o cadastro do ambiente, continua o ID.
