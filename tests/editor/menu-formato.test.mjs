@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { js } from './apoio.mjs';
 
 const { atualizarMenuPreservando } = await js('menu-modal.js');
-const { buildMenuJson, quebrasWhatsapp, textoFiel } = await js('menu-builder.js');
+const { buildMenuJson, quebrasWhatsapp, textoFiel, tamanhoDoCorpo } = await js('menu-builder.js');
 
 // Menu de lista que funciona na Orpen (gerado por outra ferramenta).
 const FUNCIONA = {
@@ -85,6 +85,13 @@ test('quebrasWhatsapp e textoFiel', () => {
   assert.equal(textoFiel('a\r\nb', 'a\nb'), 'a\r\nb', 'só a quebra difere: mantém o original');
   assert.equal(textoFiel('a\nb', 'a\nc'), 'a\r\nc');
   assert.equal(textoFiel(undefined, 'x\ny'), 'x\r\ny');
+});
+
+test('tamanhoDoCorpo conta cada quebra de linha como 2 (\\r\\n gravado)', () => {
+  assert.equal(tamanhoDoCorpo('abc'), 3);
+  assert.equal(tamanhoDoCorpo('a\nb'), 4);
+  assert.equal(tamanhoDoCorpo('a\r\nb'), 4, 'texto que já veio com \\r\\n não conta em dobro');
+  assert.equal(tamanhoDoCorpo('x\n'.repeat(600)), 1800);
 });
 
 test('WebChat não muda: lista de opções simples', () => {

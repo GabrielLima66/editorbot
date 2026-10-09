@@ -23,6 +23,7 @@ import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento
 import {
   parseMenuModel,
   quebrasWhatsapp,
+  tamanhoDoCorpo,
   textoFiel,
   TITULO_SECAO_PADRAO,
   defaultMenuModel,
@@ -220,7 +221,7 @@ function bolhaWhatsapp(m, extra) {
       <input type="text" class="mm-header" ${campo('header', m.header, `maxlength="${LIMITE.header}" placeholder="Cabeçalho (opcional)" aria-label="Cabeçalho"`)}>
       <textarea class="mm-body" data-caminho="body" rows="4" maxlength="${LIMITE.body}" placeholder="Mensagem que o cliente vai receber" aria-label="Mensagem">${escapeHtml(m.body)}</textarea>
       <input type="text" class="mm-footer" ${campo('footer', m.footer, `maxlength="${LIMITE.footer}" placeholder="Rodapé (opcional)" aria-label="Rodapé"`)}>
-      <div class="mm-bolha-meta"><span class="mm-contador">${m.body.length}/${LIMITE.body}</span><span>08:00</span></div>
+      <div class="mm-bolha-meta"><span class="mm-contador">${tamanhoDoCorpo(m.body)}/${LIMITE.body}</span><span>08:00</span></div>
       ${extra || ''}
     </div>`;
 }
@@ -300,6 +301,8 @@ function avisosDoModelo(m) {
     return lista;
   }
   if (!m.body.trim()) lista.push('A mensagem (corpo) é obrigatória no WhatsApp.');
+  // O campo conta cada quebra de linha como 1, mas o texto é gravado com \r\n (2): o limite pode estourar sem o campo barrar.
+  if (tamanhoDoCorpo(m.body) > LIMITE.body) lista.push(`A mensagem passa de ${LIMITE.body} caracteres (cada quebra de linha conta 2). Reduza o texto, senão o WhatsApp pode recusar o menu.`);
   if (m.kind === 'whatsapp_button') {
     if (m.buttons.some((b) => !b.title.trim())) lista.push('Há botão sem texto.');
     if (repetidos(m.buttons.map((b) => idFinal(b.id, b.title)))) lista.push('Há IDs repetidos entre os botões.');
@@ -411,7 +414,7 @@ export function abrirModalMenu(transitionId, actionId) {
 
   const atualizarAvisos = () => {
     const contador = $m('.mm-contador');
-    if (contador && modelo.kind !== 'webchat') contador.textContent = `${modelo.body.length}/${LIMITE.body}`;
+    if (contador && modelo.kind !== 'webchat') contador.textContent = `${tamanhoDoCorpo(modelo.body)}/${LIMITE.body}`;
     const avisos = avisosDoModelo(modelo).map((a) => `<p>${escapeHtml(a)}</p>`);
     if (modelo.kind === 'webchat' && !vaiUsarMensagemExistente() && textoWebchat.trim()) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, este texto vira uma ação "Mensagem" logo antes do menu (é assim que o WebChat funciona).</p>`);
     if (vaiAbsorver()) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, a ação "Mensagem" anterior vira a mensagem deste menu e é removida.</p>`);

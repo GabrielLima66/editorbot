@@ -127,6 +127,11 @@ export function quebrasWhatsapp(texto) {
   return String(texto ?? '').replace(/\r?\n/g, '\r\n');
 }
 
+/** Tamanho do texto como vai gravado: cada quebra de linha é \r\n (2 caracteres), não \n. */
+export function tamanhoDoCorpo(texto) {
+  return quebrasWhatsapp(texto).length;
+}
+
 /** Mantém o texto original (com o seu estilo de quebra) se só a quebra de linha mudou; senão, \r\n. */
 export function textoFiel(antigo, novo) {
   const lf = (s) => String(s ?? '').replace(/\r\n/g, '\n');

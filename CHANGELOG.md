@@ -1,7 +1,7 @@
 # Histórico de Versões (Changelog)
 
 ## [0.8.24] - 2026-10-09
-* **Menus novos saem no formato que a Orpen aceita**: o menu criado ou convertido pela extensão passa a ser gravado como o do modal nativo e de outras ferramentas: `header` e `footer` sempre presentes (mesmo vazios), quebras de linha do texto como `\r\n` e, na lista, o título da seção (`Opções` quando vazio). Antes, `header`, `footer` e o título de seção eram omitidos e a quebra saía como `\n`. Menus que já existem continuam exatamente como estavam: a extensão só reescreve o texto que você editar.
+* **Menus novos saem no formato que a Orpen aceita**: o menu criado ou convertido pela extensão passa a ser gravado como o do modal nativo e de outras ferramentas: `header` e `footer` sempre presentes (mesmo vazios), quebras de linha do texto como `\r\n` e, na lista, o título da seção (`Opções` quando vazio). Antes, `header`, `footer` e o título de seção eram omitidos e a quebra saía como `\n`. Menus que já existem continuam exatamente como estavam: a extensão só reescreve o texto que você editar. O contador de 1024 caracteres do corpo agora conta cada quebra de linha como 2 e o menu avisa quando o texto passa do limite.
 
 ## [0.8.23] - 2026-10-09
 * **Testar bot respeita as quebras de linha do menu**: o cabeçalho, o corpo e o rodapé do menu apareciam numa linha só, juntando "1 - Vendas" e "2 - Suporte". Agora as quebras de linha (e as linhas em branco) aparecem como o cliente as vê.
