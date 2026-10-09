@@ -1615,6 +1615,8 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .tb-menu-cab { font-weight: 700; margin-bottom: 4px; }
 .tb-menu-rodape { margin-top: 4px; font-size: 12px; color: var(--text-muted); }
 .tb-menu-lista { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--accent); }
+/* Cabeçalho, corpo e rodapé do menu vêm com quebras de linha (\n) no JSON: sem isso o HTML as junta numa linha só. */
+.tb-menu-cab, .tb-menu-corpo, .tb-menu-rodape, .tb-chip small { white-space: pre-wrap; }
 .tb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .tb-chip { padding: 6px 12px; font-size: 13px; font-weight: 600; text-align: left; color: var(--accent); background: transparent; border: 1px solid var(--fx-acento-borda); border-radius: 8px; cursor: pointer; }
 .tb-chip:hover { background: var(--fx-acento-hover-bg); border-color: var(--accent); }

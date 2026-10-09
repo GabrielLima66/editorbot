@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.23] - 2026-10-09
+* **Testar bot respeita as quebras de linha do menu**: o cabeçalho, o corpo e o rodapé do menu apareciam numa linha só, juntando "1 - Vendas" e "2 - Suporte". Agora as quebras de linha (e as linhas em branco) aparecem como o cliente as vê.
+
 ## [0.8.22] - 2026-10-09
 * **Analisar bot não acusa mais apelidos de menu**: uma condição como "Igual a" com as linhas `2` e `comercial` aceita tanto o toque na opção (ID `2`) quanto o texto digitado. Antes, a análise apontava `comercial` como erro mesmo com o ID já tratado; agora só avisa quando a opção realmente não tem tratamento.
 
