@@ -41,6 +41,12 @@ Janela com um **celular simulado** à direita (pré-visualização ao vivo) e o 
 
 No JSON, `interactive.type` diferente de `"button"` é tratado como lista. A pré-visualização (celular) mostra "Pré-visualização do WhatsApp" ou "do WebChat".
 
+### 3.0 Formato gravado (WhatsApp)
+
+O JSON de um menu **novo** (ou de outro tipo, convertido) sai no mesmo formato dos menus que a Orpen aceita (o do modal nativo e de outras ferramentas): `header` (`{"type":"text","text":""}`) e `footer` (`{"text":""}`) **sempre presentes**, mesmo vazios; as quebras de linha dos textos como **`\r\n`**; e, na lista, o **título da seção** (`"Opções"` quando vazio). A chave `description` só existe na linha que a preenche.
+
+Um menu que **já existe** é preservado: não ganha `header`/`footer` que não tinha, mantém o título de seção e o estilo de quebra de linha (`\n` ou `\r\n`) de um texto que não foi editado. Texto editado vira `\r\n`. O WebChat não muda.
+
 ### 3.1 Limites do WhatsApp (contadores na tela)
 cabeçalho 60 · corpo 1024 · rodapé 60 · título do botão 20 · ID do botão 256 · botão da lista 20 · título da linha 24 · descrição da linha 72 · ID da linha 200 caracteres. O valor das opções do WebChat também aceita no máximo 256. Os limites são aplicados com `maxlength` do campo (a digitação para no limite); o contador "n/1024" aparece no corpo.
 

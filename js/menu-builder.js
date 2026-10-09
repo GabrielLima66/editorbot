@@ -118,16 +118,31 @@ export function mensagemPerdidaWebchat(model) {
   return [model.header, model.body, model.footer].filter(Boolean).join('\n\n');
 }
 
+// Formato dos menus que a Orpen aceita (o mesmo do modal nativo e de outras ferramentas): header e footer
+// sempre presentes (mesmo vazios), quebra de linha do texto como \r\n, e a lista com título de seção.
+export const TITULO_SECAO_PADRAO = 'Opções';
+
+/** Quebras de linha como \r\n (o texto vem de uma textarea, que entrega \n). */
+export function quebrasWhatsapp(texto) {
+  return String(texto ?? '').replace(/\r?\n/g, '\r\n');
+}
+
+/** Mantém o texto original (com o seu estilo de quebra) se só a quebra de linha mudou; senão, \r\n. */
+export function textoFiel(antigo, novo) {
+  const lf = (s) => String(s ?? '').replace(/\r\n/g, '\n');
+  return typeof antigo === 'string' && lf(antigo) === lf(novo) ? antigo : quebrasWhatsapp(novo);
+}
+
 export function buildMenuJson(model) {
   if (model.kind === 'whatsapp_list') {
     const interactive = { type: 'list' };
-    if (model.header) interactive.header = { type: 'text', text: model.header };
-    interactive.body = { text: model.body || '' };
-    if (model.footer) interactive.footer = { text: model.footer };
+    interactive.header = { type: 'text', text: quebrasWhatsapp(model.header) };
+    interactive.body = { text: quebrasWhatsapp(model.body) };
+    interactive.footer = { text: quebrasWhatsapp(model.footer) };
     interactive.action = {
       button: model.button || '',
       sections: model.sections.map(s => ({
-        title: s.title || '',
+        title: s.title || TITULO_SECAO_PADRAO,
         rows: s.rows.map(r => Object.assign({ id: r.id || '', title: r.title || '' }, r.description ? { description: r.description } : {})),
       })),
     };
@@ -135,9 +150,9 @@ export function buildMenuJson(model) {
   }
   if (model.kind === 'whatsapp_button') {
     const interactive = { type: 'button' };
-    if (model.header) interactive.header = { type: 'text', text: model.header };
-    interactive.body = { text: model.body || '' };
-    if (model.footer) interactive.footer = { text: model.footer };
+    interactive.header = { type: 'text', text: quebrasWhatsapp(model.header) };
+    interactive.body = { text: quebrasWhatsapp(model.body) };
+    interactive.footer = { text: quebrasWhatsapp(model.footer) };
     interactive.action = { buttons: model.buttons.map(b => ({ type: 'reply', reply: { id: b.id || '', title: b.title || '' } })) };
     return JSON.stringify({ interactive }, null, 2);
   }
