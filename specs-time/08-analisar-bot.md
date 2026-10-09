@@ -71,7 +71,7 @@ O tratamento de um menu fica no estado **onde o bot espera a resposta**: o desti
 | Regra | Sev. | O que acusa |
 |---|---|---|
 | M01 | aviso | Opções do menu sem nenhuma transição que as trate (Igual a / Contém, com a semântica do motor). Lista as opções, diz se a resposta cai numa transição genérica que não sai do estado e **o que o estado espera** (para achar o ID trocado). Uma transição genérica que **segue em frente** (troca de estado, transfere) repassa qualquer resposta e não conta como falta. Valor com `{$variável}` ou operador que depende do conteúdo (É número...) torna a opção indecidível: sem achado. |
-| M02 | erro / info | Condição que espera outra grafia de uma opção: a **posição** (`1` em vez de `opt_vendas`), o **título** (`Vendas` em vez de `vendas`) ou o ID com outra caixa, acento ou pontuação. O texto diz que **tocar** na opção não dispara a transição (se o cliente digitar o valor à mão, dispara). Vira `info` se a opção já tem outro tratamento. Valor sem relação com o menu (`voltar`, `atendente`) **não gera achado**. |
+| M02 | erro / info | Condição que espera outra grafia de uma opção: a **posição** (`1` em vez de `opt_vendas`), o **título** (`Vendas` em vez de `vendas`) ou o ID com outra caixa, acento ou pontuação. O texto diz que **tocar** na opção não dispara a transição (se o cliente digitar o valor à mão, dispara). **Não acusa** quando a opção já tem tratador (na mesma condição, em outra linha do valor, ou em outra transição): `2` e `comercial` juntos num "Igual a" é um apelido para quem digita. Valor sem relação com o menu (`voltar`, `atendente`) também **não gera achado**. |
 | M03 | erro | Transição que casa qualquer mensagem e tem prioridade melhor que a transição que trata a opção: o tratamento nunca executa. |
 | M04 | aviso / info | Problema nas opções: sem opções, ID vazio, ID repetido, ID `"0"`, ID com `& < > "`, ID maior que o limite (botão 256, linha 200), mais de 3 botões ou 10 linhas. Formato não reconhecido é `info`, e isso inclui mensagem interativa que não é lista nem botões (`cta_url`, produto etc.). |
 
@@ -108,7 +108,7 @@ Condição e ação de tipo 0 não são gravadas pelo servidor: a análise as ig
 4. Estados 0 e 1 se chamando por transições sem condição → L02 com o caminho `0 → 1 → 0`. Se uma das transições espera `message`, não acusa.
 5. Menu com IDs `vendas` e `suporte` e só uma transição `message Igual a vendas` → M01 listando `suporte` e dizendo o que o estado espera.
 6. Menu com IDs `opt_1`, `opt_2` e condições `message Igual a 1` e `2` → M02 (erro) para cada uma, sugerindo o ID certo; o menu continua com M01.
-7. Condição `message Igual a Vendas` com opção de título `Vendas` e ID `vendas` → M02 apontando que difere só na caixa.
+7. Condição `message Igual a Vendas` com opção de título `Vendas` e ID `vendas` → M02 apontando que difere só na caixa. Condição `Igual a` com as linhas `2` e `comercial` e opção de ID `2` e título `Comercial` → **sem** achado (apelido).
 8. Transição `message Contém ""` de prioridade 1 e as de opção nas prioridades 2 e 3 → M03 (erro) em cada uma, e **sem** M01 duplicado.
 9. Estado cuja transição genérica troca para outro estado → as opções do menu **não** são acusadas.
 10. Menu que leva a um estado roteador com transição condicional (calendário) → sem achado de menu.

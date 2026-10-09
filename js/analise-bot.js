@@ -633,12 +633,14 @@ function analisarMenus(bot, idx, rel) {
           const porPosicao = LITERAL.test(linha) ? grupo.map((m) => m.itens[inteiro(linha) - 1]).find((it) => it && str(it.id) !== '') : null;
           const alvo = porGrafia || porTitulo || (porPosicao && todasOpcoes.find((o) => o.id === porPosicao.id)) || null;
           if (!alvo) return;
+          // Opção que já tem tratador (nesta mesma transição, em outra linha do valor, ou em outra) e uma linha com
+          // o título ou a posição: é um apelido para quem digita ("2" e "comercial" juntos), não um erro.
+          if (tratadas.has(alvo.chave)) return;
           const base = { regra: 'M02', estadoNumero: destino, transicaoId: x.t.ID };
           const causa = alvo === porGrafia ? 'só difere em maiúsculas/minúsculas, acento, espaço ou pontuação' : alvo === porTitulo ? 'é o título da opção, mas o cliente envia o ID' : 'é a posição da opção, mas o cliente envia o ID';
-          const jaTratada = tratadas.has(alvo.chave);
-          rel.add({ ...base, severidade: jaTratada ? 'info' : 'erro', confianca: jaTratada ? 'possivel' : 'certa',
+          rel.add({ ...base, severidade: 'erro', confianca: 'certa',
             titulo: `Condição espera "${linha}", mas o ID da opção é "${alvo.id}"`,
-            detalhe: `A condição ${tipo === '1' ? 'Igual a' : 'Contém'} "${linha}" ${causa}. O menu envia "${alvo.id}" quando o cliente escolhe "${alvo.title || alvo.id}", então tocar na opção não dispara esta transição (só digitar "${linha}" à mão).${jaTratada ? ' A opção já tem outro tratamento.' : ''}`,
+            detalhe: `A condição ${tipo === '1' ? 'Igual a' : 'Contém'} "${linha}" ${causa}. O menu envia "${alvo.id}" quando o cliente escolhe "${alvo.title || alvo.id}", então tocar na opção não dispara esta transição (só digitar "${linha}" à mão).`,
             sugestao: `Troque o valor da condição por "${alvo.id}".` });
         });
       });

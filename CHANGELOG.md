@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.22] - 2026-10-09
+* **Analisar bot não acusa mais apelidos de menu**: uma condição como "Igual a" com as linhas `2` e `comercial` aceita tanto o toque na opção (ID `2`) quanto o texto digitado. Antes, a análise apontava `comercial` como erro mesmo com o ID já tratado; agora só avisa quando a opção realmente não tem tratamento.
+
 ## [0.8.21] - 2026-10-09
 * **Analisar bot**: um novo botão (escudo) no cabeçalho do editor abre um painel com os pontos soltos do bot, sem executar nada: destino de "Troca Estado" que não existe, estado sem transições ou sem saída, transição que repete a mensagem sem esperar o cliente (e ciclos entre estados), opção de menu sem tratamento, condição que espera outro valor que não o ID do menu (a posição, o título ou outra grafia) e transição que nunca executa. Cada ponto explica o motivo e como resolver, e clicar leva até o estado, a transição ou a ação. A lista se atualiza enquanto você edita. O que depende de dados que a análise não vê (calendário, fila, variáveis) aparece como "possível" ou informativo, e nunca como erro.
 
