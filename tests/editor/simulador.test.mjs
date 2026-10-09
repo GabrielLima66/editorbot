@@ -1,23 +1,12 @@
 // Simulador do motor de bots (js/simulador.js): regras copiadas de Bot.class.php.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { botsDeExemplo, js } from './apoio.mjs';
+import { botsDeExemplo, botSintetico, js } from './apoio.mjs';
 
 const S = await js('simulador.js');
 const { criarSessao, enviarMensagem, continuar, definirExterna, responderCallback, simularTimeout, requisitosDeContexto, LIMITE_RODADAS } = S;
 
-// ---- construtor de bots de teste
-let seq = 100;
-function bot({ estados = ['0'], transicoes = [], timeout = {} } = {}) {
-  const b = { BOT_STATES: estados.map((n, i) => ({ ID: String(i + 1), STATE_NUMBER: String(n), ALIAS: `E${n}` })), BOT_TRANSITIONS: [], BOT_CONDITIONS: [], BOT_ACTIONS: [], ...timeout };
-  transicoes.forEach(([estado, prioridade, condicoes = [], acoes = []]) => {
-    const tid = String(++seq);
-    b.BOT_TRANSITIONS.push({ ID: tid, STATE: String(estado), PRIORITY: String(prioridade) });
-    condicoes.forEach((c) => b.BOT_CONDITIONS.push({ ID: String(++seq), TRANSITION_ID: tid, CONDITION_TYPE: String(c[1]), CONDITION_DATA: { variable: c[0], value: c[2] ?? '', ...(c[3] || {}) } }));
-    acoes.forEach((a) => b.BOT_ACTIONS.push({ ID: String(++seq), TRANSITION_ID: tid, ACTION_TYPE: String(a[0]), ACTION_DATA: a[1] || {} }));
-  });
-  return b;
-}
+const bot = botSintetico;
 const msg = (texto) => ['1', { message_text: texto }];
 const troca = (n) => ['2', { destiny: String(n) }];
 const textos = (sessao) => sessao.eventos.filter((e) => e.tipo === 'bot' && e.subtipo === 'texto').map((e) => e.texto);

@@ -446,6 +446,7 @@ export function abrirBusca() {
   montarPainel();
   const p = painel();
   if (!p) return;
+  document.dispatchEvent(new CustomEvent('editor:painel-aberto', { detail: 'busca' })); // fecha o Analisar (mesmo encaixe)
   busca.aberta = true;
   p.classList.remove('hidden');
   $r('#bot-view-overlay')?.classList.add('busca-aberta');
@@ -477,6 +478,8 @@ export function initBusca() {
     fechar.insertAdjacentHTML('beforebegin', `<button id="btn-bv-buscar" type="button" class="bv-btn-busca" title="Localizar (Ctrl+F)" aria-label="Localizar (Ctrl+F)" aria-pressed="false"><i data-lucide="search"></i></button>`);
     $r('#btn-bv-buscar').addEventListener('click', () => (busca.aberta ? fecharBusca() : abrirBusca()));
   }
+
+  document.addEventListener('editor:painel-aberto', (e) => { if (e.detail !== 'busca' && busca.aberta) fecharBusca(); });
 
   document.addEventListener('keydown', (e) => {
     if (!visivel()) return;

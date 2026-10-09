@@ -1146,9 +1146,11 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 }
 #bot-view-overlay .bv-header .bv-btn-busca + .bv-btn-tema,
 #bot-view-overlay .bv-header .bv-btn-tema + .bv-btn-busca,
-#bot-view-overlay .bv-header .bv-btn-busca + #btn-fechar-bot-view { margin-left: 0; }
+#bot-view-overlay .bv-header .bv-btn-busca + #btn-fechar-bot-view,
+#bot-view-overlay .bv-header .bv-btn-busca + .bv-btn-busca { margin-left: 0; }
 
-#bot-view-overlay.busca-aberta .bv-panel {
+#bot-view-overlay.busca-aberta .bv-panel,
+#bot-view-overlay.analise-aberta .bv-panel {
   width: calc((96vw - 404px) / 1.15) !important;
   margin-right: calc(404px / 1.15) !important;
 }
@@ -1221,6 +1223,49 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .bs-abrir-menu:hover { color: var(--bs-cor); background: var(--obd-surface); }
 .bs-abrir-menu svg { width: 13px; height: 13px; }
 .bs-dica { margin: 0; padding: 8px 14px 10px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--obd-border); }
+
+/* ---- Analisar bot (js/analise.js) ----
+   Reaproveita o painel do Localizar (.bs-painel/.bs-topo/.bs-lista): mesmo encaixe à
+   direita, px. Só tokens de cor. A contagem no botão fica em --danger quando há erro. */
+#bot-view-overlay .bv-btn-analisar[data-gravidade="erro"][data-qtd]:not([data-qtd=""])::after { background: var(--danger); }
+#bot-view-overlay .bv-btn-analisar[data-gravidade="aviso"][data-qtd]:not([data-qtd=""])::after { background: var(--warn); }
+.an-painel { --an-erro: var(--danger); --an-aviso: var(--warn); --an-info: var(--text-muted); }
+.an-chips { display: flex; gap: 4px; margin: 12px 14px; padding: 3px; background: var(--mb-switch-bg); border: 1px solid var(--mb-borda); border-radius: 9px; }
+.an-chip { flex: 1 1 0; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 4px; font-size: 12px; font-weight: 600; color: var(--mb-texto-fraco); background: transparent; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.an-chip:disabled { opacity: 0.45; cursor: default; }
+.an-chip svg { width: 13px; height: 13px; }
+.an-chip[data-sev="erro"] svg { color: var(--an-erro); }
+.an-chip[data-sev="aviso"] svg { color: var(--an-aviso); }
+.an-chip-qtd { min-width: 18px; padding: 0 5px; border-radius: 9999px; font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; color: var(--text); background: var(--obd-surface); }
+.an-chip[aria-pressed="true"] { color: var(--text); background: var(--obd-panel); box-shadow: 0 0 0 1px var(--obd-border); }
+
+.an-bloco-titulo { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 6px; margin: 0 -8px; padding: 9px 14px 7px; font-size: 12px; font-weight: 700; color: var(--text); background: var(--obd-panel); border-bottom: 1px solid var(--obd-border); }
+.an-bloco + .an-bloco .an-bloco-titulo { margin-top: 10px; border-top: 1px solid var(--obd-border); }
+.an-bloco-titulo svg { width: 14px; height: 14px; }
+.an-bloco[data-sev="erro"] .an-bloco-titulo svg { color: var(--an-erro); }
+.an-bloco[data-sev="aviso"] .an-bloco-titulo svg { color: var(--an-aviso); }
+.an-bloco-qtd { min-width: 18px; padding: 0 5px; border-radius: 9999px; font-size: 11px; line-height: 16px; text-align: center; color: var(--text); background: var(--obd-surface); }
+.an-recolher { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--accent); background: transparent; cursor: pointer; }
+.an-recolher:hover { text-decoration: underline; }
+.an-bloco ol { list-style: none; margin: 0; padding: 4px 0 0; }
+.an-item { border-radius: 8px; border-left: 3px solid transparent; }
+.an-item[data-sev="erro"] { --an-cor: var(--an-erro); }
+.an-item[data-sev="aviso"] { --an-cor: var(--an-aviso); }
+.an-item[data-sev="info"] { --an-cor: var(--an-info); }
+.an-item:hover, .an-item-atual { background: var(--hover-bg); }
+.an-item-atual { border-left-color: var(--an-cor); }
+.an-item-ir { width: 100%; display: flex; flex-direction: column; gap: 3px; padding: 7px 8px; text-align: left; background: transparent; color: inherit; cursor: pointer; }
+.an-item-topo { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.an-regra { flex: none; font-size: 10px; font-weight: 700; letter-spacing: 0.02em; padding: 0 5px; border-radius: 5px; color: var(--an-cor); border: 1px solid var(--an-cor); }
+.an-item-onde { min-width: 0; font-size: 11px; font-weight: 600; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-tag { flex: none; margin-left: auto; font-size: 10px; font-weight: 600; padding: 0 6px; border-radius: 9999px; color: var(--text-muted); background: var(--obd-surface); }
+.an-item-titulo { font-size: 12.5px; font-weight: 600; line-height: 1.4; color: var(--text); overflow-wrap: anywhere; }
+.an-detalhe { padding: 0 8px 9px 8px; font-size: 12px; line-height: 1.5; color: var(--text-muted); overflow-wrap: anywhere; }
+.an-detalhe p { margin: 0 0 6px; }
+.an-sugestao b { color: var(--text); }
+.an-tudo-certo { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 28px 18px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.an-tudo-certo svg { width: 28px; height: 28px; color: var(--accent); }
+.an-tudo-certo p { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
 
 /* Destaque do campo encontrado (pisca e some). */
 @keyframes bs-pisca { 0%, 60% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
@@ -1639,7 +1684,8 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .tb-overlay:not(.minimizado) .tb-amp { display: none; }
 .tb-overlay.minimizado .tb-alterado { font-size: 10px; padding: 1px 8px; }
 /* 4) com o Localizar aberto (à direita), o mini-chat passa para a esquerda */
-#bot-view-overlay.busca-aberta .tb-overlay.minimizado { justify-content: flex-start; }
+#bot-view-overlay.busca-aberta .tb-overlay.minimizado,
+#bot-view-overlay.analise-aberta .tb-overlay.minimizado { justify-content: flex-start; }
 .tb-ver { margin-left: 8px; padding: 1px 8px; font-size: 11px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--fx-acento-borda); border-radius: 9999px; cursor: pointer; }
 .tb-ver:hover { background: var(--fx-acento-hover-bg); }
 .tb-estado { cursor: pointer; }

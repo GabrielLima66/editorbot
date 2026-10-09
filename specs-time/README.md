@@ -22,6 +22,7 @@ Estas specs descrevem **o que cada feature faz**, com precisão suficiente para 
 | 05 | `05-menu-acao-10.md` | Menu da ação 10 (botões, lista, WebChat, tratamento) | geral | pronta |
 | 06 | `06-importar-transformar-json.md` | Importar e transformar JSON (página avulsa) | geral | pronta |
 | 07 | `07-atualizacao-novidades.md` | Aviso de versão nova e "Novidades" | geral | pronta |
+| 08 | `08-analisar-bot.md` | Analisar bot (pontos soltos: destinos, loops, menus sem tratamento) | **detalhada** | pronta |
 
 ## Versão para IA
 

@@ -26,6 +26,7 @@ Existe uma camada já pronta que **abre o bot, deixa editar, salva na Orpen e in
 | 05 | Menu da ação 10 (botões, lista, WebChat) e gerar tratamento | Geral | Menu e "Gerar tratamento" implementados; **"manter em dia" (seção 7) NÃO existe** |
 | 06 | Importar, criar e transformar JSON (página avulsa) | Geral | Implementada |
 | 07 | Aviso de versão nova, atualização e "Novidades" | Geral | Implementada |
+| 08 | Analisar bot (destinos, loops e menus sem tratamento) | **Detalhada**, com catálogo de regras | Implementada |
 
 As **detalhadas** (01, 02, 03) fogem do padrão do sistema, então estão escritas com tabelas, números exatos e casos de teste. As **gerais** descrevem comportamento e limites; o time detalha a interface a partir delas.
 
