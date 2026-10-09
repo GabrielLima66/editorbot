@@ -315,13 +315,23 @@ test('M02: condição espera a posição, o título ou outra caixa em vez do ID 
   assert.match(achados(porCaixa, 'M02')[0].detalhe, /maiúsculas/);
 });
 
-test('M02: valor sem relação com o menu (texto livre, "voltar") não gera achado; grafia com acento/pontuação gera; opção já tratada rebaixa', () => {
+test('M02: valor sem relação com o menu (texto livre, "voltar") não gera achado; grafia com acento/pontuação gera', () => {
   const livre = menuComTratamento(botoes(['a', 'A']), [[1, [quando('a')]], [2, [quando('voltar')]], [3, [quando('Atendente\nATENDENTE')]]]);
   assert.equal(achados(livre, 'M02').length, 0);
   const grafia = menuComTratamento(botoes(['Opção_1', 'Primeira']), [[1, [quando('opcao 1')]]]);
   assert.equal(achados(grafia, 'M02')[0].severidade, 'erro');
-  const jaTratada = menuComTratamento(botoes(['a', 'Alfa']), [[1, [quando('a')]], [2, [quando('Alfa')]]]);
-  assert.equal(achados(jaTratada, 'M02')[0].severidade, 'info');
+});
+
+test('M02: apelido para quem digita não é erro quando a opção já é tratada (mesma linha do valor ou outra transição)', () => {
+  // "2" e "comercial" no mesmo Igual a: aceita o toque (ID 2) e o texto digitado
+  const mesmaCondicao = menuComTratamento(botoes(['2', 'Comercial'], ['3', 'Suporte']), [[1, [quando('2\ncomercial')]], [2, [quando('3')]]]);
+  assert.equal(achados(mesmaCondicao, 'M02').length, 0);
+  // apelido em outra transição, com o ID já tratado
+  const outraTransicao = menuComTratamento(botoes(['a', 'Alfa']), [[1, [quando('a')]], [2, [quando('Alfa')]]]);
+  assert.equal(achados(outraTransicao, 'M02').length, 0);
+  // sem tratador do ID, o título sozinho continua sendo erro
+  const soTitulo = menuComTratamento(botoes(['a', 'Alfa']), [[1, [quando('Alfa')]]]);
+  assert.equal(achados(soTitulo, 'M02')[0].severidade, 'erro');
 });
 
 test('M02: valor só de pontuação não casa com título só de emoji', () => {

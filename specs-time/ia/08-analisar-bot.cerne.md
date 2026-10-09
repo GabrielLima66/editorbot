@@ -67,7 +67,7 @@ M*:  espera = estadoDeEspera(destino do menu)   // segue automática certa; cond
 - **Script (ação 7) pode mover a conversa** (`UPDATE bot_state` direto, padrão Guarida): a transição com script conta como destino dinâmico (silencia E03, rebaixa L01 para aviso possível).
 - **Estado 0 sem saída ≠ bot inteiro solto**: a entrada pode não ser o 0, então E04 não é emitido e o E02 do 0 é possível.
 - L01 só fala em reenvio/timeout quando a transição **envia**; sem ações é `info` ("transição inacabada").
-- M02 diz que **tocar** na opção não dispara a transição; digitar o valor à mão dispara.
+- M02 diz que **tocar** na opção não dispara a transição; digitar o valor à mão dispara. Mas **não acusa** quando a opção já tem tratador: "2\ncomercial" no mesmo Igual a é apelido para quem digita.
 - `parseMenuModel` chama de lista todo `interactive` que não é botão: `cta_url`, produto etc. viram `unknown` em `modeloDoMenu`.
 - `T03`/desempate: o simulador usa o ID; o motor não define. Não afirme ordem entre prioridades iguais.
 - `fallback_state` da ação 18 é ignorado pelo motor: não gere aresta nem E01 a partir dele.
