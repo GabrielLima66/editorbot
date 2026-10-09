@@ -125,3 +125,17 @@ export function servidorOrpen(body, perder) {
   if (perder) perder(getBot);
   return getBot;
 }
+
+// ---- bot sintético para testes
+// transicoes: [estado, prioridade, [[variavel, tipo, valor, extraDoCONDITION_DATA]], [[tipoAcao, ACTION_DATA]]]
+let seq = 100;
+export function botSintetico({ estados = ['0'], transicoes = [], timeout = {} } = {}) {
+  const b = { BOT_STATES: estados.map((n, i) => ({ ID: String(i + 1), STATE_NUMBER: String(n), ALIAS: `E${n}` })), BOT_TRANSITIONS: [], BOT_CONDITIONS: [], BOT_ACTIONS: [], ...timeout };
+  transicoes.forEach(([estado, prioridade, condicoes = [], acoes = []]) => {
+    const tid = String(++seq);
+    b.BOT_TRANSITIONS.push({ ID: tid, STATE: String(estado), PRIORITY: String(prioridade) });
+    condicoes.forEach((c) => b.BOT_CONDITIONS.push({ ID: String(++seq), TRANSITION_ID: tid, CONDITION_TYPE: String(c[1]), CONDITION_DATA: { variable: c[0], value: c[2] ?? '', ...(c[3] || {}) } }));
+    acoes.forEach((x) => b.BOT_ACTIONS.push({ ID: String(++seq), TRANSITION_ID: tid, ACTION_TYPE: String(x[0]), ACTION_DATA: x[1] || {} }));
+  });
+  return b;
+}

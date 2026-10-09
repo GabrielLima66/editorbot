@@ -22,6 +22,7 @@ import { initVariaveisBuilders } from './variaveis-builder.js';
 import { abrirModalMenu } from './menu-modal.js';
 import { abrirModalTratamento } from './menu-tratamento.js';
 import { initBusca } from './busca.js';
+import { initAnalise } from './analise.js';
 import { initCopiarColar } from './copiar-colar.js';
 import { initTesteBot } from './teste-bot.js';
 import { initCombobox, datalistDe } from './combobox.js';
@@ -1595,6 +1596,7 @@ export function initBotViewWiring() {
   initCopiarColar();
   initBusca();
   initTesteBot();
+  initAnalise();
   // Lista de sugestões própria em todos os campos de busca (combobox.js).
   initCombobox($('#bot-view-overlay'));
   // Botão direito ou {$ nas caixas de texto insere variável (variaveis-texto.js).

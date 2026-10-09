@@ -37,3 +37,4 @@ Esta pasta `ia/` tem, para cada feature, um **resumo do cerne**: a ideia central
 | `05-menu-acao-10.cerne.md` | Edição fiel do menu, gerador de tratamento (e o que NÃO existe). |
 | `06-importar-transformar-json.cerne.md` | Página avulsa, bot em branco, transformação. |
 | `07-atualizacao-novidades.cerne.md` | Aviso de versão, atualizador, Novidades. |
+| `08-analisar-bot.cerne.md` | Análise estática do bot: regras, menus, loops, falsos positivos. |

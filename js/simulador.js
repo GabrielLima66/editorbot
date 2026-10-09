@@ -59,9 +59,9 @@ const porPrioridade = (a, b) => (parseInt(a.PRIORITY, 10) || 0) - (parseInt(b.PR
 export const escaparHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const decodificarHtml = (s) => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&amp;/g, '&');
 const tirarTags = (s) => String(s).replace(/<[^>]*>/g, '');
-const maiusculaAscii = (s) => String(s).replace(/[a-z]/g, (c) => c.toUpperCase());
+export const maiusculaAscii = (s) => String(s).replace(/[a-z]/g, (c) => c.toUpperCase());
 const NUMERICA = /^\s*[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/; // PHP 5.6: espaço no fim não é numérico
-const phpIgual = (a, b) => (NUMERICA.test(a) && NUMERICA.test(b) ? Number(a) === Number(b) : String(a) === String(b));
+export const phpIgual = (a, b) => (NUMERICA.test(a) && NUMERICA.test(b) ? Number(a) === Number(b) : String(a) === String(b));
 const inteiro = (s) => parseInt(String(s).trim(), 10) || 0;
 
 function cpfValido(texto) {
