@@ -62,13 +62,18 @@
   }
 
   // O clique em "Editar" já foi cancelado quando o editor falha em abrir. Sem
-  // isto o botão ficava morto até o F5: reenvia o clique com Shift (que este
-  // script deixa passar) para abrir o modal nativo da Orpen.
+  // isto o botão ficava morto até o F5: reenvia o clique (que este
+  // script deixa passar uma vez) para abrir o modal nativo da Orpen.
+  let deixarPassarProximoClique = false;
   function abrirModalNativo(botao) {
+    // Sinal próprio em vez de Shift: o Shift tem outro significado num <a>.
+    deixarPassarProximoClique = true;
     try {
-      botao.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true, view: window }));
+      botao.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
     } catch (e) {
       console.error('[EDITOR_BOT] Não foi possível abrir o modal nativo:', e);
+    } finally {
+      deixarPassarProximoClique = false;
     }
   }
 
@@ -103,7 +108,7 @@
       const botao = evento.target.closest(SELECTOR_EDITAR);
       if (!botao) return;
 
-      if (evento.shiftKey) return;
+      if (evento.shiftKey || deixarPassarProximoClique) return;
 
       const match = (botao.getAttribute('onclick') || '').match(REGEX_ID);
       if (!match) return;

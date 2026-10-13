@@ -398,14 +398,26 @@ let confirmacaoFecharAberta = false;
 async function confirmarFechar() {
   // Com um salvamento em andamento a pergunta não faria sentido ("tem
   // alterações" até a gravação terminar) e "Descartar" não impediria a
-  // gravação: espera terminar e decide com o resultado.
-  if (travaSalvamento.emAndamento()) await travaSalvamento.emAndamento();
+  // gravação: espera terminar e decide com o resultado. Duas exceções, para
+  // o editor nunca ficar sem poder fechar: o salvamento está parado esperando
+  // a resposta do diálogo de renumeração (fechar não decide por ele), ou a
+  // rede demorou demais (a pergunta de fechar sem salvar aparece assim mesmo).
+  const emCurso = travaSalvamento.emAndamento();
+  if (emCurso) {
+    if (renumeracaoAberta) return false;
+    await Promise.race([emCurso, new Promise((resolve) => setTimeout(resolve, ESPERA_MAXIMA_FECHAR_MS))]);
+  }
+  const campo = campoEmEdicao();
   confirmarCampoEmEdicao();
   const podeFechar = await decidirFechar();
   // Fechou: um carregamento ainda em curso não pode reabrir o editor depois.
   if (podeFechar) carregamentoAtual++;
+  // "Continuar editando": o cursor volta para onde a pessoa estava digitando.
+  else { try { campo?.focus(); } catch { /* campo saiu da tela */ } }
   return podeFechar;
 }
+const ESPERA_MAXIMA_FECHAR_MS = 60 * 1000;
+const TEMPO_MAXIMO_ENVIO_MS = 120 * 1000;
 
 function decidirFechar() {
   if (!temAlteracoesNaoSalvas()) return true;
@@ -452,8 +464,15 @@ function decidirFechar() {
       // abertas pelo salvamento, o editor continua aberto.
       salvando = true;
       fundo.remove();
-      const ok = await salvarBotNaOrpen();
+      let ok = false;
+      try {
+        ok = await salvarBotNaOrpen();
+      } catch (err) {
+        console.error('[EDITOR_BOT] Falha ao salvar antes de fechar:', err);
+        mostrarToast('Falha ao salvar: ' + (err?.message || err));
+      }
       const pendencias = $('#pendencias-overlay');
+      // Sempre libera, mesmo com erro: senão o editor não fechava mais.
       soltarEsc();
       confirmacaoFecharAberta = false;
       // Editou algo enquanto salvava? Isso não foi gravado: fica aberto.
@@ -600,8 +619,15 @@ function confirmarRenumeracao({ mudados, excluidos, entrada }) {
 // Só um salvamento por vez (js/trava-salvamento.js): quem chama durante um em
 // andamento recebe o mesmo resultado, em vez de um segundo updateBot em paralelo.
 const travaSalvamento = criarTravaDeSalvamento(() => salvarBotNaOrpenAgora());
-function salvarBotNaOrpen() {
-  return travaSalvamento.salvar();
+async function salvarBotNaOrpen() {
+  const emCurso = travaSalvamento.emAndamento();
+  if (!emCurso) return travaSalvamento.salvar();
+  // Salvar durante uma gravação: espera terminar e, se houve edição nesse
+  // meio-tempo (ela não foi no envio), grava de novo. Sem isso o clique era
+  // absorvido e a pessoa achava que a última edição estava salva.
+  const ok = await emCurso;
+  if (ok && temAlteracoesNaoSalvas()) return travaSalvamento.salvar();
+  return ok;
 }
 
 async function salvarBotNaOrpenAgora() {
@@ -653,6 +679,9 @@ async function salvarBotNaOrpenAgora() {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body,
+        // Sem limite, uma rede parada deixava a trava (e o fechar) presos. A
+        // conferência abaixo diz se gravou mesmo assim.
+        signal: AbortSignal.timeout(TEMPO_MAXIMO_ENVIO_MS),
       });
       if (!res.ok) falhaEnvio = `HTTP ${res.status}`;
       else {
