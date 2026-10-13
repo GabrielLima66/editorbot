@@ -51,9 +51,30 @@
   let bridgePromise = null;
   function carregarBridge() {
     if (!bridgePromise) {
-      bridgePromise = import(chrome.runtime.getURL('js/orpen-bridge.js'));
+      // Dentro de then: chrome.runtime.getURL lança quando o contexto da
+      // extensão foi invalidado (extensão recarregada com a aba aberta).
+      // Falhou, esquece a promessa para a próxima tentativa não herdar o erro.
+      bridgePromise = Promise.resolve()
+        .then(() => import(chrome.runtime.getURL('js/orpen-bridge.js')))
+        .catch((err) => { bridgePromise = null; throw err; });
     }
     return bridgePromise;
+  }
+
+  // O clique em "Editar" já foi cancelado quando o editor falha em abrir. Sem
+  // isto o botão ficava morto até o F5: reenvia o clique (que este
+  // script deixa passar uma vez) para abrir o modal nativo da Orpen.
+  let deixarPassarProximoClique = false;
+  function abrirModalNativo(botao) {
+    // Sinal próprio em vez de Shift: o Shift tem outro significado num <a>.
+    deixarPassarProximoClique = true;
+    try {
+      botao.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    } catch (e) {
+      console.error('[EDITOR_BOT] Não foi possível abrir o modal nativo:', e);
+    } finally {
+      deixarPassarProximoClique = false;
+    }
   }
 
   // O CSP da página bloqueia script inline injetado por nós (script-src 'self'
@@ -87,7 +108,7 @@
       const botao = evento.target.closest(SELECTOR_EDITAR);
       if (!botao) return;
 
-      if (evento.shiftKey) return;
+      if (evento.shiftKey || deixarPassarProximoClique) return;
 
       const match = (botao.getAttribute('onclick') || '').match(REGEX_ID);
       if (!match) return;
@@ -101,11 +122,10 @@
       const envData = lerDadosAmbiente();
 
       carregarBridge()
-        .then((mod) => {
-          mod.abrirEditorOrpen(botId, envData);
-        })
+        .then((mod) => mod.abrirEditorOrpen(botId, envData))
         .catch((err) => {
-          console.error('[EDITOR_BOT] Falha ao carregar o editor:', err);
+          console.error('[EDITOR_BOT] Falha ao abrir o editor; abrindo o modal nativo no lugar:', err);
+          abrirModalNativo(botao);
         });
     },
     true

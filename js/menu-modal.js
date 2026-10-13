@@ -22,6 +22,10 @@ import { escapeHtml, mostrarToast, setPath } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import {
   parseMenuModel,
+  quebrasWhatsapp,
+  tamanhoDoCorpo,
+  textoFiel,
+  TITULO_SECAO_PADRAO,
   defaultMenuModel,
   extrairItensMenu,
   limiteParaTipoMenu,
@@ -57,8 +61,8 @@ const TIPOS = [
 // Estrutura mínima de cada tipo, usada quando o menu é novo ou mudou de tipo
 // (não há original do mesmo tipo pra preservar).
 const BASE_JSON = {
-  whatsapp_button: () => ({ interactive: { type: 'button', body: { text: '' }, action: { buttons: [] } } }),
-  whatsapp_list: () => ({ interactive: { type: 'list', body: { text: '' }, action: { button: '', sections: [] } } }),
+  whatsapp_button: () => ({ interactive: { type: 'button', header: { type: 'text', text: '' }, body: { text: '' }, footer: { text: '' }, action: { buttons: [] } } }),
+  whatsapp_list: () => ({ interactive: { type: 'list', header: { type: 'text', text: '' }, body: { text: '' }, footer: { text: '' }, action: { button: '', sections: [] } } }),
   webchat: () => ({ message_type: 'menu', menu_type: 'list', options: [] }),
 };
 
@@ -107,11 +111,11 @@ export function atualizarMenuPreservando(raw, model) {
   } else {
     const it = obj.interactive;
     const texto = (chave, valor, criar) => {
-      if (ehObjeto(it[chave])) it[chave].text = valor;
-      else if (valor) it[chave] = criar(valor);
+      if (ehObjeto(it[chave])) it[chave].text = textoFiel(it[chave].text, valor);
+      else if (valor) it[chave] = criar(quebrasWhatsapp(valor));
     };
     texto('header', model.header, (text) => ({ type: 'text', text }));
-    it.body = { ...(ehObjeto(it.body) ? it.body : {}), text: model.body };
+    it.body = { ...(ehObjeto(it.body) ? it.body : {}), text: textoFiel(ehObjeto(it.body) ? it.body.text : undefined, model.body) };
     texto('footer', model.footer, (text) => ({ text }));
     if (!ehObjeto(it.action)) it.action = {};
 
@@ -127,7 +131,8 @@ export function atualizarMenuPreservando(raw, model) {
       it.action.sections = model.sections.map((s, si) => {
         const base = ehObjeto(antigas[si]) ? antigas[si] : {};
         const secao = { ...base };
-        definirOpcional(secao, 'title', s.title);
+        // Lista nova (ou convertida de outro tipo) leva o título de seção que a Orpen espera; a existente mantém o seu.
+        definirOpcional(secao, 'title', s.title || (mesmoTipo ? '' : TITULO_SECAO_PADRAO));
         const linhasAntigas = Array.isArray(base.rows) ? base.rows : [];
         secao.rows = s.rows.map((r, ri) => {
           const linha = { ...(ehObjeto(linhasAntigas[ri]) ? linhasAntigas[ri] : {}), id: r.id, title: r.title };
@@ -216,7 +221,7 @@ function bolhaWhatsapp(m, extra) {
       <input type="text" class="mm-header" ${campo('header', m.header, `maxlength="${LIMITE.header}" placeholder="Cabeçalho (opcional)" aria-label="Cabeçalho"`)}>
       <textarea class="mm-body" data-caminho="body" rows="4" maxlength="${LIMITE.body}" placeholder="Mensagem que o cliente vai receber" aria-label="Mensagem">${escapeHtml(m.body)}</textarea>
       <input type="text" class="mm-footer" ${campo('footer', m.footer, `maxlength="${LIMITE.footer}" placeholder="Rodapé (opcional)" aria-label="Rodapé"`)}>
-      <div class="mm-bolha-meta"><span class="mm-contador">${m.body.length}/${LIMITE.body}</span><span>08:00</span></div>
+      <div class="mm-bolha-meta"><span class="mm-contador">${tamanhoDoCorpo(m.body)}/${LIMITE.body}</span><span>08:00</span></div>
       ${extra || ''}
     </div>`;
 }
@@ -296,6 +301,8 @@ function avisosDoModelo(m) {
     return lista;
   }
   if (!m.body.trim()) lista.push('A mensagem (corpo) é obrigatória no WhatsApp.');
+  // O campo conta cada quebra de linha como 1, mas o texto é gravado com \r\n (2): o limite pode estourar sem o campo barrar.
+  if (tamanhoDoCorpo(m.body) > LIMITE.body) lista.push(`A mensagem passa de ${LIMITE.body} caracteres (cada quebra de linha conta 2). Reduza o texto, senão o WhatsApp pode recusar o menu.`);
   if (m.kind === 'whatsapp_button') {
     if (m.buttons.some((b) => !b.title.trim())) lista.push('Há botão sem texto.');
     if (repetidos(m.buttons.map((b) => idFinal(b.id, b.title)))) lista.push('Há IDs repetidos entre os botões.');
@@ -407,7 +414,7 @@ export function abrirModalMenu(transitionId, actionId) {
 
   const atualizarAvisos = () => {
     const contador = $m('.mm-contador');
-    if (contador && modelo.kind !== 'webchat') contador.textContent = `${modelo.body.length}/${LIMITE.body}`;
+    if (contador && modelo.kind !== 'webchat') contador.textContent = `${tamanhoDoCorpo(modelo.body)}/${LIMITE.body}`;
     const avisos = avisosDoModelo(modelo).map((a) => `<p>${escapeHtml(a)}</p>`);
     if (modelo.kind === 'webchat' && !vaiUsarMensagemExistente() && textoWebchat.trim()) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, este texto vira uma ação "Mensagem" logo antes do menu (é assim que o WebChat funciona).</p>`);
     if (vaiAbsorver()) avisos.unshift(`<p class="mm-aviso-info">Ao salvar, a ação "Mensagem" anterior vira a mensagem deste menu e é removida.</p>`);

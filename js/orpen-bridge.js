@@ -29,9 +29,10 @@ import { $, mostrarToast, escapeHtml } from './utils.js';
 import { setRootNode, criarIcones, getRootNode, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { avisarSeHouverNovaVersao } from './atualizacao.js';
 import { abrirNovidades } from './novidades.js';
-import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, payloadEsperadoNoServidor } from './orpen-adapter.js';
+import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, payloadEsperadoNoServidor, botParaBackup } from './orpen-adapter.js';
 import { problemaAntesDeSalvar } from './validacao-salvar.js';
 import { fotografarNumeros, mudancasDeNumero } from './renumeracao.js';
+import { criarTravaDeSalvamento } from './trava-salvamento.js';
 import { abrirBotView, pedirFecharBotView, definirGuardaFechar } from './bot-view-render.js';
 import { initBotViewWiring, listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
 
@@ -173,7 +174,7 @@ async function extrairEsqueletoOverlay() {
   }
   // Versão nova publicada? Aviso ao lado do número da versão (assíncrono,
   // não atrasa a montagem; sem internet não mostra nada).
-  avisarSeHouverNovaVersao(botView, versao, temAlteracoesNaoSalvas);
+  avisarSeHouverNovaVersao(botView, versao, temAlteracoesPendentes);
   botView.querySelector('#bv-versao')?.addEventListener('click', () => abrirNovidades(versao));
 
   // O texto de #pendencias-overlay foi escrito pensando no fluxo de
@@ -194,7 +195,12 @@ async function montarOverlay() {
   montagemPromise = (async () => {
     let host = document.getElementById(HOST_ID);
     if (host && host.shadowRoot) {
-      return host.shadowRoot;
+      // Só reaproveita uma montagem completa. Uma que falhou no meio (rede,
+      // contexto invalidado) deixava o host sem o editor: o retry recebia um
+      // shadow root vazio e o botão ficava sem efeito até o F5.
+      if (host.shadowRoot.getElementById('bot-view-overlay')) return host.shadowRoot;
+      host.remove();
+      host = null;
     }
 
     // Tema lido e aplicado antes de qualquer coisa ser desenhada: sem piscar
@@ -209,6 +215,7 @@ async function montarOverlay() {
     // Registrado ANTES de qualquer $()/criarIcones() — o resto do editor lê
     // getRootNode() dinamicamente a cada chamada (ver js/dom-root.js).
     setRootNode(shadowRoot);
+    try {
 
     const [twCss, stylesCss, { botView, pendencias, copiar }] = await Promise.all([
       fetch(urlExtensao('vendor/tailwind.css')).then((r) => r.text()),
@@ -231,7 +238,17 @@ async function montarOverlay() {
     aplicarTema(); // título/aria do botão sol/lua
 
     return shadowRoot;
+    } catch (err) {
+      // Desfaz a montagem pela metade: o próximo "Editar" monta do zero.
+      host.remove();
+      setRootNode(document);
+      throw err;
+    }
   })();
+
+  // Montagem que falhou não pode ficar memorizada: toda tentativa seguinte
+  // herdaria a rejeição e "Editar" não faria mais nada até o F5.
+  montagemPromise.catch(() => { montagemPromise = null; });
 
   return montagemPromise;
 }
@@ -323,6 +340,28 @@ function temAlteracoesNaoSalvas() {
   return !!bot && assinaturaBot(bot) !== state.baselineSalvo;
 }
 
+// Os campos do editor só gravam no bot ao confirmar (evento `change`, no blur
+// ou Enter). Com o cursor ainda num campo, a assinatura acima não enxerga o que
+// foi digitado: o Esc fechava sem perguntar e a atualização recarregava a página.
+function campoEmEdicao() {
+  try {
+    const ativo = getRootNode().activeElement;
+    if (!ativo || ativo === document.body) return null;
+    return /^(INPUT|TEXTAREA|SELECT)$/.test(ativo.tagName) ? ativo : null;
+  } catch { return null; }
+}
+
+// Confirma o que está sendo digitado (o blur dispara o `change` na hora).
+function confirmarCampoEmEdicao() {
+  try { campoEmEdicao()?.blur(); } catch { /* sem foco */ }
+}
+
+// Para quem decide sozinho (atualização automática): digitando também conta
+// como alteração, e aqui não se tira o foco do campo.
+function temAlteracoesPendentes() {
+  return temAlteracoesNaoSalvas() || !!campoEmEdicao();
+}
+
 function atualizarBotaoFluxograma() {
   const btn = $('#btn-bv-fluxograma');
   if (!btn) return;
@@ -368,7 +407,36 @@ function ligarBotoesExtensao(shadowRoot) {
 // Guarda do fechamento (X, clique fora, Esc): sem alteração não salva, fecha
 // direto; com alteração, pergunta. Resolve true pra fechar.
 let confirmacaoFecharAberta = false;
-function confirmarFechar() {
+async function confirmarFechar() {
+  // Com um salvamento em andamento a pergunta não faria sentido ("tem
+  // alterações" até a gravação terminar) e "Descartar" não impediria a
+  // gravação: espera terminar e decide com o resultado. Duas exceções, para
+  // o editor nunca ficar sem poder fechar: o salvamento está parado esperando
+  // a resposta do diálogo de renumeração (fechar não decide por ele), ou a
+  // rede demorou demais (a pergunta de fechar sem salvar aparece assim mesmo).
+  const emCurso = travaSalvamento.emAndamento();
+  if (emCurso) {
+    if (renumeracaoAberta) return false;
+    await Promise.race([emCurso, new Promise((resolve) => setTimeout(resolve, ESPERA_MAXIMA_FECHAR_MS))]);
+    // O salvamento abriu o painel de pendências: o editor fica aberto, como
+    // no "Salvar e fechar", em vez de fechar deixando o painel solto na página.
+    const pendencias = $('#pendencias-overlay');
+    if (pendencias && !pendencias.classList.contains('hidden')) return false;
+  }
+  const campo = campoEmEdicao();
+  confirmarCampoEmEdicao();
+  const podeFechar = await decidirFechar();
+  // Fechou: um carregamento ainda em curso não pode reabrir o editor depois.
+  if (podeFechar) carregamentoAtual++;
+  // "Continuar editando": o cursor volta para onde a pessoa estava digitando.
+  else { try { campo?.focus(); } catch { /* campo saiu da tela */ } }
+  return podeFechar;
+}
+const ESPERA_MAXIMA_FECHAR_MS = 60 * 1000;
+const TEMPO_MAXIMO_ENVIO_MS = 120 * 1000;
+const TEMPO_MAXIMO_LEITURA_MS = 60 * 1000;
+
+function decidirFechar() {
   if (!temAlteracoesNaoSalvas()) return true;
   if (confirmacaoFecharAberta) return false;
   confirmacaoFecharAberta = true;
@@ -413,8 +481,15 @@ function confirmarFechar() {
       // abertas pelo salvamento, o editor continua aberto.
       salvando = true;
       fundo.remove();
-      const ok = await salvarBotNaOrpen();
+      let ok = false;
+      try {
+        ok = await salvarBotNaOrpen();
+      } catch (err) {
+        console.error('[EDITOR_BOT] Falha ao salvar antes de fechar:', err);
+        mostrarToast('Falha ao salvar: ' + (err?.message || err));
+      }
       const pendencias = $('#pendencias-overlay');
+      // Sempre libera, mesmo com erro: senão o editor não fechava mais.
       soltarEsc();
       confirmacaoFecharAberta = false;
       // Editou algo enquanto salvava? Isso não foi gravado: fica aberto.
@@ -432,7 +507,7 @@ function baixarBotJson() {
   const bot = state.botCarregado;
   if (!bot) return;
   const nomeArquivo = `bot_${bot.ID || 'sem-id'}_${(bot.NAME || 'sem-nome').replace(/[^a-zA-Z0-9_-]+/g, '_')}.json`;
-  const blob = new Blob([JSON.stringify(bot, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(botParaBackup(bot), null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -447,6 +522,9 @@ async function buscarBotCru(botId) {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
     body: `action=getBot&id=${encodeURIComponent(botId)}`,
+    // Sem limite, a conferência parada deixava a trava (e o "Salvar e fechar")
+    // presos até o F5.
+    signal: AbortSignal.timeout(TEMPO_MAXIMO_LEITURA_MS),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -557,7 +635,23 @@ function confirmarRenumeracao({ mudados, excluidos, entrada }) {
 // Devolve true se o bot foi gravado, false em qualquer falha — o botão
 // "Salvar" ignora o retorno; o "Gerar fluxograma" usa pra só gerar depois de
 // salvar com sucesso.
+//
+// Só um salvamento por vez (js/trava-salvamento.js): quem chama durante um em
+// andamento recebe o mesmo resultado, em vez de um segundo updateBot em paralelo.
+const travaSalvamento = criarTravaDeSalvamento(() => salvarBotNaOrpenAgora());
 async function salvarBotNaOrpen() {
+  const emCurso = travaSalvamento.emAndamento();
+  if (!emCurso) return travaSalvamento.salvar();
+  // Salvar durante uma gravação: espera terminar e, se houve edição nesse
+  // meio-tempo (ela não foi no envio), grava de novo. Sem isso o clique era
+  // absorvido e a pessoa achava que a última edição estava salva.
+  const ok = await emCurso;
+  if (ok && temAlteracoesNaoSalvas()) return travaSalvamento.salvar();
+  return ok;
+}
+
+async function salvarBotNaOrpenAgora() {
+  confirmarCampoEmEdicao();
   const bot = state.botCarregado;
   if (!bot) return false;
 
@@ -591,6 +685,9 @@ async function salvarBotNaOrpen() {
   try {
     const payload = toUpdateBotPayload(bot);
     const body = serializeBracketNotation(payload);
+    // Os números que estão sendo gravados. Fotografar depois do envio pegaria
+    // o que a pessoa mexeu enquanto salvava (e isso não foi para o servidor).
+    const numerosEnviados = fotografarNumeros(bot);
 
     // Falha de rede ou HTTP não diz se gravou: a requisição pode ter chegado
     // e sido processada. Resposta fora de JSON (aviso/erro do PHP impresso
@@ -602,6 +699,9 @@ async function salvarBotNaOrpen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body,
+        // Sem limite, uma rede parada deixava a trava (e o fechar) presos. A
+        // conferência abaixo diz se gravou mesmo assim.
+        signal: AbortSignal.timeout(TEMPO_MAXIMO_ENVIO_MS),
       });
       if (!res.ok) falhaEnvio = `HTTP ${res.status}`;
       else {
@@ -651,7 +751,11 @@ async function salvarBotNaOrpen() {
     if (state.botCarregado !== bot) return true;
     // O que acabou de ser gravado é a nova referência de "sem alterações".
     state.baselineSalvo = body;
-    registrarNumerosSalvos(bot);
+    numerosSalvos = numerosEnviados;
+    // Editor já fechado (a pessoa saiu enquanto salvava): o painel de
+    // pendências abriria solto por cima da página da Orpen.
+    const overlay = $('#bot-view-overlay');
+    if (overlay && overlay.classList.contains('hidden')) return true;
     const pendencias = listarPendencias(bot);
     if (pendencias.length) abrirPendenciasModal(pendencias);
     return true;

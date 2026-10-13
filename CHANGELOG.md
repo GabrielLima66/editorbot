@@ -1,5 +1,16 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.25] - 2026-10-13
+* **Salvar e fechar mais seguros**: Salvar, "Salvar e fechar" e "Gerar fluxograma" não disparam mais duas gravações ao mesmo tempo, e salvar durante uma gravação grava de novo o que foi editado nesse meio-tempo. Fechar espera a gravação terminar, o Esc confirma o campo que está sendo digitado antes de perguntar "Fechar sem salvar?" e o editor não reabre sozinho se for fechado enquanto carrega. O envio tem limite de 2 minutos, e o aviso de renumeração passa a considerar os números que foram realmente gravados.
+* **O que a tela mostra é o que grava**: "Troca Estado" e o timeout "Trocar estado" gravavam um destino vazio enquanto a tela mostrava o estado 0. Agora gravam o primeiro estado, e um destino vazio ou inexistente aparece como tal. Trocar a ação do timeout não leva mais o destino da ação anterior (um status de CRM virava número de estado), e cada ação lembra o que foi escolhido ao voltar.
+* **Condições**: trocar a variável não deixa mais "Sempre verdadeiro" como operador (o servidor descarta essa condição ao salvar e ela sumia) e limpa o valor anterior, como o modal nativo.
+* **Ações de lista começam pelo primeiro item**: Transf. Agente, Transf. Fila, Finalizar, Executar Script, Checkpoint, Enviar à Entrance e Sub-status passam a gravar o primeiro cadastro do ambiente quando são criadas ou trocadas, como os selects do nativo. Transf. Fila lista só filas (o motor sempre transfere como fila).
+* **Agentes e bots com ID**: os nomes aparecem como `[Agente 12] Maria` e `[Bot 77] Atendimento`, e o campo de busca acha pelo ID (digitar o número e dar Enter escolhe esse cadastro). Cadastros com o mesmo nome ganham o ID para a busca gravar o ID certo.
+* **Ajustes**: se o editor falhar ao abrir, o botão "Editar" abre o modal nativo em vez de não responder; a lista de labels aberta não prende mais o Esc ao fechar o editor; o painel de pendências não abre com o editor fechado; bot importado com a fila do timeout só em "destino" mostra a fila e não a perde ao salvar; o simulador não repete o ID da fila; o backup (Baixar) leva a fila do timeout; a conferência depois de salvar também tem limite de tempo; o Testar bot avisa quando só a fila do timeout muda.
+
+## [0.8.24] - 2026-10-09
+* **Menus novos saem no formato que a Orpen aceita**: o menu criado ou convertido pela extensão passa a ser gravado como o do modal nativo e de outras ferramentas: `header` e `footer` sempre presentes (mesmo vazios), quebras de linha do texto como `\r\n` e, na lista, o título da seção (`Opções` quando vazio). Antes, `header`, `footer` e o título de seção eram omitidos e a quebra saía como `\n`. Menus que já existem continuam exatamente como estavam: a extensão só reescreve o texto que você editar. O contador de 1024 caracteres do corpo agora conta cada quebra de linha como 2 e o menu avisa quando o texto passa do limite.
+
 ## [0.8.23] - 2026-10-09
 * **Testar bot respeita as quebras de linha do menu**: o cabeçalho, o corpo e o rodapé do menu apareciam numa linha só, juntando "1 - Vendas" e "2 - Suporte". Agora as quebras de linha (e as linhas em branco) aparecem como o cliente as vê.
 

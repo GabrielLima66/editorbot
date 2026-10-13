@@ -58,7 +58,11 @@ export function fromGetBotResponse(getBotJson) {
     TIME_ANSWER: getBotJson.TIME_ANSWER ?? '',
     TIMEOUT_DELAY: getBotJson.TIMEOUT_DELAY ?? '',
     CONF_DELIVERY_TIME: getBotJson.CONF_DELIVERY_TIME ?? getBotJson.TIMEOUT_DELAY ?? '',
-    CONF_DELIVERY_QUEUE: getBotJson.CONF_DELIVERY_QUEUE ?? '',
+    // Com timeout "queue" o nativo preenche o select com TIMEOUT_DESTINY
+    // (bot.php:2803, 2945). Em bot importado os dois campos podem divergir e o
+    // CONF_DELIVERY_QUEUE vazio zeraria a fila do timeout ao salvar.
+    CONF_DELIVERY_QUEUE: (getBotJson.TIMEOUT_ACTION === 'queue' && getBotJson.TIMEOUT_DESTINY)
+      || (getBotJson.CONF_DELIVERY_QUEUE ?? ''),
     TIMEOUT_ACTION: getBotJson.TIMEOUT_ACTION ?? '',
     TIMEOUT_DESTINY: getBotJson.TIMEOUT_DESTINY ?? '',
     TIMEOUT_MESSAGE: getBotJson.TIMEOUT_MESSAGE ?? '',
@@ -300,4 +304,13 @@ export function serializeBracketNotation(payload) {
   });
 
   return partes.join('&');
+}
+
+// Cópia do bot para o backup (botão Baixar). Com timeout de fila o editor
+// guarda a fila em CONF_DELIVERY_QUEUE e deixa TIMEOUT_DESTINY como estava; o
+// import do servidor lê TIMEOUT_DESTINY (Bot.class.php:2294-2300), então o
+// backup precisa dos dois iguais para restaurar a fila.
+export function botParaBackup(bot) {
+  if (bot.TIMEOUT_ACTION !== 'queue' || !bot.CONF_DELIVERY_QUEUE) return bot;
+  return { ...bot, TIMEOUT_DESTINY: bot.CONF_DELIVERY_QUEUE, '7': bot.CONF_DELIVERY_QUEUE };
 }

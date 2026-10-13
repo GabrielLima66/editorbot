@@ -47,8 +47,12 @@ export function criarBotVazio() {
 }
 
 export function mostrarResumoBot() {
-  $('#upload-section').classList.add('hidden');
-  $('#result-section').classList.add('hidden');
+  // Na extensão só o overlay do editor existe (orpen-bridge.js extrai
+  // #bot-view-overlay e outros do bot_transform.html): a seção de upload e o
+  // resumo são da ferramenta avulsa e não estão lá.
+  if (!$('#bot-summary')) return;
+  $('#upload-section')?.classList.add('hidden');
+  $('#result-section')?.classList.add('hidden');
   $('#bot-summary').classList.remove('hidden');
   $('#bot-name').textContent = state.botCarregado.NAME || '(sem nome)';
   const nEstados = (state.botCarregado.BOT_STATES || []).length;

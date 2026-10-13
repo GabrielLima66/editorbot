@@ -44,7 +44,7 @@ function opcoesDoRequisito(r) {
   return null;
 }
 
-const assinaturaDoBot = (bot) => JSON.stringify([bot.BOT_STATES, bot.BOT_TRANSITIONS, bot.BOT_CONDITIONS, bot.BOT_ACTIONS, bot.TIMEOUT_ACTION, bot.TIMEOUT_DESTINY, bot.TIMEOUT_MESSAGE]);
+const assinaturaDoBot = (bot) => JSON.stringify([bot.BOT_STATES, bot.BOT_TRANSITIONS, bot.BOT_CONDITIONS, bot.BOT_ACTIONS, bot.TIMEOUT_ACTION, bot.TIMEOUT_DESTINY, bot.CONF_DELIVERY_QUEUE, bot.TIMEOUT_MESSAGE]);
 const porNumero = (a, b) => (parseInt(a.STATE_NUMBER, 10) || 0) - (parseInt(b.STATE_NUMBER, 10) || 0);
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 

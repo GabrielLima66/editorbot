@@ -13,6 +13,7 @@ import {
   abrirBotView,
   atualizarListaVariaveisCondicao,
   pedirFecharBotView,
+  registrarAoFechar,
   atualizarSecaoDestino,
   lerContaTranscricao,
   atualizarContadorRodape,
@@ -27,7 +28,10 @@ import { initCopiarColar } from './copiar-colar.js';
 import { initTesteBot } from './teste-bot.js';
 import { initCombobox, datalistDe } from './combobox.js';
 import { initVariaveisTexto } from './variaveis-texto.js';
-import { assistentesOpenAi } from './orpen-env.js';
+import {
+  assistentesOpenAi, opcoesFilas, opcoesCrmStatus, opcoesAgentes, opcoesScripts, opcoesCheckpoints,
+  opcoesEntrancesEnvioNaOrdemDoNativo, opcoesSubStatus,
+} from './orpen-env.js';
 import { mostrarResumoBot } from './upload.js';
 
 // ---------------------------------------------------------------------------
@@ -295,9 +299,19 @@ export function tipoRaizAssistente(variavel) {
 export function mudarCondicaoVariavel(bot, transitionId, conditionId, novaVariavel) {
   const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === conditionId);
   if (!cond) return;
+  const trocouDeVariavel = cond.CONDITION_DATA?.variable !== novaVariavel;
   cond.CONDITION_DATA = { ...cond.CONDITION_DATA, variable: novaVariavel };
+  // O nativo recria o campo de valor ao trocar a variável (bot.php:3538-3539).
+  // Manter o antigo deixava um texto "grudado" e, saindo de "Possui os labels"
+  // (valor = lista de IDs), uma lista como valor de condição de texto.
+  if (trocouDeVariavel) cond.CONDITION_DATA.value = '';
   const kind = VARIABLE_KIND[novaVariavel] || 'text';
-  const primeiroTipo = buildOperatorOptions(kind, '')[0]?.value ?? '';
+  // O nativo começa pelo primeiro operador de verdade (bot.php:3543, 3630, 3641).
+  // "Sempre verdadeiro" (0) segue disponível na lista, mas não pode ser o padrão:
+  // o servidor descarta condição de tipo 0 (Bot.class.php:226), e a condição
+  // sumiria sozinha ao salvar se a pessoa não notasse o operador.
+  const opcoesOperador = buildOperatorOptions(kind, '');
+  const primeiroTipo = (opcoesOperador.find((o) => String(o.value) !== '0') ?? opcoesOperador[0])?.value ?? '';
   const raizAssistente = tipoRaizAssistente(novaVariavel);
   if (raizAssistente) {
     if (cond.CONDITION_DATA.assistant_id === undefined) cond.CONDITION_DATA.assistant_id = '';
@@ -411,7 +425,88 @@ export function mudarTipoAcao(bot, transitionId, actionId, novoTipo) {
   if (!acao || acao.ACTION_TYPE === novoTipo) return;
   acao.ACTION_TYPE = novoTipo;
   acao.ACTION_DATA = defaultActionData(novoTipo);
+  // "Troca Estado": o <select> do nativo não tem opção vazia, então grava o
+  // primeiro estado da lista (bot.php:3956-3964). Aqui o select mostra o mesmo
+  // estado, então o dado tem que ser esse e não ''.
+  if (String(novoTipo) === '2') acao.ACTION_DATA.destiny = primeiroNumeroDeEstado(bot);
+  Object.assign(acao.ACTION_DATA, padraoDaAcao(novoTipo));
   withMirrors('action', acao);
+}
+
+// Ações cujo campo é uma lista do ambiente: o nativo monta um <select> sem
+// opção vazia (ou já preenche o primeiro agente/fila), então uma ação nova
+// nasce com o primeiro item e nunca vazia (bot.php:3989, 4028, 4070-4191).
+const CAMPO_E_LISTA_POR_ACAO = {
+  '4': ['destiny', opcoesAgentes],
+  '5': ['destiny', opcoesFilas],
+  '6': ['crm_status', opcoesCrmStatus],
+  '7': ['script_name', opcoesScripts],
+  '9': ['check_point', opcoesCheckpoints],
+  '12': ['entrances', opcoesEntrancesEnvioNaOrdemDoNativo],
+  '14': ['substatus', opcoesSubStatus],
+};
+
+/** { campo: primeiroValor } da ação, ou {} sem o cadastro do ambiente. */
+export function padraoDaAcao(tipo) {
+  const regra = CAMPO_E_LISTA_POR_ACAO[String(tipo)];
+  if (!regra) return {};
+  const primeiro = regra[1]()[0]?.value;
+  return primeiro === undefined || primeiro === '' ? {} : { [regra[0]]: String(primeiro) };
+}
+
+/** Número do primeiro estado do bot em ordem numérica ('' se não houver estados). */
+export function primeiroNumeroDeEstado(bot) {
+  const numeros = (bot.BOT_STATES || [])
+    .map((e) => parseInt(e.STATE_NUMBER, 10))
+    .filter((n) => Number.isFinite(n));
+  return numeros.length ? String(Math.min(...numeros)) : '';
+}
+
+// Trocar a ação do timeout troca o significado de TIMEOUT_DESTINY (estado,
+// status de CRM). Carregar o destino da ação anterior gravava, por exemplo, um
+// ID de status como número de estado. No nativo cada ação tem o próprio
+// controle, já com o primeiro item (bot.php:1514-1553).
+//
+// Os três selects do nativo não têm opção vazia: ao escolher a ação, já vale o
+// primeiro item (estado, fila ou status CRM) e o nativo nunca grava destino
+// vazio. A fila do timeout é o próprio CONF_DELIVERY_QUEUE (campo único no editor).
+// O que a pessoa tinha escolhido em cada ação do timeout, por bot. No nativo
+// cada ação tem o próprio controle (o de status é fixo, bot.php:522-529); aqui
+// o editor guarda o mesmo valor ao ir para outra ação e voltar, em vez de
+// recomeçar do primeiro item.
+const destinoLembrado = new WeakMap();
+
+function valorAtualDoTimeout(bot, acao) {
+  return acao === 'queue' ? bot.CONF_DELIVERY_QUEUE : bot.TIMEOUT_DESTINY;
+}
+
+export function trocarAcaoTimeout(bot, novaAcao) {
+  const anterior = String(bot.TIMEOUT_ACTION ?? '');
+  if (anterior === String(novaAcao ?? '')) return;
+  const lembrado = destinoLembrado.get(bot) || {};
+  if (['bot', 'queue', 'close'].includes(anterior)) {
+    const atual = valorAtualDoTimeout(bot, anterior);
+    if (atual !== undefined && atual !== null && String(atual) !== '') lembrado[anterior] = String(atual);
+    destinoLembrado.set(bot, lembrado);
+  }
+  mudarCampoBot(bot, 'TIMEOUT_ACTION', novaAcao);
+
+  if (novaAcao === 'queue') {
+    // A fila do timeout é o próprio CONF_DELIVERY_QUEUE: só é preenchida
+    // quando está vazia (a primeira fila, como o select do nativo).
+    const fila = lembrado.queue ?? (String(bot.CONF_DELIVERY_QUEUE ?? '').trim() || opcoesFilas()[0]?.value || '');
+    mudarCampoBot(bot, 'CONF_DELIVERY_QUEUE', fila);
+    mudarCampoBot(bot, 'TIMEOUT_DESTINY', '');
+    return;
+  }
+  let destino = '';
+  if (novaAcao === 'bot') {
+    const existe = (bot.BOT_STATES || []).some((e) => String(e.STATE_NUMBER) === lembrado.bot);
+    destino = existe ? lembrado.bot : primeiroNumeroDeEstado(bot);
+  } else if (novaAcao === 'close') {
+    destino = lembrado.close ?? opcoesCrmStatus()[0]?.value ?? '';
+  }
+  mudarCampoBot(bot, 'TIMEOUT_DESTINY', destino);
 }
 
 // Os campos "estado livre" (campoEstadoLivre) mostram "N - ALIAS" quando o
@@ -485,6 +580,10 @@ export function remapStateNumbers(bot, mapa) {
     bot.TIMEOUT_DESTINY = mapa.get(bot.TIMEOUT_DESTINY);
     bot['7'] = bot.TIMEOUT_DESTINY;
   }
+  // O estado que o timeout tinha antes de trocar de ação também renumera:
+  // senão voltar para "Trocar estado" apontava para outro estado.
+  const lembrado = destinoLembrado.get(bot);
+  if (lembrado && mapa.has(lembrado.bot)) lembrado.bot = mapa.get(lembrado.bot);
 }
 
 export function duplicarEstado(bot, stateNumber) {
@@ -986,6 +1085,14 @@ function fecharListasLabels() {
   getRootNode().querySelectorAll('#bv-estados .labels-campo').forEach(fecharListaLabels);
 }
 
+// Fecha qualquer lista aberta e solta o handler de Esc mesmo quando o campo
+// já saiu do DOM (editor fechado ou reaberto com a lista aberta): sem isto o
+// handler ficava empilhado e engolia o Esc da página e do próprio editor.
+function fecharListasLabelsAbertas() {
+  fecharListasLabels();
+  if (soltarEscLabels) { soltarEscLabels(); soltarEscLabels = null; }
+}
+
 function filtrarListaLabels(campo, texto) {
   const alvo = texto.trim().toLowerCase();
   let visiveis = 0;
@@ -1001,7 +1108,7 @@ function alternarListaLabels(campo) {
   if (!campo) return;
   const lista = campo.querySelector('.labels-lista');
   if (!lista.classList.contains('hidden')) { fecharListaLabels(campo); return; }
-  fecharListasLabels();
+  fecharListasLabelsAbertas();
   lista.classList.remove('hidden');
   campo.querySelector('.labels-caixa')?.setAttribute('aria-expanded', 'true');
   const busca = campo.querySelector('.labels-busca');
@@ -1016,6 +1123,9 @@ function alternarListaLabels(campo) {
 
 export function initAcoesDelegadas() {
   const container = $('#bv-estados');
+  // Na init e não no topo do módulo: render e interactions se importam
+  // mutuamente e o registro precisa rodar com o render já avaliado.
+  registrarAoFechar(fecharListasLabelsAbertas);
 
   // Busca dentro da lista de labels: filtra enquanto digita; Enter escolhe a
   // primeira que sobrou.
@@ -1270,7 +1380,13 @@ export function initAcoesDelegadas() {
       // troca por data-lista para o popup nativo não abrir).
       case 'mudar-campo-acao-ambiente-buscavel': {
         const datalist = datalistDe(el);
-        const opt = datalist && Array.from(datalist.options).find(o => o.value === el.value);
+        const opcoesLista = datalist ? Array.from(datalist.options) : [];
+        const opt = opcoesLista.find(o => o.value === el.value)
+          // Só o ID digitado ("77"): vale se houver um único cadastro com ele.
+          || (() => {
+            const porId = opcoesLista.filter(o => o.dataset.value !== undefined && o.dataset.value === el.value.trim());
+            return porId.length === 1 ? porId[0] : null;
+          })();
         if (!opt) { el.value = el.defaultValue; return; }
         mudarCampoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, opt.dataset.value);
         rerenderTransicao(bot, el.dataset.transitionId);
@@ -1289,8 +1405,10 @@ export function initAcoesDelegadas() {
       const digitado = e.target.value.toLowerCase().trim();
       if (digitado) {
         const options = Array.from(datalistDe(e.target).options);
-        // Prioriza quem começa com o texto; se não, quem apenas contém
-        let match = options.find(o => o.value.toLowerCase().startsWith(digitado));
+        // Um ID digitado por inteiro ("77") escolhe o cadastro com esse ID;
+        // senão prioriza quem começa com o texto; se não, quem apenas contém
+        let match = options.find(o => o.dataset.value !== undefined && o.dataset.value.toLowerCase() === digitado);
+        if (!match) match = options.find(o => o.value.toLowerCase().startsWith(digitado));
         if (!match) match = options.find(o => o.value.toLowerCase().includes(digitado));
 
         if (match && match.value !== e.target.value) {
@@ -1457,7 +1575,7 @@ export function initBotHeaderEdit() {
 
   $('#bv-acao-timeout').addEventListener('change', () => {
     if (!state.botCarregado) return;
-    mudarCampoBot(state.botCarregado, 'TIMEOUT_ACTION', $('#bv-acao-timeout').value);
+    trocarAcaoTimeout(state.botCarregado, $('#bv-acao-timeout').value);
     const estadoPorNumero = {};
     (state.botCarregado.BOT_STATES || []).forEach(e => estadoPorNumero[e.STATE_NUMBER] = e);
     atualizarSecaoDestino(state.botCarregado, estadoPorNumero);
