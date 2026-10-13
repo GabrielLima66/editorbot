@@ -234,6 +234,10 @@ async function montarOverlay() {
     return shadowRoot;
   })();
 
+  // Montagem que falhou não pode ficar memorizada: toda tentativa seguinte
+  // herdaria a rejeição e "Editar" não faria mais nada até o F5.
+  montagemPromise.catch(() => { montagemPromise = null; });
+
   return montagemPromise;
 }
 

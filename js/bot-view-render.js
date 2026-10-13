@@ -811,9 +811,18 @@ export async function pedirFecharBotView() {
   fecharBotView();
 }
 
+// Quem abre algo por cima do editor (lista de labels etc.) registra aqui como
+// fechar, pois o render não importa os módulos de interação (dependência
+// circular). Chamado sempre que o editor fecha.
+const aoFechar = [];
+export function registrarAoFechar(fn) {
+  aoFechar.push(fn);
+}
+
 export function fecharBotView() {
   fecharCombobox();
   fecharVariaveisTexto();
+  aoFechar.forEach((fn) => { try { fn(); } catch { /* um fechamento não impede os outros */ } });
   $('#bot-view-overlay').classList.add('hidden');
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';

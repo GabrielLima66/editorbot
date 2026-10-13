@@ -130,3 +130,12 @@ test('comValorAtual devolve rótulos únicos e a lista sem repetição fica inta
   const com = comValorAtual([{ value: '1', label: 'A' }, { value: '2', label: 'A' }], '');
   assert.notEqual(com[0].label, com[1].label);
 });
+
+// --- 10. resumo da ferramenta avulsa dentro da extensão --------------------
+
+test('mostrarResumoBot não quebra quando a página não tem a seção de upload', async () => {
+  const { mostrarResumoBot } = await js('upload.js');
+  state.botCarregado = botCom({ NAME: 'X', ID: '1' });
+  assert.doesNotThrow(() => mostrarResumoBot());
+  state.botCarregado = null;
+});

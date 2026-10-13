@@ -13,6 +13,7 @@ import {
   abrirBotView,
   atualizarListaVariaveisCondicao,
   pedirFecharBotView,
+  registrarAoFechar,
   atualizarSecaoDestino,
   lerContaTranscricao,
   atualizarContadorRodape,
@@ -1013,6 +1014,14 @@ function fecharListasLabels() {
   getRootNode().querySelectorAll('#bv-estados .labels-campo').forEach(fecharListaLabels);
 }
 
+// Fecha qualquer lista aberta e solta o handler de Esc mesmo quando o campo
+// já saiu do DOM (editor fechado ou reaberto com a lista aberta): sem isto o
+// handler ficava empilhado e engolia o Esc da página e do próprio editor.
+function fecharListasLabelsAbertas() {
+  fecharListasLabels();
+  if (soltarEscLabels) { soltarEscLabels(); soltarEscLabels = null; }
+}
+
 function filtrarListaLabels(campo, texto) {
   const alvo = texto.trim().toLowerCase();
   let visiveis = 0;
@@ -1028,7 +1037,7 @@ function alternarListaLabels(campo) {
   if (!campo) return;
   const lista = campo.querySelector('.labels-lista');
   if (!lista.classList.contains('hidden')) { fecharListaLabels(campo); return; }
-  fecharListasLabels();
+  fecharListasLabelsAbertas();
   lista.classList.remove('hidden');
   campo.querySelector('.labels-caixa')?.setAttribute('aria-expanded', 'true');
   const busca = campo.querySelector('.labels-busca');
@@ -1043,6 +1052,9 @@ function alternarListaLabels(campo) {
 
 export function initAcoesDelegadas() {
   const container = $('#bv-estados');
+  // Na init e não no topo do módulo: render e interactions se importam
+  // mutuamente e o registro precisa rodar com o render já avaliado.
+  registrarAoFechar(fecharListasLabelsAbertas);
 
   // Busca dentro da lista de labels: filtra enquanto digita; Enter escolhe a
   // primeira que sobrou.
