@@ -299,3 +299,40 @@ test('sem o ambiente (modo avulso) a ação nasce em branco como antes', () => {
   assert.equal(bot.BOT_ACTIONS[0].ACTION_DATA.destiny, '');
   assert.deepEqual(I.padraoDaAcao('1'), {});
 });
+
+// --- timeout: o que foi escolhido em cada ação volta na ida e volta ----------
+
+test('Trocar estado -> Encerrar -> Trocar estado conserva o estado escolhido', () => {
+  state.ambienteOrpen = { crm_status: [{ id: '4', name: 'Resolvido' }] };
+  try {
+    const bot = botCom({ TIMEOUT_ACTION: 'bot', TIMEOUT_DESTINY: '3' });
+    I.trocarAcaoTimeout(bot, 'close');
+    assert.equal(bot.TIMEOUT_DESTINY, '4');
+    I.trocarAcaoTimeout(bot, 'bot');
+    assert.equal(bot.TIMEOUT_DESTINY, '3');
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('Fila -> Encerrar -> Fila conserva a fila escolhida, mesmo depois de trocar duas vezes', () => {
+  state.ambienteOrpen = { queues: [{ id: 'SUPORTE', name: 'SUPORTE' }, { id: 'VENDAS', name: 'VENDAS' }], crm_status: [{ id: '4', name: 'A' }] };
+  try {
+    const bot = botCom({ TIMEOUT_ACTION: 'queue', CONF_DELIVERY_QUEUE: 'VENDAS', TIMEOUT_DESTINY: '' });
+    I.trocarAcaoTimeout(bot, 'close');
+    I.trocarAcaoTimeout(bot, 'bot');
+    I.trocarAcaoTimeout(bot, 'queue');
+    assert.equal(bot.CONF_DELIVERY_QUEUE, 'VENDAS');
+    assert.equal(bot.TIMEOUT_ACTION, 'queue');
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('estado lembrado que deixou de existir volta ao primeiro estado', () => {
+  const bot = botCom({ TIMEOUT_ACTION: 'bot', TIMEOUT_DESTINY: '3' });
+  I.trocarAcaoTimeout(bot, 'queue');
+  bot.BOT_STATES = bot.BOT_STATES.filter((e) => e.STATE_NUMBER !== '3');
+  I.trocarAcaoTimeout(bot, 'bot');
+  assert.equal(bot.TIMEOUT_DESTINY, '0');
+});

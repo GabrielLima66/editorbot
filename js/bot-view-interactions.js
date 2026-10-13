@@ -470,21 +470,43 @@ export function primeiroNumeroDeEstado(bot) {
 // Os três selects do nativo não têm opção vazia: ao escolher a ação, já vale o
 // primeiro item (estado, fila ou status CRM) e o nativo nunca grava destino
 // vazio. A fila do timeout é o próprio CONF_DELIVERY_QUEUE (campo único no editor).
-const statusEncerrarLembrado = new WeakMap();
+// O que a pessoa tinha escolhido em cada ação do timeout, por bot. No nativo
+// cada ação tem o próprio controle (o de status é fixo, bot.php:522-529); aqui
+// o editor guarda o mesmo valor ao ir para outra ação e voltar, em vez de
+// recomeçar do primeiro item.
+const destinoLembrado = new WeakMap();
+
+function valorAtualDoTimeout(bot, acao) {
+  return acao === 'queue' ? bot.CONF_DELIVERY_QUEUE : bot.TIMEOUT_DESTINY;
+}
+
 export function trocarAcaoTimeout(bot, novaAcao) {
   const anterior = String(bot.TIMEOUT_ACTION ?? '');
   if (anterior === String(novaAcao ?? '')) return;
-  // O select de status do nativo é fixo (bot.php:522-529): ir para "Trocar
-  // estado" e voltar a "Encerrar" não muda o status escolhido.
-  if (anterior === 'close' && bot.TIMEOUT_DESTINY) statusEncerrarLembrado.set(bot, bot.TIMEOUT_DESTINY);
-  mudarCampoBot(bot, 'TIMEOUT_ACTION', novaAcao);
-  let destino = '';
-  if (novaAcao === 'bot') destino = primeiroNumeroDeEstado(bot);
-  else if (novaAcao === 'close') destino = statusEncerrarLembrado.get(bot) ?? opcoesCrmStatus()[0]?.value ?? '';
-  mudarCampoBot(bot, 'TIMEOUT_DESTINY', destino);
-  if (novaAcao === 'queue' && !String(bot.CONF_DELIVERY_QUEUE ?? '').trim()) {
-    mudarCampoBot(bot, 'CONF_DELIVERY_QUEUE', opcoesFilas()[0]?.value ?? '');
+  const lembrado = destinoLembrado.get(bot) || {};
+  if (['bot', 'queue', 'close'].includes(anterior)) {
+    const atual = valorAtualDoTimeout(bot, anterior);
+    if (atual !== undefined && atual !== null && String(atual) !== '') lembrado[anterior] = String(atual);
+    destinoLembrado.set(bot, lembrado);
   }
+  mudarCampoBot(bot, 'TIMEOUT_ACTION', novaAcao);
+
+  if (novaAcao === 'queue') {
+    // A fila do timeout é o próprio CONF_DELIVERY_QUEUE: só é preenchida
+    // quando está vazia (a primeira fila, como o select do nativo).
+    const fila = lembrado.queue ?? (String(bot.CONF_DELIVERY_QUEUE ?? '').trim() || opcoesFilas()[0]?.value || '');
+    mudarCampoBot(bot, 'CONF_DELIVERY_QUEUE', fila);
+    mudarCampoBot(bot, 'TIMEOUT_DESTINY', '');
+    return;
+  }
+  let destino = '';
+  if (novaAcao === 'bot') {
+    const existe = (bot.BOT_STATES || []).some((e) => String(e.STATE_NUMBER) === lembrado.bot);
+    destino = existe ? lembrado.bot : primeiroNumeroDeEstado(bot);
+  } else if (novaAcao === 'close') {
+    destino = lembrado.close ?? opcoesCrmStatus()[0]?.value ?? '';
+  }
+  mudarCampoBot(bot, 'TIMEOUT_DESTINY', destino);
 }
 
 // Os campos "estado livre" (campoEstadoLivre) mostram "N - ALIAS" quando o
