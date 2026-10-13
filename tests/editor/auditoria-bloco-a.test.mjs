@@ -248,3 +248,54 @@ test('simulador: timeout de fila usa a fila escolhida no editor', async () => {
   const bot = botCom({ TIMEOUT_ACTION: 'queue', TIMEOUT_DESTINY: '', CONF_DELIVERY_QUEUE: 'VENDAS' });
   assert.equal(criarSessao(bot).bot.TIMEOUT_DESTINY, 'VENDAS');
 });
+
+// --- primeiro item como padrão nas ações de lista (paridade com o nativo) ----
+
+const AMBIENTE_PADRAO = {
+  agents: [{ id: '12', name: '[Agente] Maria' }, { id: '15', name: '[Agente] João' }],
+  bots: [{ id: '77', name: '[Bot] Bot X' }],
+  queues: [{ id: 'SUPORTE', name: '[SUPORTE] Suporte' }, { id: 'VENDAS', name: 'VENDAS' }],
+  crm_status: [{ id: '4', name: 'Resolvido' }, { id: '9', name: 'Outro' }],
+  scripts: [{ id: '81', name: 'Consulta CPF' }],
+  checkpoints: [{ id: '3', name: 'Início' }],
+  entrances: [{ id: 'WABA1', name: '[Whatsapp] WABA1' }],
+  subStatus: [{ id: '20', name: 'Cliente desistiu' }],
+};
+
+const acaoMensagem = () => ({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '1', ACTION_DATA: { message_text: 'oi' } });
+
+test('ações de lista nascem com o primeiro item do ambiente', () => {
+  state.ambienteOrpen = AMBIENTE_PADRAO;
+  try {
+    const esperado = {
+      '4': { destiny: '12' }, '5': { destiny: 'SUPORTE' }, '6': { crm_status: '4' }, '7': { script_name: '81' },
+      '9': { check_point: '3' }, '12': { entrances: 'WABA1' }, '14': { substatus: '20' },
+    };
+    for (const [tipo, dados] of Object.entries(esperado)) {
+      const bot = botCom({ BOT_ACTIONS: [acaoMensagem()] });
+      I.mudarTipoAcao(bot, 't1', 'a1', tipo);
+      for (const [campo, valor] of Object.entries(dados)) {
+        assert.equal(bot.BOT_ACTIONS[0].ACTION_DATA[campo], valor, `ação ${tipo}.${campo}`);
+      }
+    }
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('Transf. Agente começa pelo primeiro agente, nunca por um bot', () => {
+  state.ambienteOrpen = { ...AMBIENTE_PADRAO, agents: [] };
+  try {
+    assert.deepEqual(I.padraoDaAcao('4'), {});
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('sem o ambiente (modo avulso) a ação nasce em branco como antes', () => {
+  state.ambienteOrpen = null;
+  const bot = botCom({ BOT_ACTIONS: [acaoMensagem()] });
+  I.mudarTipoAcao(bot, 't1', 'a1', '5');
+  assert.equal(bot.BOT_ACTIONS[0].ACTION_DATA.destiny, '');
+  assert.deepEqual(I.padraoDaAcao('1'), {});
+});

@@ -28,7 +28,10 @@ import { initCopiarColar } from './copiar-colar.js';
 import { initTesteBot } from './teste-bot.js';
 import { initCombobox, datalistDe } from './combobox.js';
 import { initVariaveisTexto } from './variaveis-texto.js';
-import { assistentesOpenAi, opcoesFilas, opcoesCrmStatus } from './orpen-env.js';
+import {
+  assistentesOpenAi, opcoesFilas, opcoesCrmStatus, opcoesAgentes, opcoesScripts, opcoesCheckpoints,
+  opcoesEntrancesEnvio, opcoesSubStatus,
+} from './orpen-env.js';
 import { mostrarResumoBot } from './upload.js';
 
 // ---------------------------------------------------------------------------
@@ -426,7 +429,29 @@ export function mudarTipoAcao(bot, transitionId, actionId, novoTipo) {
   // primeiro estado da lista (bot.php:3956-3964). Aqui o select mostra o mesmo
   // estado, então o dado tem que ser esse e não ''.
   if (String(novoTipo) === '2') acao.ACTION_DATA.destiny = primeiroNumeroDeEstado(bot);
+  Object.assign(acao.ACTION_DATA, padraoDaAcao(novoTipo));
   withMirrors('action', acao);
+}
+
+// Ações cujo campo é uma lista do ambiente: o nativo monta um <select> sem
+// opção vazia (ou já preenche o primeiro agente/fila), então uma ação nova
+// nasce com o primeiro item e nunca vazia (bot.php:3989, 4028, 4070-4191).
+const CAMPO_E_LISTA_POR_ACAO = {
+  '4': ['destiny', opcoesAgentes],
+  '5': ['destiny', opcoesFilas],
+  '6': ['crm_status', opcoesCrmStatus],
+  '7': ['script_name', opcoesScripts],
+  '9': ['check_point', opcoesCheckpoints],
+  '12': ['entrances', opcoesEntrancesEnvio],
+  '14': ['substatus', opcoesSubStatus],
+};
+
+/** { campo: primeiroValor } da ação, ou {} sem o cadastro do ambiente. */
+export function padraoDaAcao(tipo) {
+  const regra = CAMPO_E_LISTA_POR_ACAO[String(tipo)];
+  if (!regra) return {};
+  const primeiro = regra[1]()[0]?.value;
+  return primeiro === undefined || primeiro === '' ? {} : { [regra[0]]: String(primeiro) };
 }
 
 /** Número do primeiro estado do bot em ordem numérica ('' se não houver estados). */
