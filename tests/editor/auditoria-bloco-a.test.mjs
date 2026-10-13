@@ -169,3 +169,61 @@ test('o ambiente guardado continua com o nome como o coletor entregou (o fluxogr
     state.ambienteOrpen = null;
   }
 });
+
+// --- paridade: valor da condição, timeout fila/status e fila importada -------
+
+test('trocar a variável limpa o valor da condição, como o nativo', () => {
+  const bot = botCom({ BOT_CONDITIONS: [{ ...condicao('message'), CONDITION_DATA: { variable: 'message', type: '1', value: 'oi' } }] });
+  I.mudarCondicaoVariavel(bot, 't1', 'c1', 'cpf_cliente');
+  assert.equal(bot.BOT_CONDITIONS[0].CONDITION_DATA.value, '');
+});
+
+test('trocar de "Possui os labels" para texto não deixa a lista como valor', () => {
+  const bot = botCom({ BOT_CONDITIONS: [{ ID: 'c1', TRANSITION_ID: 't1', CONDITION_TYPE: '18', CONDITION_DATA: { variable: 'contact', type: '18', value: ['3', '9'] } }] });
+  I.mudarCondicaoVariavel(bot, 't1', 'c1', 'message');
+  assert.equal(bot.BOT_CONDITIONS[0].CONDITION_DATA.value, '');
+});
+
+test('escolher de novo a mesma variável não apaga o valor', () => {
+  const bot = botCom({ BOT_CONDITIONS: [{ ...condicao('message'), CONDITION_DATA: { variable: 'message', type: '1', value: 'oi' } }] });
+  I.mudarCondicaoVariavel(bot, 't1', 'c1', 'message');
+  assert.equal(bot.BOT_CONDITIONS[0].CONDITION_DATA.value, 'oi');
+});
+
+test('timeout "Encerrar" já nasce com o primeiro status CRM e "Fila" com a primeira fila', () => {
+  state.ambienteOrpen = { crm_status: [{ id: '4', name: 'Resolvido' }, { id: '9', name: 'Outro' }], queues: [{ id: 'VENDAS', name: '[VENDAS] Vendas' }] };
+  try {
+    const a = botCom({ TIMEOUT_ACTION: 'bot', TIMEOUT_DESTINY: '3' });
+    I.trocarAcaoTimeout(a, 'close');
+    assert.equal(a.TIMEOUT_DESTINY, '4');
+    const b = botCom({ TIMEOUT_ACTION: 'bot', TIMEOUT_DESTINY: '3', CONF_DELIVERY_QUEUE: '' });
+    I.trocarAcaoTimeout(b, 'queue');
+    assert.equal(b.CONF_DELIVERY_QUEUE, 'VENDAS');
+    const c = botCom({ TIMEOUT_ACTION: 'bot', CONF_DELIVERY_QUEUE: 'SUPORTE' });
+    I.trocarAcaoTimeout(c, 'queue');
+    assert.equal(c.CONF_DELIVERY_QUEUE, 'SUPORTE', 'fila já escolhida não é trocada');
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('bot importado com fila só no TIMEOUT_DESTINY mostra a fila e não a perde ao salvar', async () => {
+  const { fromGetBotResponse, toUpdateBotPayload } = await js('orpen-adapter.js');
+  const bot = fromGetBotResponse({
+    ID: '5', NAME: 'x', TIMEOUT_ACTION: 'queue', TIMEOUT_DESTINY: 'SUPORTE', CONF_DELIVERY_QUEUE: '',
+    BOT_STATES: [], BOT_TRANSITIONS: [], BOT_CONDITIONS: [], BOT_ACTIONS: [],
+  });
+  assert.equal(bot.CONF_DELIVERY_QUEUE, 'SUPORTE');
+  assert.equal(toUpdateBotPayload(bot).timeout_queue, 'SUPORTE');
+});
+
+test('fila: o simulador mostra o nome e o ID uma vez só', async () => {
+  const { nomeDoCadastro } = await js('simulador.js');
+  state.ambienteOrpen = { queues: [{ id: 'SUPORTE', name: '[SUPORTE] Suporte N1' }, { id: 'GERAL', name: 'GERAL' }] };
+  try {
+    assert.equal(nomeDoCadastro('agent_on_queue', 'SUPORTE'), '"Suporte N1" (ID SUPORTE)');
+    assert.equal(nomeDoCadastro('agent_on_queue', 'GERAL'), 'ID GERAL');
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});

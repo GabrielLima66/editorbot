@@ -28,7 +28,7 @@ import { initCopiarColar } from './copiar-colar.js';
 import { initTesteBot } from './teste-bot.js';
 import { initCombobox, datalistDe } from './combobox.js';
 import { initVariaveisTexto } from './variaveis-texto.js';
-import { assistentesOpenAi } from './orpen-env.js';
+import { assistentesOpenAi, opcoesFilas, opcoesCrmStatus } from './orpen-env.js';
 import { mostrarResumoBot } from './upload.js';
 
 // ---------------------------------------------------------------------------
@@ -296,7 +296,12 @@ export function tipoRaizAssistente(variavel) {
 export function mudarCondicaoVariavel(bot, transitionId, conditionId, novaVariavel) {
   const cond = (bot.BOT_CONDITIONS || []).find(c => c.TRANSITION_ID === transitionId && c.ID === conditionId);
   if (!cond) return;
+  const trocouDeVariavel = cond.CONDITION_DATA?.variable !== novaVariavel;
   cond.CONDITION_DATA = { ...cond.CONDITION_DATA, variable: novaVariavel };
+  // O nativo recria o campo de valor ao trocar a variável (bot.php:3538-3539).
+  // Manter o antigo deixava um texto "grudado" e, saindo de "Possui os labels"
+  // (valor = lista de IDs), uma lista como valor de condição de texto.
+  if (trocouDeVariavel) cond.CONDITION_DATA.value = '';
   const kind = VARIABLE_KIND[novaVariavel] || 'text';
   // O nativo começa pelo primeiro operador de verdade (bot.php:3543, 3630, 3641).
   // "Sempre verdadeiro" (0) segue disponível na lista, mas não pode ser o padrão:
@@ -436,10 +441,20 @@ export function primeiroNumeroDeEstado(bot) {
 // status de CRM). Carregar o destino da ação anterior gravava, por exemplo, um
 // ID de status como número de estado. No nativo cada ação tem o próprio
 // controle, já com o primeiro item (bot.php:1514-1553).
+//
+// Os três selects do nativo não têm opção vazia: ao escolher a ação, já vale o
+// primeiro item (estado, fila ou status CRM) e o nativo nunca grava destino
+// vazio. A fila do timeout é o próprio CONF_DELIVERY_QUEUE (campo único no editor).
 export function trocarAcaoTimeout(bot, novaAcao) {
   if (String(bot.TIMEOUT_ACTION ?? '') === String(novaAcao ?? '')) return;
   mudarCampoBot(bot, 'TIMEOUT_ACTION', novaAcao);
-  mudarCampoBot(bot, 'TIMEOUT_DESTINY', novaAcao === 'bot' ? primeiroNumeroDeEstado(bot) : '');
+  let destino = '';
+  if (novaAcao === 'bot') destino = primeiroNumeroDeEstado(bot);
+  else if (novaAcao === 'close') destino = opcoesCrmStatus()[0]?.value ?? '';
+  mudarCampoBot(bot, 'TIMEOUT_DESTINY', destino);
+  if (novaAcao === 'queue' && !String(bot.CONF_DELIVERY_QUEUE ?? '').trim()) {
+    mudarCampoBot(bot, 'CONF_DELIVERY_QUEUE', opcoesFilas()[0]?.value ?? '');
+  }
 }
 
 // Os campos "estado livre" (campoEstadoLivre) mostram "N - ALIAS" quando o

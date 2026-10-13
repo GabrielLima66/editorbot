@@ -42,7 +42,10 @@ export function nomeDoCadastro(variavel, id) {
   const nome = CADASTRO_POR_VARIAVEL[variavel]?.().find((o) => String(o.value) === String(id))?.label;
   // Agentes e bots trazem o ID no rótulo ("[Agente 12] Maria"): aqui o ID sai
   // do prefixo para não repetir, e fica só o nome seguido de (ID n).
-  const limpo = nome ? String(nome).replace(/^\[(?:Agente|Bot)[^\]]*\]\s*/u, '') : nome;
+  // Fila: o coletor entrega "[NAME] BEE_NAME" e o NAME é o próprio ID.
+  const limpo = nome
+    ? String(nome).replace(/^\[(?:Agente|Bot)[^\]]*\]\s*/u, '').replace(`[${id}] `, '')
+    : nome;
   return limpo && limpo !== String(id) ? `"${limpo}" (ID ${id})` : `ID ${id}`;
 }
 

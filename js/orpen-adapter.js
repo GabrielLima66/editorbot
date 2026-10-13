@@ -58,7 +58,11 @@ export function fromGetBotResponse(getBotJson) {
     TIME_ANSWER: getBotJson.TIME_ANSWER ?? '',
     TIMEOUT_DELAY: getBotJson.TIMEOUT_DELAY ?? '',
     CONF_DELIVERY_TIME: getBotJson.CONF_DELIVERY_TIME ?? getBotJson.TIMEOUT_DELAY ?? '',
-    CONF_DELIVERY_QUEUE: getBotJson.CONF_DELIVERY_QUEUE ?? '',
+    // Com timeout "queue" o nativo preenche o select com TIMEOUT_DESTINY
+    // (bot.php:2803, 2945). Em bot importado os dois campos podem divergir e o
+    // CONF_DELIVERY_QUEUE vazio zeraria a fila do timeout ao salvar.
+    CONF_DELIVERY_QUEUE: (getBotJson.TIMEOUT_ACTION === 'queue' && getBotJson.TIMEOUT_DESTINY)
+      || (getBotJson.CONF_DELIVERY_QUEUE ?? ''),
     TIMEOUT_ACTION: getBotJson.TIMEOUT_ACTION ?? '',
     TIMEOUT_DESTINY: getBotJson.TIMEOUT_DESTINY ?? '',
     TIMEOUT_MESSAGE: getBotJson.TIMEOUT_MESSAGE ?? '',
