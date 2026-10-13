@@ -297,7 +297,12 @@ export function mudarCondicaoVariavel(bot, transitionId, conditionId, novaVariav
   if (!cond) return;
   cond.CONDITION_DATA = { ...cond.CONDITION_DATA, variable: novaVariavel };
   const kind = VARIABLE_KIND[novaVariavel] || 'text';
-  const primeiroTipo = buildOperatorOptions(kind, '')[0]?.value ?? '';
+  // O nativo começa pelo primeiro operador de verdade (bot.php:3543, 3630, 3641).
+  // "Sempre verdadeiro" (0) segue disponível na lista, mas não pode ser o padrão:
+  // o servidor descarta condição de tipo 0 (Bot.class.php:226), e a condição
+  // sumiria sozinha ao salvar se a pessoa não notasse o operador.
+  const opcoesOperador = buildOperatorOptions(kind, '');
+  const primeiroTipo = (opcoesOperador.find((o) => String(o.value) !== '0') ?? opcoesOperador[0])?.value ?? '';
   const raizAssistente = tipoRaizAssistente(novaVariavel);
   if (raizAssistente) {
     if (cond.CONDITION_DATA.assistant_id === undefined) cond.CONDITION_DATA.assistant_id = '';
@@ -411,7 +416,29 @@ export function mudarTipoAcao(bot, transitionId, actionId, novoTipo) {
   if (!acao || acao.ACTION_TYPE === novoTipo) return;
   acao.ACTION_TYPE = novoTipo;
   acao.ACTION_DATA = defaultActionData(novoTipo);
+  // "Troca Estado": o <select> do nativo não tem opção vazia, então grava o
+  // primeiro estado da lista (bot.php:3956-3964). Aqui o select mostra o mesmo
+  // estado, então o dado tem que ser esse e não ''.
+  if (String(novoTipo) === '2') acao.ACTION_DATA.destiny = primeiroNumeroDeEstado(bot);
   withMirrors('action', acao);
+}
+
+/** Número do primeiro estado do bot em ordem numérica ('' se não houver estados). */
+export function primeiroNumeroDeEstado(bot) {
+  const numeros = (bot.BOT_STATES || [])
+    .map((e) => parseInt(e.STATE_NUMBER, 10))
+    .filter((n) => Number.isFinite(n));
+  return numeros.length ? String(Math.min(...numeros)) : '';
+}
+
+// Trocar a ação do timeout troca o significado de TIMEOUT_DESTINY (estado,
+// status de CRM). Carregar o destino da ação anterior gravava, por exemplo, um
+// ID de status como número de estado. No nativo cada ação tem o próprio
+// controle, já com o primeiro item (bot.php:1514-1553).
+export function trocarAcaoTimeout(bot, novaAcao) {
+  if (String(bot.TIMEOUT_ACTION ?? '') === String(novaAcao ?? '')) return;
+  mudarCampoBot(bot, 'TIMEOUT_ACTION', novaAcao);
+  mudarCampoBot(bot, 'TIMEOUT_DESTINY', novaAcao === 'bot' ? primeiroNumeroDeEstado(bot) : '');
 }
 
 // Os campos "estado livre" (campoEstadoLivre) mostram "N - ALIAS" quando o
@@ -1457,7 +1484,7 @@ export function initBotHeaderEdit() {
 
   $('#bv-acao-timeout').addEventListener('change', () => {
     if (!state.botCarregado) return;
-    mudarCampoBot(state.botCarregado, 'TIMEOUT_ACTION', $('#bv-acao-timeout').value);
+    trocarAcaoTimeout(state.botCarregado, $('#bv-acao-timeout').value);
     const estadoPorNumero = {};
     (state.botCarregado.BOT_STATES || []).forEach(e => estadoPorNumero[e.STATE_NUMBER] = e);
     atualizarSecaoDestino(state.botCarregado, estadoPorNumero);

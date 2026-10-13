@@ -94,7 +94,18 @@ export function variaveisAmbiente() {
 // JSON importado, cadastro removido depois etc.) — sem isso o <select>
 // mudaria silenciosamente o valor pro primeiro item da lista.
 export function comValorAtual(opcoes, valorAtual) {
-  if (valorAtual === undefined || valorAtual === null || valorAtual === '') return opcoes;
-  if (opcoes.some((o) => String(o.value) === String(valorAtual))) return opcoes;
-  return [...opcoes, { value: String(valorAtual), label: `${valorAtual} (não encontrado no ambiente)` }];
+  if (valorAtual === undefined || valorAtual === null || valorAtual === '') return rotulosUnicos(opcoes);
+  if (opcoes.some((o) => String(o.value) === String(valorAtual))) return rotulosUnicos(opcoes);
+  return rotulosUnicos([...opcoes, { value: String(valorAtual), label: `${valorAtual} (não encontrado no ambiente)` }]);
+}
+
+// A escolha num campo de busca (input + datalist) volta como TEXTO e é
+// resolvida para o ID pelo rótulo. Dois cadastros com o mesmo nome (dois
+// agentes "Maria Silva", filas repetidas) gravavam sempre o ID do primeiro.
+// Só os rótulos que se repetem ganham o ID; os demais ficam como estão.
+export function rotulosUnicos(opcoes) {
+  const contagem = new Map();
+  for (const o of opcoes) contagem.set(o.label, (contagem.get(o.label) || 0) + 1);
+  if (![...contagem.values()].some((n) => n > 1)) return opcoes;
+  return opcoes.map((o) => (contagem.get(o.label) > 1 ? { ...o, label: `${o.label} (ID ${o.value})` } : o));
 }

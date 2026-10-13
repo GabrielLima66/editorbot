@@ -175,8 +175,20 @@ export function campoEstadoLivre(label, estadoPorNumero, transitionId, actionId,
 // card dele, mesmo se estiver fechado/fora da tela) — só faz sentido aqui,
 // já que é o único campo de estado com garantia de sempre apontar pra um
 // estado que existe de verdade no bot.
-export function campoEstadoDestinoComAtalho(estadoPorNumero, transitionId, actionId, selected) {
+// Opções de um <select> de estado que sempre mostram o que está gravado: sem
+// valor aparece "Selecione o estado…" e, com um número que não existe no bot,
+// uma opção própria. Sem isso o navegador exibia o primeiro estado enquanto o
+// dado continuava vazio (ou apontando para um estado inexistente).
+export function opcoesDeEstado(estadoPorNumero, selecionado) {
   const opcoes = Object.values(estadoPorNumero).map(e => ({ value: e.STATE_NUMBER, label: `[${e.STATE_NUMBER}] ${e.ALIAS}` }));
+  const vazio = selecionado === undefined || selecionado === null || selecionado === '';
+  if (vazio) return [{ value: '', label: 'Selecione o estado…' }, ...opcoes];
+  if (!estadoPorNumero[selecionado]) return [...opcoes, { value: String(selecionado), label: `${selecionado} (estado inexistente)` }];
+  return opcoes;
+}
+
+export function campoEstadoDestinoComAtalho(estadoPorNumero, transitionId, actionId, selected) {
+  const opcoes = opcoesDeEstado(estadoPorNumero, selected);
   const selectHtml = `<select class="field-view flex-1" data-action="mudar-campo-acao" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="destiny">${optionsHtml(opcoes, selected)}</select>`;
   const temEstado = selected !== undefined && selected !== null && selected !== '' && estadoPorNumero[selected];
   const btnHtml = `<button type="button" class="ir-para-estado-btn shrink-0" data-action="ir-para-estado" data-state="${escapeHtml(selected ?? '')}" title="Ir para este estado"${temEstado ? '' : ' disabled'}><i data-lucide="arrow-right" class="w-3.5 h-3.5 pointer-events-none"></i></button>`;
@@ -405,9 +417,11 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
       break;
     case '5':
-      // Fila é o destino mais comum, mas o campo historicamente aceita
-      // número de fila/bot/agente — junta as três listas do ambiente.
-      corpo = campoAmbienteSelect('Fila / bot / agente destino', () => [...opcoesFilas(), ...opcoesBots(), ...opcoesAgentes()], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
+      // O motor sempre transfere como fila (tipo '1', Bot.class.php:1268-1276)
+      // e o modal nativo lista só filas e variáveis (bot.php:3842-3852). Um
+      // bot ou agente aqui seria gravado como número de fila. Um valor já
+      // gravado continua aparecendo (comValorAtual).
+      corpo = campoAmbienteSelect('Fila destino', opcoesFilas, a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
       break;
     case '6': {
       if (temAmbiente()) {
@@ -656,7 +670,7 @@ export function atualizarSecaoDestino(bot, estadoPorNumero) {
   const destinoWrap = $('#bv-destino-wrap');
   const msgWrap = $('#bv-msg-encerrar-wrap');
   if (bot.TIMEOUT_ACTION === 'bot') {
-    const opcoesEstado = Object.values(estadoPorNumero).map(e => ({ value: e.STATE_NUMBER, label: `[${e.STATE_NUMBER}] ${e.ALIAS}` }));
+    const opcoesEstado = opcoesDeEstado(estadoPorNumero, bot.TIMEOUT_DESTINY);
     $('#bv-destino-label').textContent = 'Estado do bot (timeout)';
     $('#bv-destino-valor').innerHTML = `<select id="bv-destino-select" class="field-view" data-campo-bot="TIMEOUT_DESTINY">${optionsHtml(opcoesEstado, bot.TIMEOUT_DESTINY)}</select>`;
     destinoWrap.classList.remove('hidden');
