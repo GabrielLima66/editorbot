@@ -16,3 +16,6 @@ VALIDACAO.md
 .project/
 project-lifecycle/
 CAPABILITY_MAP.md
+
+# Documentação interna do motor da Orpen: só na máquina de desenvolvimento (cópia em .project/docs-internas/)
+bot-engine-spec.md
