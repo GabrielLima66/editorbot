@@ -22,8 +22,21 @@ export function temAmbiente() {
 }
 
 export function opcoesFilas() { return opcoesDe(state.ambienteOrpen?.queues); }
-export function opcoesAgentes() { return opcoesDe(state.ambienteOrpen?.agents); }
-export function opcoesBots() { return opcoesDe(state.ambienteOrpen?.bots); }
+// Agentes e bots aparecem sempre com o ID junto do nome ("[Agente 12] Maria"):
+// nomes se repetem, e a busca (campo e lista) passa a achar também pelo ID.
+// O coletor entrega "[Agente] Maria"/"[Bot] Nome"; o prefixo é refeito aqui,
+// sem mexer em state.ambienteOrpen (o fluxograma lê o nome como veio).
+export function rotuloComId(tipo, id, nome) {
+  const limpo = String(nome ?? '').replace(/^\[(?:Agente|Bot)(?:\s+[^\]]*)?\]\s*/u, '').trim();
+  const prefixo = `[${tipo} ${id}]`;
+  return limpo && limpo !== String(id) ? `${prefixo} ${limpo}` : prefixo;
+}
+export function opcoesAgentes() {
+  return opcoesDe(state.ambienteOrpen?.agents).map((o) => ({ ...o, label: rotuloComId('Agente', o.value, o.label) }));
+}
+export function opcoesBots() {
+  return opcoesDe(state.ambienteOrpen?.bots).map((o) => ({ ...o, label: rotuloComId('Bot', o.value, o.label) }));
+}
 export function opcoesCrmStatus() { return opcoesDe(state.ambienteOrpen?.crm_status); }
 export function opcoesSubStatus() { return opcoesDe(state.ambienteOrpen?.subStatus); }
 // Condição "ENTRADA": todas as entradas, gravando o ID (como no nativo).

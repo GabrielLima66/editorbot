@@ -139,3 +139,33 @@ test('mostrarResumoBot não quebra quando a página não tem a seção de upload
   assert.doesNotThrow(() => mostrarResumoBot());
   state.botCarregado = null;
 });
+
+// --- ID junto do nome de agentes e bots, e busca pelo ID --------------------
+
+test('agentes e bots aparecem com o ID junto do nome', async () => {
+  const { opcoesAgentes, opcoesBots, rotuloComId } = await js('orpen-env.js');
+  state.ambienteOrpen = {
+    agents: [{ id: '12', name: '[Agente] Maria Silva' }, { id: '9', name: '9' }],
+    bots: [{ id: '77', name: '[Bot] Atendimento' }],
+  };
+  try {
+    assert.deepEqual(opcoesAgentes().map((o) => o.label), ['[Agente 12] Maria Silva', '[Agente 9]']);
+    assert.deepEqual(opcoesBots().map((o) => o.label), ['[Bot 77] Atendimento']);
+    assert.equal(opcoesAgentes()[0].value, '12', 'o valor gravado continua sendo o ID');
+    assert.equal(rotuloComId('Agente', '5', '[Agente 5] Já com id'), '[Agente 5] Já com id', 'idempotente');
+    assert.equal(rotuloComId('Bot', '3', 'Sem prefixo'), '[Bot 3] Sem prefixo');
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('o ambiente guardado continua com o nome como o coletor entregou (o fluxograma lê assim)', async () => {
+  const { opcoesAgentes } = await js('orpen-env.js');
+  state.ambienteOrpen = { agents: [{ id: '12', name: '[Agente] Maria' }] };
+  try {
+    opcoesAgentes();
+    assert.equal(state.ambienteOrpen.agents[0].name, '[Agente] Maria');
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});

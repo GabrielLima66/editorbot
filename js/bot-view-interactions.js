@@ -1309,7 +1309,13 @@ export function initAcoesDelegadas() {
       // troca por data-lista para o popup nativo não abrir).
       case 'mudar-campo-acao-ambiente-buscavel': {
         const datalist = datalistDe(el);
-        const opt = datalist && Array.from(datalist.options).find(o => o.value === el.value);
+        const opcoesLista = datalist ? Array.from(datalist.options) : [];
+        const opt = opcoesLista.find(o => o.value === el.value)
+          // Só o ID digitado ("77"): vale se houver um único cadastro com ele.
+          || (() => {
+            const porId = opcoesLista.filter(o => o.dataset.value !== undefined && o.dataset.value === el.value.trim());
+            return porId.length === 1 ? porId[0] : null;
+          })();
         if (!opt) { el.value = el.defaultValue; return; }
         mudarCampoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, opt.dataset.value);
         rerenderTransicao(bot, el.dataset.transitionId);
@@ -1328,8 +1334,10 @@ export function initAcoesDelegadas() {
       const digitado = e.target.value.toLowerCase().trim();
       if (digitado) {
         const options = Array.from(datalistDe(e.target).options);
-        // Prioriza quem começa com o texto; se não, quem apenas contém
-        let match = options.find(o => o.value.toLowerCase().startsWith(digitado));
+        // Um ID digitado por inteiro ("77") escolhe o cadastro com esse ID;
+        // senão prioriza quem começa com o texto; se não, quem apenas contém
+        let match = options.find(o => o.dataset.value !== undefined && o.dataset.value.toLowerCase() === digitado);
+        if (!match) match = options.find(o => o.value.toLowerCase().startsWith(digitado));
         if (!match) match = options.find(o => o.value.toLowerCase().includes(digitado));
 
         if (match && match.value !== e.target.value) {

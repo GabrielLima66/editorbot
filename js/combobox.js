@@ -71,9 +71,13 @@ function opcoesDoCampo(filtro) {
     .map((o) => ({
       valor: o.value,
       grupo: o.dataset.grupo || '',
+      id: o.dataset.value ?? '',
       apoio: o.getAttribute('label') && o.getAttribute('label') !== o.value ? o.getAttribute('label') : '',
     }))
-    .filter((o) => o.valor && (!alvo || normalizar(`${o.valor} ${o.apoio} ${o.grupo}`).includes(alvo)));
+    .filter((o) => o.valor && (!alvo || normalizar(`${o.valor} ${o.apoio} ${o.grupo}`).includes(alvo)))
+    // Digitou um ID inteiro ("12"): o cadastro com esse ID vem antes dos que só
+    // contêm o número ("[Agente 112]").
+    .sort((a, b) => Number(alvo !== '' && normalizar(b.id) === alvo) - Number(alvo !== '' && normalizar(a.id) === alvo));
 }
 
 function desenhar(filtro) {
