@@ -227,3 +227,24 @@ test('fila: o simulador mostra o nome e o ID uma vez só', async () => {
     state.ambienteOrpen = null;
   }
 });
+
+// --- ida e volta do timeout e fila do simulador ------------------------------
+
+test('Encerrar -> Trocar estado -> Encerrar conserva o status CRM escolhido', () => {
+  state.ambienteOrpen = { crm_status: [{ id: '4', name: 'Resolvido' }, { id: '5', name: 'Outro' }] };
+  try {
+    const bot = botCom({ TIMEOUT_ACTION: 'close', TIMEOUT_DESTINY: '5' });
+    I.trocarAcaoTimeout(bot, 'bot');
+    assert.equal(bot.TIMEOUT_DESTINY, '0');
+    I.trocarAcaoTimeout(bot, 'close');
+    assert.equal(bot.TIMEOUT_DESTINY, '5');
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('simulador: timeout de fila usa a fila escolhida no editor', async () => {
+  const { criarSessao } = await js('simulador.js');
+  const bot = botCom({ TIMEOUT_ACTION: 'queue', TIMEOUT_DESTINY: '', CONF_DELIVERY_QUEUE: 'VENDAS' });
+  assert.equal(criarSessao(bot).bot.TIMEOUT_DESTINY, 'VENDAS');
+});

@@ -445,12 +445,17 @@ export function primeiroNumeroDeEstado(bot) {
 // Os três selects do nativo não têm opção vazia: ao escolher a ação, já vale o
 // primeiro item (estado, fila ou status CRM) e o nativo nunca grava destino
 // vazio. A fila do timeout é o próprio CONF_DELIVERY_QUEUE (campo único no editor).
+const statusEncerrarLembrado = new WeakMap();
 export function trocarAcaoTimeout(bot, novaAcao) {
-  if (String(bot.TIMEOUT_ACTION ?? '') === String(novaAcao ?? '')) return;
+  const anterior = String(bot.TIMEOUT_ACTION ?? '');
+  if (anterior === String(novaAcao ?? '')) return;
+  // O select de status do nativo é fixo (bot.php:522-529): ir para "Trocar
+  // estado" e voltar a "Encerrar" não muda o status escolhido.
+  if (anterior === 'close' && bot.TIMEOUT_DESTINY) statusEncerrarLembrado.set(bot, bot.TIMEOUT_DESTINY);
   mudarCampoBot(bot, 'TIMEOUT_ACTION', novaAcao);
   let destino = '';
   if (novaAcao === 'bot') destino = primeiroNumeroDeEstado(bot);
-  else if (novaAcao === 'close') destino = opcoesCrmStatus()[0]?.value ?? '';
+  else if (novaAcao === 'close') destino = statusEncerrarLembrado.get(bot) ?? opcoesCrmStatus()[0]?.value ?? '';
   mudarCampoBot(bot, 'TIMEOUT_DESTINY', destino);
   if (novaAcao === 'queue' && !String(bot.CONF_DELIVERY_QUEUE ?? '').trim()) {
     mudarCampoBot(bot, 'CONF_DELIVERY_QUEUE', opcoesFilas()[0]?.value ?? '');

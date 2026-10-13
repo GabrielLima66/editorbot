@@ -195,7 +195,12 @@ async function montarOverlay() {
   montagemPromise = (async () => {
     let host = document.getElementById(HOST_ID);
     if (host && host.shadowRoot) {
-      return host.shadowRoot;
+      // Só reaproveita uma montagem completa. Uma que falhou no meio (rede,
+      // contexto invalidado) deixava o host sem o editor: o retry recebia um
+      // shadow root vazio e o botão ficava sem efeito até o F5.
+      if (host.shadowRoot.getElementById('bot-view-overlay')) return host.shadowRoot;
+      host.remove();
+      host = null;
     }
 
     // Tema lido e aplicado antes de qualquer coisa ser desenhada: sem piscar
@@ -210,6 +215,7 @@ async function montarOverlay() {
     // Registrado ANTES de qualquer $()/criarIcones() — o resto do editor lê
     // getRootNode() dinamicamente a cada chamada (ver js/dom-root.js).
     setRootNode(shadowRoot);
+    try {
 
     const [twCss, stylesCss, { botView, pendencias, copiar }] = await Promise.all([
       fetch(urlExtensao('vendor/tailwind.css')).then((r) => r.text()),
@@ -232,6 +238,12 @@ async function montarOverlay() {
     aplicarTema(); // título/aria do botão sol/lua
 
     return shadowRoot;
+    } catch (err) {
+      // Desfaz a montagem pela metade: o próximo "Editar" monta do zero.
+      host.remove();
+      setRootNode(document);
+      throw err;
+    }
   })();
 
   // Montagem que falhou não pode ficar memorizada: toda tentativa seguinte
@@ -406,6 +418,10 @@ async function confirmarFechar() {
   if (emCurso) {
     if (renumeracaoAberta) return false;
     await Promise.race([emCurso, new Promise((resolve) => setTimeout(resolve, ESPERA_MAXIMA_FECHAR_MS))]);
+    // O salvamento abriu o painel de pendências: o editor fica aberto, como
+    // no "Salvar e fechar", em vez de fechar deixando o painel solto na página.
+    const pendencias = $('#pendencias-overlay');
+    if (pendencias && !pendencias.classList.contains('hidden')) return false;
   }
   const campo = campoEmEdicao();
   confirmarCampoEmEdicao();

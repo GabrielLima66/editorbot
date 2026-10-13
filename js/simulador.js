@@ -121,7 +121,9 @@ export function criarSessao(bot, contexto = {}) {
     BOT_CONDITIONS: clone((bot.BOT_CONDITIONS || []).filter((c) => Number(tipoDaCondicao(c)) !== 0)),
     BOT_ACTIONS: clone((bot.BOT_ACTIONS || []).filter((a) => (parseInt(a.ACTION_TYPE, 10) || 0) !== 0)),
     TIMEOUT_ACTION: bot.TIMEOUT_ACTION ?? '',
-    TIMEOUT_DESTINY: bot.TIMEOUT_DESTINY ?? '',
+    // Com timeout "queue" a fila do editor é CONF_DELIVERY_QUEUE; TIMEOUT_DESTINY só é
+    // atualizado ao salvar e reabrir.
+    TIMEOUT_DESTINY: (bot.TIMEOUT_ACTION === 'queue' && bot.CONF_DELIVERY_QUEUE) || (bot.TIMEOUT_DESTINY ?? ''),
     TIMEOUT_MESSAGE: bot.TIMEOUT_MESSAGE ?? '',
   };
   const inicio = String(contexto.inicio ?? '0');
