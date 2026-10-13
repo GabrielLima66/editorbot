@@ -336,3 +336,33 @@ test('estado lembrado que deixou de existir volta ao primeiro estado', () => {
   I.trocarAcaoTimeout(bot, 'bot');
   assert.equal(bot.TIMEOUT_DESTINY, '0');
 });
+
+// --- ajustes da revisão final ------------------------------------------------
+
+test('ação 12 começa pela primeira entrada na ordem do nativo, não pela do grupo', () => {
+  state.ambienteOrpen = { entrances: [{ id: 'WA1', name: '[Whatsapp] WA1' }, { id: 'FB1', name: '[Facebook] FB1' }] };
+  try {
+    assert.deepEqual(I.padraoDaAcao('12'), { entrances: 'WA1' });
+  } finally {
+    state.ambienteOrpen = null;
+  }
+});
+
+test('o estado lembrado do timeout acompanha a renumeração', () => {
+  const bot = botCom({ TIMEOUT_ACTION: 'bot', TIMEOUT_DESTINY: '3' });
+  I.trocarAcaoTimeout(bot, 'close');
+  I.remapStateNumbers(bot, new Map([['3', '4'], ['1', '3']]));
+  I.trocarAcaoTimeout(bot, 'bot');
+  assert.equal(bot.TIMEOUT_DESTINY, '4');
+});
+
+test('backup com timeout de fila leva a fila também em TIMEOUT_DESTINY', async () => {
+  const { botParaBackup } = await js('orpen-adapter.js');
+  const bot = { TIMEOUT_ACTION: 'queue', TIMEOUT_DESTINY: '', CONF_DELIVERY_QUEUE: 'VENDAS', '7': '' };
+  const copia = botParaBackup(bot);
+  assert.equal(copia.TIMEOUT_DESTINY, 'VENDAS');
+  assert.equal(copia['7'], 'VENDAS');
+  assert.equal(bot.TIMEOUT_DESTINY, '', 'o bot do editor não é alterado');
+  const outro = { TIMEOUT_ACTION: 'close', TIMEOUT_DESTINY: '4', CONF_DELIVERY_QUEUE: 'VENDAS' };
+  assert.equal(botParaBackup(outro), outro);
+});

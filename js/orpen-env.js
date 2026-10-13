@@ -53,6 +53,9 @@ export function opcoesEntrancesEnvio() {
     // Um tópico por tipo: a lista precisa vir ordenada pelo grupo.
     .sort((a, b) => String(a.grupo ?? '').localeCompare(String(b.grupo ?? '')));
 }
+// As mesmas entradas na ordem em que o nativo as lista (ORDER BY id, sem
+// agrupar por tipo): é de onde sai o "primeiro item" de uma ação nova.
+export function opcoesEntrancesEnvioNaOrdemDoNativo() { return opcoesDe(state.ambienteOrpen?.entrances); }
 export function opcoesScripts() { return opcoesDe(state.ambienteOrpen?.scripts); }
 export function opcoesCheckpoints() { return opcoesDe(state.ambienteOrpen?.checkpoints); }
 export function opcoesOpenAiContas() { return opcoesDe(state.ambienteOrpen?.openAiAccounts); }

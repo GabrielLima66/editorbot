@@ -305,3 +305,12 @@ export function serializeBracketNotation(payload) {
 
   return partes.join('&');
 }
+
+// Cópia do bot para o backup (botão Baixar). Com timeout de fila o editor
+// guarda a fila em CONF_DELIVERY_QUEUE e deixa TIMEOUT_DESTINY como estava; o
+// import do servidor lê TIMEOUT_DESTINY (Bot.class.php:2294-2300), então o
+// backup precisa dos dois iguais para restaurar a fila.
+export function botParaBackup(bot) {
+  if (bot.TIMEOUT_ACTION !== 'queue' || !bot.CONF_DELIVERY_QUEUE) return bot;
+  return { ...bot, TIMEOUT_DESTINY: bot.CONF_DELIVERY_QUEUE, '7': bot.CONF_DELIVERY_QUEUE };
+}

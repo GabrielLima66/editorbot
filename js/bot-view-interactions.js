@@ -30,7 +30,7 @@ import { initCombobox, datalistDe } from './combobox.js';
 import { initVariaveisTexto } from './variaveis-texto.js';
 import {
   assistentesOpenAi, opcoesFilas, opcoesCrmStatus, opcoesAgentes, opcoesScripts, opcoesCheckpoints,
-  opcoesEntrancesEnvio, opcoesSubStatus,
+  opcoesEntrancesEnvioNaOrdemDoNativo, opcoesSubStatus,
 } from './orpen-env.js';
 import { mostrarResumoBot } from './upload.js';
 
@@ -442,7 +442,7 @@ const CAMPO_E_LISTA_POR_ACAO = {
   '6': ['crm_status', opcoesCrmStatus],
   '7': ['script_name', opcoesScripts],
   '9': ['check_point', opcoesCheckpoints],
-  '12': ['entrances', opcoesEntrancesEnvio],
+  '12': ['entrances', opcoesEntrancesEnvioNaOrdemDoNativo],
   '14': ['substatus', opcoesSubStatus],
 };
 
@@ -580,6 +580,10 @@ export function remapStateNumbers(bot, mapa) {
     bot.TIMEOUT_DESTINY = mapa.get(bot.TIMEOUT_DESTINY);
     bot['7'] = bot.TIMEOUT_DESTINY;
   }
+  // O estado que o timeout tinha antes de trocar de ação também renumera:
+  // senão voltar para "Trocar estado" apontava para outro estado.
+  const lembrado = destinoLembrado.get(bot);
+  if (lembrado && mapa.has(lembrado.bot)) lembrado.bot = mapa.get(lembrado.bot);
 }
 
 export function duplicarEstado(bot, stateNumber) {

@@ -29,7 +29,7 @@ import { $, mostrarToast, escapeHtml } from './utils.js';
 import { setRootNode, criarIcones, getRootNode, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { avisarSeHouverNovaVersao } from './atualizacao.js';
 import { abrirNovidades } from './novidades.js';
-import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, payloadEsperadoNoServidor } from './orpen-adapter.js';
+import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, payloadEsperadoNoServidor, botParaBackup } from './orpen-adapter.js';
 import { problemaAntesDeSalvar } from './validacao-salvar.js';
 import { fotografarNumeros, mudancasDeNumero } from './renumeracao.js';
 import { criarTravaDeSalvamento } from './trava-salvamento.js';
@@ -434,6 +434,7 @@ async function confirmarFechar() {
 }
 const ESPERA_MAXIMA_FECHAR_MS = 60 * 1000;
 const TEMPO_MAXIMO_ENVIO_MS = 120 * 1000;
+const TEMPO_MAXIMO_LEITURA_MS = 60 * 1000;
 
 function decidirFechar() {
   if (!temAlteracoesNaoSalvas()) return true;
@@ -506,7 +507,7 @@ function baixarBotJson() {
   const bot = state.botCarregado;
   if (!bot) return;
   const nomeArquivo = `bot_${bot.ID || 'sem-id'}_${(bot.NAME || 'sem-nome').replace(/[^a-zA-Z0-9_-]+/g, '_')}.json`;
-  const blob = new Blob([JSON.stringify(bot, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(botParaBackup(bot), null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -521,6 +522,9 @@ async function buscarBotCru(botId) {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
     body: `action=getBot&id=${encodeURIComponent(botId)}`,
+    // Sem limite, a conferência parada deixava a trava (e o "Salvar e fechar")
+    // presos até o F5.
+    signal: AbortSignal.timeout(TEMPO_MAXIMO_LEITURA_MS),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
