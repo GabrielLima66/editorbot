@@ -13,6 +13,7 @@
 import { state } from './state.js';
 import { getRootNode, empilharEsc, marcarSemAutopreenchimento } from './dom-root.js';
 import { opcoesVariavelCondicao } from './bot-view-render.js';
+import { obterEscala } from './escala.js';
 
 const DICA = 'Botão direito ou {$ para inserir variável';
 const PREFIXO_DIGITADO = /\{\$([A-Za-z0-9_]*)$/;
@@ -129,13 +130,17 @@ function marcar(i) {
 
 function posicionar(x, y, campo) {
   const r = campo.getBoundingClientRect();
-  const largura = Math.max(260, Math.min(r.width, 360));
+  // `largura` é a largura visual; a caixa recebe largura / k porque o painel é
+  // desenhado com transform: scale(k) (escala da interface, js/escala.js).
+  const k = obterEscala();
+  const largura = Math.max(260 * k, Math.min(r.width, 360 * k));
   const esquerda = Math.min(x ?? r.left, window.innerWidth - largura - 8);
   const topo = y ?? r.bottom + 4;
-  const cabeAbaixo = window.innerHeight - topo >= 220;
+  const cabeAbaixo = window.innerHeight - topo >= 220 * k;
   painel.style.left = `${Math.max(8, Math.round(esquerda))}px`;
-  painel.style.width = `${Math.round(largura)}px`;
+  painel.style.width = `${Math.round(largura / k)}px`;
   painel.style.maxHeight = '300px';
+  painel.style.transformOrigin = cabeAbaixo ? 'top left' : 'bottom left';
   if (cabeAbaixo) { painel.style.top = `${Math.round(topo)}px`; painel.style.bottom = ''; }
   else { painel.style.top = ''; painel.style.bottom = `${Math.round(window.innerHeight - (y ?? r.top) + 4)}px`; }
 }

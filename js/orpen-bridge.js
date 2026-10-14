@@ -35,6 +35,10 @@ import { fotografarNumeros, mudancasDeNumero } from './renumeracao.js';
 import { criarTravaDeSalvamento } from './trava-salvamento.js';
 import { abrirBotView, pedirFecharBotView, definirGuardaFechar } from './bot-view-render.js';
 import { initBotViewWiring, listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
+import {
+  CHAVE_ESCALA, normalizarEscala, maiorPassoPermitido, escalaEfetiva, passoAdjacente, rotuloEscala,
+  definirEscalaAtual, lerPreferencia, gravarPreferencia,
+} from './escala.js';
 
 const HOST_ID = 'orpen-editor-bot-host';
 
@@ -102,15 +106,24 @@ async function extrairEsqueletoOverlay() {
     const badge = header.querySelector('#bv-loading-badge');
     if (fechar && badge) header.insertBefore(badge, fechar);
 
-    // Alternar tema claro/escuro (SPEC-tema-claro.md): logo antes do
-    // "fechar". Os dois ícones ficam no DOM; o CSS mostra o do tema destino.
+    // Tamanho da interface + tema claro/escuro (SPEC-tema-claro.md), num grupo
+    // logo antes do "fechar". Os dois ícones do tema ficam no DOM; o CSS mostra
+    // o do tema destino. O grupo ocupa o lugar do botão de tema na fila do
+    // header (as regras de vizinhança em css/styles.css valem pro grupo).
     if (fechar) {
       fechar.insertAdjacentHTML(
         'beforebegin',
-        `<button id="btn-bv-tema" type="button" class="bv-btn-tema">
-          <i data-lucide="sun" class="bv-icone-sol"></i>
-          <i data-lucide="moon" class="bv-icone-lua"></i>
-        </button>`
+        `<div id="bv-grupo-visual" class="bv-grupo-visual">
+          <div id="bv-escala" class="bv-escala" role="group" aria-label="Tamanho da interface">
+            <button id="btn-bv-escala-menos" type="button" class="bv-escala-menos" title="Diminuir o tamanho" aria-label="Diminuir o tamanho da interface">A\u2212</button>
+            <button id="btn-bv-escala-valor" type="button" class="bv-escala-valor" title="Tamanho padrão" aria-label="Tamanho da interface">100%</button>
+            <button id="btn-bv-escala-mais" type="button" class="bv-escala-mais" title="Aumentar o tamanho" aria-label="Aumentar o tamanho da interface">A+</button>
+          </div>
+          <button id="btn-bv-tema" type="button" class="bv-btn-tema">
+            <i data-lucide="sun" class="bv-icone-sol"></i>
+            <i data-lucide="moon" class="bv-icone-lua"></i>
+          </button>
+        </div>`
       );
     }
   }
@@ -206,10 +219,12 @@ async function montarOverlay() {
     // Tema lido e aplicado antes de qualquer coisa ser desenhada: sem piscar
     // o escuro antes de virar claro.
     temaAtual = await carregarTemaSalvo();
+    escalaPreferida = await carregarEscalaSalva();
     host = document.createElement('div');
     host.id = HOST_ID;
     if (temaAtual === 'claro') host.setAttribute('data-tema', 'claro');
     document.body.appendChild(host);
+    aplicarEscala();
     const shadowRoot = host.attachShadow({ mode: 'open' });
 
     // Registrado ANTES de qualquer $()/criarIcones() — o resto do editor lê
@@ -328,6 +343,96 @@ function alternarTema() {
   aplicarTema({ animar: true });
 }
 
+// ---------------------------------------------------------------------------
+// Tamanho da interface (js/escala.js). Mesmo esquema do tema: a preferência
+// fica no chrome.storage.local da extensão (vale para todos os ambientes),
+// com o localStorage como reserva. O que vale na tela é a escala EFETIVA: a
+// preferência, limitada pelo que a janela comporta agora (sem apagá-la: ao
+// aumentar a janela, o tamanho escolhido volta).
+// ---------------------------------------------------------------------------
+let escalaPreferida = 1;
+
+// Os dois armazenamentos são lidos na hora de usar: com a extensão recarregada
+// e a aba aberta, `chrome.storage` deixa de existir e o localStorage segue.
+function armazenamentosDaEscala() {
+  let webStorage;
+  try { webStorage = localStorage; } catch { /* bloqueado pela página */ }
+  return { chromeLocal: globalThis.chrome?.storage?.local, webStorage };
+}
+
+function carregarEscalaSalva() {
+  return lerPreferencia(armazenamentosDaEscala());
+}
+
+try {
+  chrome.storage.onChanged.addListener((mudancas, area) => {
+    if (area !== 'local' || !(CHAVE_ESCALA in mudancas)) return;
+    const nova = normalizarEscala(mudancas[CHAVE_ESCALA].newValue);
+    if (nova !== escalaPreferida) {
+      escalaPreferida = nova;
+      aplicarEscala();
+    }
+  });
+} catch {
+  // sem chrome.storage (contexto invalidado): segue só com o localStorage
+}
+
+function aplicarEscala() {
+  const efetiva = escalaEfetiva(escalaPreferida, window.innerWidth, window.innerHeight);
+  definirEscalaAtual(efetiva);
+  const host = document.getElementById(HOST_ID);
+  if (!host) return;
+  host.style.setProperty('--ed-k', String(efetiva));
+  // Em 100% o atributo some e nada do bloco de escala do CSS vale.
+  if (efetiva === 1) host.removeAttribute('data-escala');
+  else host.setAttribute('data-escala', String(efetiva));
+  atualizarControleEscala(host, efetiva);
+}
+
+function atualizarControleEscala(host, efetiva) {
+  const raiz = host.shadowRoot;
+  const menos = raiz?.getElementById('btn-bv-escala-menos');
+  const valor = raiz?.getElementById('btn-bv-escala-valor');
+  const mais = raiz?.getElementById('btn-bv-escala-mais');
+  if (!menos || !valor || !mais) return;
+  const teto = maiorPassoPermitido(window.innerWidth, window.innerHeight);
+  const limitado = normalizarEscala(escalaPreferida) > efetiva;
+  valor.textContent = rotuloEscala(efetiva);
+  valor.dataset.limitado = String(limitado);
+  valor.title = limitado
+    ? `Limitado pelo tamanho da janela (você escolheu ${rotuloEscala(escalaPreferida)}). Clique para voltar a 100%.`
+    : efetiva === 1 ? 'Tamanho padrão' : 'Clique para voltar a 100%';
+  menos.disabled = passoAdjacente(efetiva, -1) === null;
+  mais.disabled = passoAdjacente(efetiva, 1, teto) === null;
+  mais.title = mais.disabled && efetiva < 1.75
+    ? 'A janela não comporta um tamanho maior'
+    : 'Aumentar o tamanho';
+}
+
+function guardarEscala() {
+  gravarPreferencia(escalaPreferida, armazenamentosDaEscala());
+}
+
+function mudarEscala(direcao) {
+  const efetiva = escalaEfetiva(escalaPreferida, window.innerWidth, window.innerHeight);
+  const teto = maiorPassoPermitido(window.innerWidth, window.innerHeight);
+  const novo = passoAdjacente(efetiva, direcao, teto);
+  if (novo === null) return;
+  escalaPreferida = novo;
+  guardarEscala();
+  aplicarEscala();
+}
+
+function redefinirEscala() {
+  if (escalaPreferida === 1) return;
+  escalaPreferida = 1;
+  guardarEscala();
+  aplicarEscala();
+}
+
+// Janela redimensionada: o limite de passo muda junto.
+window.addEventListener('resize', () => aplicarEscala());
+
 // Exatamente o que o "Salvar" enviaria ao servidor — comparar com a versão
 // gravada em state.baselineSalvo diz se há alteração não salva, sem flag de
 // "sujo" espalhada pelo editor.
@@ -373,6 +478,10 @@ function ligarBotoesExtensao(shadowRoot) {
   shadowRoot.getElementById('btn-bv-salvar').addEventListener('click', salvarBotNaOrpen);
   shadowRoot.getElementById('btn-bv-baixar').addEventListener('click', baixarBotJson);
   shadowRoot.getElementById('btn-bv-tema')?.addEventListener('click', alternarTema);
+  shadowRoot.getElementById('btn-bv-escala-menos')?.addEventListener('click', () => mudarEscala(-1));
+  shadowRoot.getElementById('btn-bv-escala-mais')?.addEventListener('click', () => mudarEscala(1));
+  shadowRoot.getElementById('btn-bv-escala-valor')?.addEventListener('click', redefinirEscala);
+  aplicarEscala();
 
   // Módulo carregado só no primeiro clique: quem nunca gera fluxograma não
   // paga nada (nem o iframe de vendor/fluxograma/ é criado).
