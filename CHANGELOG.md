@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.26] - 2026-10-14
+* **Tamanho da interface**: um novo controle `A−  100%  A+` no cabeçalho do editor, ao lado do sol/lua, aumenta o editor em passos de 100, 125, 150 e 175%. A janela e as fontes crescem juntas, e o "Editar menu", os diálogos, o copiar/colar, o Testar bot (inclusive minimizado), as pendências, o Localizar e o Analisar, as listas de sugestões e os avisos acompanham. 100% é o tamanho de sempre.
+* **A escolha fica salva**: vale para todos os ambientes e continua depois de recarregar a página ou reiniciar o navegador.
+* **Limite pela janela**: em janelas pequenas o tamanho máximo é menor (o valor aparece em âmbar e o `A+` explica). A escolha não se perde: se a janela aumentar, o tamanho escolhido volta.
+
 ## [0.8.25] - 2026-10-13
 * **Salvar e fechar mais seguros**: Salvar, "Salvar e fechar" e "Gerar fluxograma" não disparam mais duas gravações ao mesmo tempo, e salvar durante uma gravação grava de novo o que foi editado nesse meio-tempo. Fechar espera a gravação terminar, o Esc confirma o campo que está sendo digitado antes de perguntar "Fechar sem salvar?" e o editor não reabre sozinho se for fechado enquanto carrega. O envio tem limite de 2 minutos, e o aviso de renumeração passa a considerar os números que foram realmente gravados.
 * **O que a tela mostra é o que grava**: "Troca Estado" e o timeout "Trocar estado" gravavam um destino vazio enquanto a tela mostrava o estado 0. Agora gravam o primeiro estado, e um destino vazio ou inexistente aparece como tal. Trocar a ação do timeout não leva mais o destino da ação anterior (um status de CRM virava número de estado), e cada ação lembra o que foi escolhido ao voltar.
