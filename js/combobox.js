@@ -12,6 +12,7 @@
 // ---------------------------------------------------------------------------
 
 import { getRootNode, empilharEsc, marcarSemAutopreenchimento } from './dom-root.js';
+import { obterEscala } from './escala.js';
 
 export function datalistDe(input) {
   const id = input?.dataset?.lista || input?.getAttribute?.('list');
@@ -45,11 +46,16 @@ function criarPainel() {
 function posicionar() {
   if (!painel || !campoAtual) return;
   const r = campoAtual.getBoundingClientRect();
+  // Com a escala da interface o painel é desenhado com transform: scale(k):
+  // largura e altura da caixa valem antes dela, e o que se vê é k vezes isso.
+  // O r vem em px da tela, então a largura da caixa é r.width / k.
+  const k = obterEscala();
   const alturaMax = 260;
-  const cabeAbaixo = window.innerHeight - r.bottom >= Math.min(alturaMax, 160) || r.top < alturaMax;
+  const cabeAbaixo = window.innerHeight - r.bottom >= Math.min(alturaMax, 160) * k || r.top < alturaMax * k;
   painel.style.left = `${Math.round(r.left)}px`;
-  painel.style.width = `${Math.round(Math.max(r.width, 180))}px`;
+  painel.style.width = `${Math.round(Math.max(r.width / k, 180))}px`;
   painel.style.maxHeight = `${alturaMax}px`;
+  painel.style.transformOrigin = cabeAbaixo ? 'top left' : 'bottom left';
   if (cabeAbaixo) {
     painel.style.top = `${Math.round(r.bottom + 4)}px`;
     painel.style.bottom = '';

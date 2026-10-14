@@ -2,6 +2,14 @@
   /* Cores antigas legadas (mantidas pro Tailwind não quebrar caso algo fuja) */
   --primary: #8377FF;
   --primary-hover: #7162fa;
+
+  /* Escala da interface (js/escala.js). --ed-k vem do host (style inline) e
+     vale 1 = tamanho de sempre. O painel principal soma o zoom 1.15 que já
+     tinha (--ed-zoom); as janelas satélites usam transform: scale(--ed-k) e
+     dividem os limites por --ed-k pra não passarem da tela. */
+  --ed-k: 1;
+  --ed-zoom: calc(1.15 * var(--ed-k));
+  --ed-inv: calc(1 / var(--ed-k));
   --surface-1: #ffffff;
   --surface-2: #f6f5fb;
   --border: #e6e4ef;
@@ -266,8 +274,8 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
      sumir. margin-left/right:auto é diferente: centraliza no eixo principal
      (horizontal), não passa pelo mesmo path de alinhamento do eixo
      transversal e nunca apresentou esse bug. */
-  margin-top: calc(6vh / 1.15) !important;
-  margin-bottom: calc(3vh / 1.15) !important;
+  margin-top: calc(6vh / var(--ed-zoom)) !important;
+  margin-bottom: calc(3vh / var(--ed-zoom)) !important;
   margin-left: auto !important;
   margin-right: auto !important;
   background: var(--obd-bg);
@@ -279,8 +287,8 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
      Dividindo por 1.15 aqui, o resultado pós-zoom volta a bater com o
      tamanho pretendido (92vw / 92vh / 1320px). vw/vh não dependem do
      font-size do <html> (diferente de rem), então são seguros aqui. */
-  width: calc(92vw / 1.15) !important;
-  max-width: calc(1320px / 1.15) !important;
+  width: calc(92vw / var(--ed-zoom)) !important;
+  max-width: calc(1320px * var(--ed-k) / var(--ed-zoom)) !important;
   /* SEM height fixa: o painel cresce com o conteúdo (o flex-column do
      bot_transform.html: header shrink-0 / body flex-1 min-h-0 overflow-y-auto
      / footer shrink-0 já resolve isso sozinho) até bater no max-height
@@ -303,10 +311,10 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
      viewport, sem desperdiçar tela. Se precisar aumentar a folga do topo de
      novo no futuro (bug do header voltando em zoom mais extremo ainda),
      mexer SÓ no margin-top acima — não precisa tirar espaço daqui. */
-  max-height: calc(91vh / 1.15) !important;
+  max-height: calc(91vh / var(--ed-zoom)) !important;
   border-radius: 14px;
   border: 1px solid var(--obd-border);
-  zoom: 1.15;
+  zoom: var(--ed-zoom);
 }
 #pendencias-overlay .bv-panel {
   background: var(--obd-bg);
@@ -818,7 +826,8 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 }
 #bot-view-overlay .bv-btn-tema:hover { background: var(--hover-bg); color: var(--text); }
 #bot-view-overlay .bv-btn-tema svg { width: 1.125rem; height: 1.125rem; }
-#bot-view-overlay .bv-header .bv-btn-tema + #btn-fechar-bot-view { margin-left: 0; }
+#bot-view-overlay .bv-header .bv-btn-tema + #btn-fechar-bot-view,
+#bot-view-overlay .bv-header .bv-grupo-visual + #btn-fechar-bot-view { margin-left: 0; }
 #bot-view-overlay .bv-icone-lua { display: none; }
 :host([data-tema="claro"]) #bot-view-overlay .bv-icone-sol,
 :root[data-tema="claro"] #bot-view-overlay .bv-icone-sol { display: none; }
@@ -1146,13 +1155,15 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 }
 #bot-view-overlay .bv-header .bv-btn-busca + .bv-btn-tema,
 #bot-view-overlay .bv-header .bv-btn-tema + .bv-btn-busca,
+#bot-view-overlay .bv-header .bv-btn-busca + .bv-grupo-visual,
+#bot-view-overlay .bv-header .bv-grupo-visual + .bv-btn-busca,
 #bot-view-overlay .bv-header .bv-btn-busca + #btn-fechar-bot-view,
 #bot-view-overlay .bv-header .bv-btn-busca + .bv-btn-busca { margin-left: 0; }
 
 #bot-view-overlay.busca-aberta .bv-panel,
 #bot-view-overlay.analise-aberta .bv-panel {
-  width: calc((96vw - 404px) / 1.15) !important;
-  margin-right: calc(404px / 1.15) !important;
+  width: calc((96vw - (372px * var(--ed-k) + 32px)) / var(--ed-zoom)) !important;
+  margin-right: calc((372px * var(--ed-k) + 32px) / var(--ed-zoom)) !important;
 }
 
 .bs-painel {
@@ -1552,7 +1563,8 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 #bot-view-overlay .bv-btn-testar:hover { background: var(--hover-bg); color: var(--text); }
 #bot-view-overlay .bv-btn-testar svg { width: 1.125rem; height: 1.125rem; }
 #bot-view-overlay .bv-btn-testar + .bv-btn-busca,
-#bot-view-overlay .bv-header .bv-btn-tema + .bv-btn-testar { margin-left: 0; }
+#bot-view-overlay .bv-header .bv-btn-tema + .bv-btn-testar,
+#bot-view-overlay .bv-header .bv-grupo-visual + .bv-btn-testar { margin-left: 0; }
 
 .tb-overlay {
   position: fixed; inset: 0; z-index: 60;
@@ -1700,3 +1712,126 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 #bot-view-overlay .condicao-item.sim-ok { border-color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--item-bg)); }
 #bot-view-overlay .condicao-item.sim-nao { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--item-bg)); }
 #bot-view-overlay .condicao-item.sim-talvez { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, var(--item-bg)); }
+
+/* ---- Controle de tamanho da interface (js/escala.js; botões em orpen-bridge.js) ----
+   Vive num grupo com o botão sol/lua: o grupo ocupa o lugar que o botão de tema
+   tinha na fila de botões do header (o margin-left:auto e as regras de
+   vizinhança acima passam a valer pro grupo). */
+#bot-view-overlay .bv-grupo-visual {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+#bot-view-overlay .bv-grupo-visual .bv-btn-tema { margin-left: 0; }
+#bot-view-overlay .bv-escala {
+  display: flex;
+  align-items: stretch;
+  height: 2rem;
+  margin-right: 0.25rem;
+  border: 1px solid var(--obd-border-field);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+#bot-view-overlay .bv-escala button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  transition: background-color 0.12s, color 0.12s;
+}
+#bot-view-overlay .bv-escala button:hover:not(:disabled) { background: var(--hover-bg); color: var(--text); }
+#bot-view-overlay .bv-escala button:disabled { opacity: 0.4; cursor: not-allowed; }
+#bot-view-overlay .bv-escala-menos { font-size: 0.75rem; }
+#bot-view-overlay .bv-escala-mais { font-size: 1rem; }
+#bot-view-overlay .bv-escala-valor {
+  min-width: 3.25rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--obd-border-field);
+  border-right: 1px solid var(--obd-border-field);
+}
+#bot-view-overlay .bv-escala-valor[data-limitado="true"] { color: var(--warn); }
+
+/* ---- Escala das janelas fora do painel (js/escala.js) ----
+   Só quando a escala não é 100% (o host ganha data-escala): em 100% nada aqui
+   vale e o editor fica exatamente como era. Diálogos centralizados escalam a
+   partir do centro, então seguem centralizados sem depender de `zoom` (que,
+   combinado com align-items:center, empurra o item pra fora da tela). A
+   largura/altura da caixa é dividida pela escala pra o resultado visual
+   caber na janela. */
+:host([data-escala]) .fx-confirmacao-painel,
+:host([data-escala]) .mm-painel,
+:host([data-escala]) .cc-painel,
+:host([data-escala]) .tb-overlay:not(.minimizado) .tb-painel,
+:root[data-escala] .fx-confirmacao-painel,
+:root[data-escala] .mm-painel,
+:root[data-escala] .cc-painel,
+:root[data-escala] .tb-overlay:not(.minimizado) .tb-painel {
+  transform: scale(var(--ed-k));
+  transform-origin: center;
+  width: calc(100% * var(--ed-inv));
+}
+/* Pendências encosta no topo (o overlay usa align-items:flex-start): cresce
+   pra baixo, senão o título sairia da tela. */
+:host([data-escala]) #pendencias-overlay .bv-panel,
+:root[data-escala] #pendencias-overlay .bv-panel {
+  transform: scale(var(--ed-k));
+  transform-origin: top center;
+  width: calc(100% * var(--ed-inv));
+}
+:host([data-escala]) .mm-painel,
+:root[data-escala] .mm-painel { max-height: calc((100vh - 32px) * var(--ed-inv)); }
+:host([data-escala]) .cc-painel,
+:root[data-escala] .cc-painel { height: min(660px, calc(90vh * var(--ed-inv))); }
+:host([data-escala]) .tb-overlay:not(.minimizado) .tb-painel,
+:root[data-escala] .tb-overlay:not(.minimizado) .tb-painel { height: min(740px, calc(92vh * var(--ed-inv))); }
+
+/* Testar bot minimizado: mini-chat no canto inferior direito (à esquerda com o
+   Localizar/Analisar aberto). Cresce a partir do canto em que está encostado,
+   e a folga de baixo (que deixa o rodapé do editor livre) acompanha a escala. */
+:host([data-escala]) .tb-overlay.minimizado,
+:root[data-escala] .tb-overlay.minimizado { padding-bottom: calc(92px * var(--ed-k)); }
+:host([data-escala]) .tb-overlay.minimizado .tb-painel,
+:root[data-escala] .tb-overlay.minimizado .tb-painel {
+  transform: scale(var(--ed-k));
+  transform-origin: bottom right;
+  width: 400px;
+  max-width: calc((100vw - 32px) * var(--ed-inv));
+  height: min(480px, calc(70vh * var(--ed-inv)));
+}
+:host([data-escala]) #bot-view-overlay.busca-aberta .tb-overlay.minimizado .tb-painel,
+:host([data-escala]) #bot-view-overlay.analise-aberta .tb-overlay.minimizado .tb-painel,
+:root[data-escala] #bot-view-overlay.busca-aberta .tb-overlay.minimizado .tb-painel,
+:root[data-escala] #bot-view-overlay.analise-aberta .tb-overlay.minimizado .tb-painel { transform-origin: bottom left; }
+:host([data-escala]) #pendencias-overlay .bv-panel,
+:root[data-escala] #pendencias-overlay .bv-panel { max-height: calc(90vh * var(--ed-inv)); }
+
+/* Painel de busca/análise encaixado à direita: cresce a partir do canto
+   superior direito e a altura é recalculada (top 6vh, base a 3vh). */
+:host([data-escala]) .bs-painel,
+:root[data-escala] .bs-painel {
+  transform: scale(var(--ed-k));
+  transform-origin: top right;
+  bottom: auto;
+  height: calc(91vh * var(--ed-inv));
+}
+
+/* Dropdowns (combobox e variáveis): o JS decide largura/altura em px visuais e
+   troca transform-origin conforme a lista abre pra baixo ou pra cima. */
+:host([data-escala]) .cb-painel,
+:root[data-escala] .cb-painel {
+  transform: scale(var(--ed-k));
+  transform-origin: top left;
+}
+
+/* Avisos no canto superior direito. */
+:host([data-escala]) #mb-toast-container,
+:root[data-escala] #mb-toast-container {
+  transform: scale(var(--ed-k));
+  transform-origin: top right;
+}
