@@ -352,6 +352,11 @@ function alternarTema() {
 // ---------------------------------------------------------------------------
 let escalaPreferida = 1;
 
+// Valores que ESTA aba acabou de gravar: o eco do storage.onChanged deles é
+// ignorado. Sem isso, dois cliques rápidos em A+ faziam a tela voltar um passo
+// quando o eco do primeiro chegava depois do segundo clique.
+const gravadasPorMim = new Set();
+
 // Os dois armazenamentos são lidos na hora de usar: com a extensão recarregada
 // e a aba aberta, `chrome.storage` deixa de existir e o localStorage segue.
 function armazenamentosDaEscala() {
@@ -368,6 +373,7 @@ try {
   chrome.storage.onChanged.addListener((mudancas, area) => {
     if (area !== 'local' || !(CHAVE_ESCALA in mudancas)) return;
     const nova = normalizarEscala(mudancas[CHAVE_ESCALA].newValue);
+    if (gravadasPorMim.delete(nova)) return;
     if (nova !== escalaPreferida) {
       escalaPreferida = nova;
       aplicarEscala();
@@ -404,13 +410,18 @@ function atualizarControleEscala(host, efetiva) {
     : efetiva === 1 ? 'Tamanho padrão' : 'Clique para voltar a 100%';
   menos.disabled = passoAdjacente(efetiva, -1) === null;
   mais.disabled = passoAdjacente(efetiva, 1, teto) === null;
-  mais.title = mais.disabled && efetiva < 1.75
-    ? 'A janela não comporta um tamanho maior'
-    : 'Aumentar o tamanho';
+  mais.title = !mais.disabled
+    ? 'Aumentar o tamanho'
+    : efetiva < 1.75 ? 'A janela não comporta um tamanho maior' : 'Tamanho máximo';
 }
 
 function guardarEscala() {
-  gravarPreferencia(escalaPreferida, armazenamentosDaEscala());
+  const valor = escalaPreferida;
+  gravadasPorMim.add(valor);
+  // Se o eco nunca vier (sem chrome.storage), a marca não pode ficar para
+  // sempre e esconder uma mudança igual feita em outra aba.
+  setTimeout(() => gravadasPorMim.delete(valor), 2000);
+  gravarPreferencia(valor, armazenamentosDaEscala());
 }
 
 function mudarEscala(direcao) {

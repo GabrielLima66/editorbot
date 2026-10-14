@@ -1731,8 +1731,9 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
   margin-right: 0.25rem;
   border: 1px solid var(--obd-border-field);
   border-radius: 0.5rem;
-  overflow: hidden;
 }
+#bot-view-overlay .bv-escala button:first-child { border-radius: 0.4375rem 0 0 0.4375rem; }
+#bot-view-overlay .bv-escala button:last-child { border-radius: 0 0.4375rem 0.4375rem 0; }
 #bot-view-overlay .bv-escala button {
   display: flex;
   align-items: center;
@@ -1786,6 +1787,13 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 }
 :host([data-escala]) .mm-painel,
 :root[data-escala] .mm-painel { max-height: calc((100vh - 32px) * var(--ed-inv)); }
+/* O aviso "estados mudaram de número" é o mais alto dos diálogos: com a escala
+   ele rola por dentro em vez de passar da tela e esconder os botões. */
+:host([data-escala]) .fx-confirmacao-painel,
+:root[data-escala] .fx-confirmacao-painel {
+  max-height: calc((100vh - 32px) * var(--ed-inv));
+  overflow-y: auto;
+}
 :host([data-escala]) .cc-painel,
 :root[data-escala] .cc-painel { height: min(660px, calc(90vh * var(--ed-inv))); }
 :host([data-escala]) .tb-overlay:not(.minimizado) .tb-painel,
