@@ -93,19 +93,40 @@ test('escolher a mesma ação do timeout não mexe no destino', () => {
   assert.equal(bot.TIMEOUT_DESTINY, '3');
 });
 
-// --- 4. Transf. Fila só oferece filas ---------------------------------------
+// --- 4. Transf. Fila oferece filas e variáveis --------------------------------------
 
-test('Transf. Fila lista só filas; valor de bot/agente já gravado continua visível', () => {
+test('Transf. Fila lista filas e variáveis; valor de bot/agente já gravado continua visível', () => {
   state.ambienteOrpen = {
     queues: [{ id: '10', name: 'Vendas' }],
     bots: [{ id: '77', name: 'Bot X' }],
     agents: [{ id: '5', name: 'Ana' }],
+    variables: [{ id: 'FILA_ESCOLHIDA', name: 'Fila escolhida', parent: null, fixa: false, tipo: 'queue' }],
   };
   const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '77' } }, {}, 0, 1);
   assert.match(html, /Vendas/);
   assert.doesNotMatch(html, /Bot X/);
   assert.doesNotMatch(html, /Ana/);
   assert.match(html, /77 \(não encontrado no ambiente\)/);
+  // Variáveis aparecem no grupo "Variáveis do bot"
+  assert.match(html, /Fila escolhida/);
+  assert.match(html, /Vari.veis do bot/);
+  state.ambienteOrpen = null;
+});
+
+test('Transf. Agente lista agentes, bots e variáveis; variável gravada aparece pelo nome', () => {
+  state.ambienteOrpen = {
+    queues: [{ id: '10', name: 'Vendas' }],
+    bots: [{ id: '77', name: 'Bot X' }],
+    agents: [{ id: '5', name: 'Ana' }],
+    variables: [{ id: 'AGENTE_DESTINO', name: 'Agente destino', parent: null, fixa: false, tipo: 'agent' }],
+  };
+  const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '4', ACTION_DATA: { destiny: '{$AGENTE_DESTINO}' } }, {}, 0, 1);
+  assert.match(html, /Ana/);
+  assert.match(html, /Bot X/);
+  assert.doesNotMatch(html, /Vendas/);
+  assert.match(html, /data-value="\{\$AGENTE_DESTINO\}"/);
+  assert.match(html, /value="Agente destino"/);
+  assert.doesNotMatch(html, /não encontrado no ambiente/);
   state.ambienteOrpen = null;
 });
 
