@@ -22,7 +22,7 @@ import {
 import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
 import { criarIcones, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { fecharCombobox } from './combobox.js';
-import { fecharVariaveisTexto } from './variaveis-texto.js';
+import { fecharVariaveisTexto, variaveisDisponiveis } from './variaveis-texto.js';
 import { parseMenuModel, renderMenuBuilderShell, initMenuBuilders } from './menu-builder.js';
 import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariaveis } from './variaveis-builder.js';
 import { renderMenuResumo, renderMenuVazio, menuVazio, tipoDoModal } from './menu-modal.js';
@@ -411,9 +411,14 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       // Ação nativa "Transf. Agente" (Action 4) na Orpen popula tanto agentes
       // quanto bots no mesmo select (ver optGroupAgents/optGroupBots em
       // ContactCenter/bot.php:3820-3840) — replica aqui pra manter paridade.
+      // Variáveis: as mesmas do modal nativo (buildSelectVariablesBot com
+      // dataType 'agent', bot.php:3797-3867), gravadas como {$NOME}
+      // (handleVariablesBot, bot.php:3884-3902), que o motor resolve
+      // (Bot.class.php:1258-1266).
       corpo = campoAmbienteSelect('Agente / bot destino', () => [
         ...opcoesAgentes().map((o) => ({ ...o, grupo: 'Agentes' })),
         ...opcoesBots().map((o) => ({ ...o, grupo: 'Bots' })),
+        ...variaveisDisponiveis().map((v) => ({ value: `{$${v.valor}}`, label: v.rotulo, grupo: v.grupo })),
       ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
       break;
     case '5':
@@ -421,7 +426,14 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       // e o modal nativo lista só filas e variáveis (bot.php:3842-3852). Um
       // bot ou agente aqui seria gravado como número de fila. Um valor já
       // gravado continua aparecendo (comValorAtual).
-      corpo = campoAmbienteSelect('Fila destino', opcoesFilas, a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
+      // Variáveis: as mesmas do modal nativo (buildSelectVariablesBot com
+      // dataType 'queue', bot.php:3797-3867: variáveis do bot e as gravadas
+      // pela ação 13), gravadas como {$NOME} (handleVariablesBot,
+      // bot.php:3884-3902), que o motor resolve (Bot.class.php:1268-1276).
+      corpo = campoAmbienteSelect('Fila destino', () => [
+        ...opcoesFilas().map((o) => ({ ...o, grupo: 'Filas' })),
+        ...variaveisDisponiveis().map((v) => ({ value: `{$${v.valor}}`, label: v.rotulo, grupo: v.grupo })),
+      ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
       break;
     case '6': {
       if (temAmbiente()) {
