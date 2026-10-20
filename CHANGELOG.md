@@ -1,5 +1,8 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.27] - 2026-10-20
+* **Variáveis como destino nas transferências**: Transf. Agente e Transf. Fila passam a oferecer as variáveis do bot no mesmo campo de busca, como o modal nativo. Transf. Agente lista agentes, bots e variáveis; Transf. Fila lista filas e variáveis. A variável é gravada como `{$NOME}`, que o motor troca pelo valor na hora de transferir. Um bot já salvo com variável no destino mostra o nome da variável, e não mais "não encontrado no ambiente".
+
 ## [0.8.26] - 2026-10-14
 * **Tamanho da interface**: um novo controle `A−  100%  A+` no cabeçalho do editor, ao lado do sol/lua, aumenta o editor em passos de 100, 125, 150 e 175%. A janela e as fontes crescem juntas, e o "Editar menu", os diálogos, o copiar/colar, o Testar bot (inclusive minimizado), as pendências, o Localizar e o Analisar, as listas de sugestões e os avisos acompanham. 100% é o tamanho de sempre.
 * **A escolha fica salva**: vale para todos os ambientes e continua depois de recarregar a página ou reiniciar o navegador.
