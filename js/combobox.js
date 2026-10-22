@@ -13,6 +13,7 @@
 
 import { getRootNode, empilharEsc, marcarSemAutopreenchimento } from './dom-root.js';
 import { obterEscala } from './escala.js';
+import { normalizar, classificar, FAIXA_EXATA, FAIXA_PARECIDA } from './fuzzy.js';
 
 export function datalistDe(input) {
   const id = input?.dataset?.lista || input?.getAttribute?.('list');
@@ -21,7 +22,15 @@ export function datalistDe(input) {
   return raiz.getElementById ? raiz.getElementById(id) : raiz.querySelector(`#${CSS.escape(id)}`);
 }
 
-const normalizar = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+// O texto digitado é a opção inteira ou o nome dela sem o "N - " do começo (as
+// opções de estado são "N - ALIAS"). O Enter escolhe essa antes de qualquer
+// outra que apenas contenha o texto: "Menu" é o estado "5 - Menu", não o
+// "2 - Menu principal".
+export function correspondeExato(valor, texto) {
+  const alvo = normalizar(texto).trim();
+  if (!alvo) return false;
+  return normalizar(valor).trim() === alvo || normalizar(String(valor).replace(/^\d+\s*-\s*/, '')).trim() === alvo;
+}
 
 let painel = null;
 let campoAtual = null;
@@ -67,23 +76,42 @@ function posicionar() {
 
 // Cada <option> pode ter data-grupo (vira um cabeçalho de tópico na lista,
 // na ordem em que aparece) e um `label` diferente do valor (aparece como
-// texto de apoio, ex.: nome amigável de uma variável {$id}). O filtro olha
-// valor, apoio e grupo.
+// texto de apoio, ex.: nome amigável de uma variável {$id}).
+export function lerOpcoes(datalist) {
+  return Array.from(datalist?.options || []).map((o) => ({
+    valor: o.value,
+    grupo: o.dataset.grupo || '',
+    id: o.dataset.value ?? '',
+    apoio: o.getAttribute('label') && o.getAttribute('label') !== o.value ? o.getAttribute('label') : '',
+  }));
+}
+
+// O que a lista mostra para o texto digitado. O filtro olha valor, apoio e
+// grupo. Primeiro vêm as opções que contêm o texto (ou todas as palavras dele),
+// na ordem da lista; depois, marcadas `parecido`, as que só se aproximam dele
+// (fuzzy.js), da mais próxima para a mais distante.
+export function filtrarOpcoes(opcoes, filtro) {
+  const alvo = normalizar(filtro).trim();
+  const validas = opcoes.filter((o) => o.valor);
+  if (!alvo) return validas;
+  const principais = [];
+  const parecidas = [];
+  validas.forEach((o) => {
+    const r = classificar(`${o.valor} ${o.apoio} ${o.grupo}`, alvo);
+    if (!r) return;
+    if (r.faixa === FAIXA_PARECIDA) parecidas.push({ ...o, parecido: true, pontos: r.pontos });
+    else principais.push({ ...o, faixa: r.faixa });
+  });
+  // Digitou um ID inteiro ("12"): o cadastro com esse ID vem antes dos que só
+  // contêm o número ("[Agente 112]").
+  principais.sort((a, b) => Number(normalizar(b.id) === alvo) - Number(normalizar(a.id) === alvo));
+  parecidas.sort((a, b) => a.pontos - b.pontos);
+  return [...principais, ...parecidas];
+}
+
 function opcoesDoCampo(filtro) {
   const lista = datalistDe(campoAtual);
-  if (!lista) return [];
-  const alvo = normalizar(filtro).trim();
-  return Array.from(lista.options)
-    .map((o) => ({
-      valor: o.value,
-      grupo: o.dataset.grupo || '',
-      id: o.dataset.value ?? '',
-      apoio: o.getAttribute('label') && o.getAttribute('label') !== o.value ? o.getAttribute('label') : '',
-    }))
-    .filter((o) => o.valor && (!alvo || normalizar(`${o.valor} ${o.apoio} ${o.grupo}`).includes(alvo)))
-    // Digitou um ID inteiro ("12"): o cadastro com esse ID vem antes dos que só
-    // contêm o número ("[Agente 112]").
-    .sort((a, b) => Number(alvo !== '' && normalizar(b.id) === alvo) - Number(alvo !== '' && normalizar(a.id) === alvo));
+  return lista ? filtrarOpcoes(lerOpcoes(lista), filtro) : [];
 }
 
 function desenhar(filtro) {
@@ -99,7 +127,10 @@ function desenhar(filtro) {
     return;
   }
   let grupoAtual = null;
-  opcoes.forEach(({ valor: v, grupo, apoio }) => {
+  opcoes.forEach(({ valor: v, grupo: grupoDaOpcao, apoio, parecido }) => {
+    // As aproximadas ficam juntas no fim, sob um cabeçalho próprio, e não
+    // dentro dos tópicos da lista.
+    const grupo = parecido ? 'Parecidos' : grupoDaOpcao;
     if (grupo && grupo !== grupoAtual) {
       const cab = document.createElement('p');
       cab.className = 'cb-grupo';
@@ -123,17 +154,26 @@ function desenhar(filtro) {
     b.setAttribute('role', 'option');
     painel.appendChild(b);
   });
-  // O que o Enter escolhe: o valor atual, se estiver na lista; senão, com
-  // algo digitado, a primeira que começa com o texto (ou a primeira que
-  // contém). Sem nada digitado e valor livre, nada: o Enter não troca texto
-  // livre (nome de variável etc.) pela primeira opção.
+  marcar(escolhaPadrao(opcoes, campoAtual.value, filtro));
+}
+
+// O que o Enter escolhe: o valor atual, se estiver na lista; senão, com algo
+// digitado, o nome exato, a que começa com o texto, a primeira que contém o
+// texto inteiro e, por fim, a primeira que contém suas palavras. Os "parecidos"
+// nunca são escolhidos sozinhos (só pela seta, vendo o que é): sem nenhum
+// resultado de verdade, o Enter não escolhe nada, e o texto livre (nome de
+// variável, valor literal, ID digitado) segue o fluxo de sempre. Sem nada
+// digitado e valor livre, também nada.
+export function escolhaPadrao(opcoes, valorAtual, filtro) {
+  let i = opcoes.findIndex((o) => o.valor === valorAtual);
   const alvo = normalizar(filtro).trim();
-  let padrao = valores.indexOf(campoAtual.value);
-  if (padrao < 0 && alvo) {
-    padrao = valores.findIndex((v) => normalizar(v).startsWith(alvo));
-    if (padrao < 0) padrao = 0;
+  if (i < 0 && alvo) {
+    i = opcoes.findIndex((o) => !o.parecido && correspondeExato(o.valor, filtro));
+    if (i < 0) i = opcoes.findIndex((o) => !o.parecido && normalizar(o.valor).startsWith(alvo));
+    if (i < 0) i = opcoes.findIndex((o) => o.faixa === FAIXA_EXATA);
+    if (i < 0) i = opcoes.findIndex((o) => !o.parecido);
   }
-  marcar(padrao);
+  return i;
 }
 
 function marcar(i) {
@@ -160,6 +200,23 @@ function abrir(campo, filtro) {
 
 export function fecharCombobox() {
   fechar();
+}
+
+// O campo trocou de <datalist> (alternar-lista-variaveis): mostra a lista
+// nova inteira. Com o campo já em foco a lista aberta é redesenhada; sem foco,
+// o focusin abre.
+export function reabrirCombobox(campo) {
+  if (campoAtual === campo && painel) {
+    indiceMarcado = -1;
+    desenhar('');
+    posicionar();
+  } else if ((getRootNode().activeElement ?? document.activeElement) === campo) {
+    // Já em foco, com a lista fechada (Esc, rolagem): focus() não dispara
+    // focusin, então abre direto.
+    abrir(campo, '');
+  } else {
+    campo.focus();
+  }
 }
 
 function fechar() {
