@@ -612,6 +612,9 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 #bot-view-overlay .ir-para-estado-btn { width: 2.25rem; border-radius: 0.5rem; background: var(--ir-estado-bg); color: var(--ir-estado-texto); display: flex; align-items: center; justify-content: center; transition: background-color .12s, color .12s; }
 #bot-view-overlay .ir-para-estado-btn:hover:not(:disabled) { background: var(--ir-estado-bg-hover); color: var(--ir-estado-texto-hover); }
 #bot-view-overlay .ir-para-estado-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+/* Botão {$} do destino: troca a lista de filas/agentes pela de variáveis. */
+#bot-view-overlay .ir-para-estado-btn.btn-variavel { font-size: 0.75rem; font-weight: 600; font-family: ui-monospace, monospace; }
+#bot-view-overlay .ir-para-estado-btn.btn-variavel[aria-pressed="true"] { background: var(--ir-estado-bg-hover); color: var(--ir-estado-texto-hover); }
 #bot-view-overlay .estado-wrap { scroll-margin-top: 0.75rem; }
 #bot-view-overlay .estado-wrap.estado-destaque {
   outline: 2px solid var(--primary);

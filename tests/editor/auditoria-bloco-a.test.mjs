@@ -60,18 +60,44 @@ test('o primeiro estado é o de menor número, não o primeiro da lista', () => 
   assert.equal(I.primeiroNumeroDeEstado({ BOT_STATES: [] }), '');
 });
 
-test('select de estado vazio mostra "Selecione o estado…" e não o estado 0', () => {
+test('campo de estado vazio fica em branco (placeholder) e não mostra o estado 0', () => {
   const porNumero = { 0: { STATE_NUMBER: '0', ALIAS: 'A' }, 1: { STATE_NUMBER: '1', ALIAS: 'B' } };
-  const opcoes = R.opcoesDeEstado(porNumero, '');
-  assert.equal(opcoes[0].value, '');
-  assert.match(opcoes[0].label, /Selecione/);
+  assert.equal(R.textoDeEstado(porNumero, ''), '');
+  assert.equal(R.textoDeEstado(porNumero, undefined), '');
 });
 
-test('select de estado com número inexistente mostra o valor gravado', () => {
+test('campo de estado com número inexistente mostra o valor gravado', () => {
   const porNumero = { 0: { STATE_NUMBER: '0', ALIAS: 'A' } };
-  const opcoes = R.opcoesDeEstado(porNumero, '7');
-  assert.deepEqual(opcoes.at(-1), { value: '7', label: '7 (estado inexistente)' });
-  assert.equal(R.opcoesDeEstado(porNumero, '0').length, 1);
+  assert.equal(R.textoDeEstado(porNumero, '7'), '7 (estado inexistente)');
+  assert.equal(R.textoDeEstado(porNumero, '0'), '0 - A');
+});
+
+test('destino de Troca Estado é um campo de busca com a lista de estados', () => {
+  const porNumero = { 0: { STATE_NUMBER: '0', ALIAS: 'Início' } };
+  const html = R.campoEstadoDestinoComAtalho(porNumero, 't1', 'a1', '0');
+  assert.match(html, /<input type="search" list="bv-estados-datalist"/);
+  assert.doesNotMatch(html, /<select/);
+  assert.match(html, /value="0 - Início"/);
+});
+
+test('Enter prefere o estado de nome exato ao que só contém o texto', async () => {
+  const { correspondeExato } = await import('../../js/combobox.js');
+  const opcoes = ['2 - Menu principal', '5 - Menu'];
+  assert.equal(opcoes.findIndex((o) => correspondeExato(o, 'Menu')), 1);
+  assert.equal(opcoes.findIndex((o) => correspondeExato(o, 'menu principal')), 0);
+  assert.equal(opcoes.findIndex((o) => correspondeExato(o, '5 - menu')), 1);
+  assert.equal(opcoes.findIndex((o) => correspondeExato(o, 'men')), -1);
+});
+
+test('busca de estado aceita "N - Nome", número ou nome e rejeita o que não existe', () => {
+  const bot = botCom({ BOT_STATES: [{ STATE_NUMBER: '0', ALIAS: 'Início' }, { STATE_NUMBER: '12', ALIAS: 'Menu Principal' }] });
+  assert.equal(I.resolverEstadoDigitado(bot, '12 - Menu Principal'), '12');
+  assert.equal(I.resolverEstadoDigitado(bot, ' 12 '), '12');
+  assert.equal(I.resolverEstadoDigitado(bot, 'menu principal'), '12');
+  assert.equal(I.resolverEstadoDigitado(bot, '0'), '0');
+  assert.equal(I.resolverEstadoDigitado(bot, '99'), null);
+  assert.equal(I.resolverEstadoDigitado(bot, 'menu'), null);
+  assert.equal(I.resolverEstadoDigitado(bot, ''), null);
 });
 
 test('trocar o timeout para "Trocar estado" não herda o status CRM de antes', () => {
@@ -128,6 +154,118 @@ test('Transf. Agente lista agentes, bots e variáveis; variável gravada aparece
   assert.match(html, /value="Agente destino"/);
   assert.doesNotMatch(html, /não encontrado no ambiente/);
   state.ambienteOrpen = null;
+});
+
+test('destino de transferência: a lista do campo é só de filas; variáveis ficam numa lista à parte (botão {$})', () => {
+  state.ambienteOrpen = {
+    queues: [{ id: '10', name: 'Suporte' }],
+    bots: [], agents: [],
+    variables: [
+      { id: 'message', name: 'MENSAGEM', parent: null },
+      { id: 'agent_on_queue', name: 'AGENTES NA FILA', parent: null },
+      { id: 'calendario', name: 'CALENDARIO - Verdadeiro', parent: null },
+      { id: 'FILA_ESCOLHIDA', name: 'Fila escolhida', parent: null },
+    ],
+  };
+  const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '10' } }, {}, 0, 1);
+  const listaFila = /<datalist id="dl-a1-destiny">(.*?)<\/datalist>/s.exec(html)[1];
+  const listaVar = /<datalist id="dl-a1-destiny-var">(.*?)<\/datalist>/s.exec(html)[1];
+  assert.match(listaFila, /Suporte/);
+  assert.doesNotMatch(listaFila, /MENSAGEM|Fila escolhida|\{\$/);
+  assert.match(listaVar, /data-value="\{\$FILA_ESCOLHIDA\}"/);
+  assert.doesNotMatch(listaVar, /Suporte/);
+  // só variáveis: as fixas de condição (Mensagem, Agentes e filas, Calendário) ficam de fora
+  assert.doesNotMatch(listaVar, /MENSAGEM|AGENTES NA FILA|CALENDARIO|data-grupo="(Mensagem|Agentes e filas|Calendário)"/);
+  // valor de fila: o campo usa a lista de filas; o botão {$} começa desligado
+  assert.match(html, /<input type="search" list="dl-a1-destiny" /);
+  assert.match(html, /data-action="alternar-lista-variaveis" aria-pressed="false"/);
+  state.ambienteOrpen = null;
+});
+
+test('Transf. Agente oferece AG. PREFERIDO e Último agente que atendeu entre as variáveis; a fila não', () => {
+  state.ambienteOrpen = {
+    queues: [{ id: '10', name: 'Suporte' }],
+    bots: [], agents: [{ id: '5', name: 'Ana' }],
+    variables: [
+      { id: 'pref_agent', name: 'AG. PREFERIDO', parent: null },
+      { id: 'agent_last_att', name: 'Último agente que atendeu', parent: null },
+      { id: 'name_pref_agent', name: 'NOME AG. PREFERIDO', parent: null },
+      { id: 'message', name: 'MENSAGEM', parent: null },
+      { id: 'AGENTE_DESTINO', name: 'Agente destino', parent: null },
+    ],
+  };
+  const agente = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '4', ACTION_DATA: { destiny: '5' } }, {}, 0, 1);
+  const listaAgente = /<datalist id="dl-a1-destiny-var">(.*?)<\/datalist>/s.exec(agente)[1];
+  assert.match(listaAgente, /data-value="\{\$pref_agent\}"/);
+  assert.match(listaAgente, /data-value="\{\$agent_last_att\}"/);
+  assert.match(listaAgente, /data-value="\{\$AGENTE_DESTINO\}"/);
+  assert.doesNotMatch(listaAgente, /MENSAGEM|name_pref_agent/);
+  const fila = R.renderAcao({ ID: 'a2', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '10' } }, {}, 0, 1);
+  const listaFila = /<datalist id="dl-a2-destiny-var">(.*?)<\/datalist>/s.exec(fila)[1];
+  assert.doesNotMatch(listaFila, /pref_agent|agent_last_att|AG\. PREFERIDO|Último agente/);
+  // gravado na 0.8.27: aparece pelo nome, não como "não encontrado"
+  const gravado = R.renderAcao({ ID: 'a3', TRANSITION_ID: 't1', ACTION_TYPE: '4', ACTION_DATA: { destiny: '{$agent_last_att}' } }, {}, 0, 1);
+  assert.match(gravado, /value="Último agente que atendeu"/);
+  assert.doesNotMatch(gravado, /não encontrado no ambiente/);
+  state.ambienteOrpen = null;
+});
+
+test('destino de transferência com {$variável} gravada: o campo usa a lista de variáveis e o botão fica ligado', () => {
+  state.ambienteOrpen = {
+    queues: [{ id: '10', name: 'Suporte' }],
+    bots: [], agents: [],
+    variables: [{ id: 'FILA_ESCOLHIDA', name: 'Fila escolhida', parent: null }],
+  };
+  const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '{$FILA_ESCOLHIDA}' } }, {}, 0, 1);
+  assert.match(html, /<input type="search" list="dl-a1-destiny-var" [^>]*value="Fila escolhida"/);
+  assert.match(html, /aria-pressed="true"/);
+  assert.doesNotMatch(html, /não encontrado no ambiente/);
+  state.ambienteOrpen = null;
+});
+
+test('outros campos do ambiente continuam sem o botão {$}', () => {
+  state.ambienteOrpen = { queues: [], bots: [], agents: [], scripts: [{ id: '3', name: 'Survey' }], variables: [] };
+  const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '7', ACTION_DATA: { script_name: '3' } }, {}, 0, 1);
+  assert.doesNotMatch(html, /alternar-lista-variaveis/);
+  state.ambienteOrpen = null;
+});
+
+// --- fila e status CRM do timeout: campo de busca --------------------------------
+
+test('timeout (fila/status): campo de busca com o valor gravado, sem opção vazia na lista', () => {
+  const opcoes = comValorAtual([{ value: '10', label: 'Suporte' }, { value: '11', label: 'Vendas' }], '11');
+  const html = R.campoBuscaDoTimeout(opcoes, 'CONF_DELIVERY_QUEUE', '11', 'Selecione a fila…');
+  assert.match(html, /<input type="search" id="bv-destino-select" list="bv-destino-datalist"/);
+  assert.match(html, /value="Vendas"/);
+  assert.match(html, /data-campo-bot="CONF_DELIVERY_QUEUE" data-busca-lista="1"/);
+  assert.match(html, /<option value="Suporte" data-value="10">/);
+  assert.equal((html.match(/<option /g) || []).length, 2);
+  assert.doesNotMatch(html, /<select/);
+});
+
+test('timeout: sem valor o campo fica vazio (placeholder); valor fora do ambiente continua visível e gravável', () => {
+  const vazio = R.campoBuscaDoTimeout(comValorAtual([{ value: '10', label: 'Suporte' }], ''), 'TIMEOUT_DESTINY', '', 'Selecione o status…');
+  assert.match(vazio, /placeholder="Selecione o status…" value=""/);
+  const fora = R.campoBuscaDoTimeout(comValorAtual([{ value: '10', label: 'Suporte' }], '99'), 'TIMEOUT_DESTINY', '99', 'x');
+  assert.match(fora, /value="99 \(não encontrado no ambiente\)"/);
+  assert.match(fora, /<option value="99 \(não encontrado no ambiente\)" data-value="99">/);
+});
+
+test('timeout: status com o mesmo nome ganham o ID e cada um grava o seu', () => {
+  const opcoes = comValorAtual([{ value: '5', label: 'Resolvido' }, { value: '8', label: 'Resolvido' }], '');
+  const lista = opcoes.map((o) => ({ valor: o.label, id: o.value }));
+  assert.notEqual(lista[0].valor, lista[1].valor);
+  assert.equal(I.resolverOpcaoDaLista(lista, lista[0].valor).id, '5');
+  assert.equal(I.resolverOpcaoDaLista(lista, lista[1].valor).id, '8');
+});
+
+test('texto do campo de busca do ambiente volta ao item: rótulo exato ou ID único', () => {
+  const lista = [{ valor: 'Suporte', id: '10' }, { valor: 'Vendas', id: '11' }, { valor: 'Vendas 2', id: '11' }];
+  assert.equal(I.resolverOpcaoDaLista(lista, 'Suporte').id, '10');
+  assert.equal(I.resolverOpcaoDaLista(lista, ' 10 ').id, '10');
+  assert.equal(I.resolverOpcaoDaLista(lista, '11'), null); // dois cadastros com o ID: ambíguo
+  assert.equal(I.resolverOpcaoDaLista(lista, 'Supor'), null);
+  assert.equal(I.resolverOpcaoDaLista(lista, ''), null);
 });
 
 // --- 7. rótulos repetidos ----------------------------------------------------

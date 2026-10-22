@@ -26,7 +26,7 @@ import { initBusca } from './busca.js';
 import { initAnalise } from './analise.js';
 import { initCopiarColar } from './copiar-colar.js';
 import { initTesteBot } from './teste-bot.js';
-import { initCombobox, datalistDe } from './combobox.js';
+import { initCombobox, datalistDe, correspondeExato, filtrarOpcoes, lerOpcoes, reabrirCombobox } from './combobox.js';
 import { initVariaveisTexto } from './variaveis-texto.js';
 import {
   assistentesOpenAi, opcoesFilas, opcoesCrmStatus, opcoesAgentes, opcoesScripts, opcoesCheckpoints,
@@ -426,7 +426,7 @@ export function mudarTipoAcao(bot, transitionId, actionId, novoTipo) {
   acao.ACTION_TYPE = novoTipo;
   acao.ACTION_DATA = defaultActionData(novoTipo);
   // "Troca Estado": o <select> do nativo não tem opção vazia, então grava o
-  // primeiro estado da lista (bot.php:3956-3964). Aqui o select mostra o mesmo
+  // primeiro estado da lista (bot.php:3956-3964). Aqui o campo mostra o mesmo
   // estado, então o dado tem que ser esse e não ''.
   if (String(novoTipo) === '2') acao.ACTION_DATA.destiny = primeiroNumeroDeEstado(bot);
   Object.assign(acao.ACTION_DATA, padraoDaAcao(novoTipo));
@@ -518,6 +518,24 @@ export function extrairNumeroEstado(valorDigitado) {
   const texto = (valorDigitado ?? '').trim();
   const match = /^(\d+)\s*-/.exec(texto);
   return match ? match[1] : texto;
+}
+
+// Campos de estado que só aceitam um estado existente (destino de Troca Estado
+// e estado do timeout): a pessoa escolhe da lista de busca ("N - ALIAS") ou
+// digita o número ou o nome. Devolve o número do estado, ou null se o texto
+// não identifica um estado do bot (o campo volta ao valor anterior).
+export function resolverEstadoDigitado(bot, texto) {
+  const t = String(texto ?? '').trim();
+  if (!t) return null;
+  const estados = bot.BOT_STATES || [];
+  const porNumero = /^(\d+)\s*(?:-.*)?$/.exec(t);
+  if (porNumero) {
+    const achado = estados.find((e) => String(e.STATE_NUMBER) === String(Number(porNumero[1])) || String(e.STATE_NUMBER) === porNumero[1]);
+    if (achado) return String(achado.STATE_NUMBER);
+  }
+  const nome = t.toLowerCase();
+  const iguais = estados.filter((e) => String(e.ALIAS ?? '').trim().toLowerCase() === nome);
+  return iguais.length === 1 ? String(iguais[0].STATE_NUMBER) : null;
 }
 
 export function mudarCampoEstadoAcao(bot, transitionId, actionId, campo, valorDigitado) {
@@ -1093,6 +1111,27 @@ function fecharListasLabelsAbertas() {
   if (soltarEscLabels) { soltarEscLabels(); soltarEscLabels = null; }
 }
 
+// Texto de um campo de busca do ambiente (fila, agente, status...) de volta ao
+// item da lista: o rótulo exato, ou só o ID digitado ("77") quando houver um
+// único cadastro com ele. `opcoes` vem de lerOpcoes (valor = rótulo, id =
+// data-value). null: o texto não é um item da lista.
+export function resolverOpcaoDaLista(opcoes, texto) {
+  const exata = opcoes.find((o) => o.valor === texto);
+  if (exata) return exata;
+  const porId = opcoes.filter((o) => o.id !== '' && o.id === String(texto).trim());
+  return porId.length === 1 ? porId[0] : null;
+}
+
+// Campo de destino com lista de variáveis à parte (campoAmbienteSelect): põe
+// a lista de variáveis ou a de filas/agentes no campo e acerta o botão {$}. O
+// combobox troca `list` por `data-lista` no primeiro foco; vale qualquer um.
+function usarListaDoCampo(campo, variaveis) {
+  const id = variaveis ? campo.dataset.listaVariavel : campo.dataset.listaFila;
+  if (campo.dataset.lista) campo.dataset.lista = id; else campo.setAttribute('list', id);
+  const btn = campo.parentElement.querySelector('[data-action="alternar-lista-variaveis"]');
+  if (btn) btn.setAttribute('aria-pressed', String(variaveis));
+}
+
 function filtrarListaLabels(campo, texto) {
   const alvo = texto.trim().toLowerCase();
   let visiveis = 0;
@@ -1144,7 +1183,7 @@ export function initAcoesDelegadas() {
       alternarListaLabels(e.target.closest('.labels-campo'));
     }
   });
-  const acoesComEnterParaBlur = new Set(['mover-transicao', 'mover-estado', 'renomear-estado', 'mudar-estado-acao', 'mudar-campo-acao', 'mudar-condicao-variavel', 'mudar-condicao-operador', 'mudar-tipo-acao', 'mudar-campo-acao-buscavel', 'mudar-campo-acao-ambiente-buscavel', 'mudar-condicao-ia-detalhe']);
+  const acoesComEnterParaBlur = new Set(['mover-transicao', 'mover-estado', 'renomear-estado', 'mudar-estado-acao', 'mudar-destino-estado', 'mudar-campo-acao', 'mudar-condicao-variavel', 'mudar-condicao-operador', 'mudar-tipo-acao', 'mudar-campo-acao-buscavel', 'mudar-campo-acao-ambiente-buscavel', 'mudar-condicao-ia-detalhe']);
 
   // Campos de busca (qualquer <input list="..."> com datalist — variável de
   // condição, operador, tipo de ação, estado de destino livre, campo
@@ -1153,6 +1192,15 @@ export function initAcoesDelegadas() {
   // de tipo) exigia selecionar manualmente antes de digitar por cima.
   // 'focusin' bubla (diferente de 'focus'), então um listener delegado aqui
   // cobre também campos inseridos depois via rerenderTransicao/rerenderEstado.
+  // Botão {$} de destino: clicar não tira o foco do campo (a lista aberta não
+  // fecha para reabrir). Ao sair do campo sem escolher, a lista volta à do
+  // valor gravado (filas/agentes, ou variáveis se ele é uma {$variável}).
+  container.addEventListener('mousedown', (e) => {
+    if (e.target.closest?.('[data-action="alternar-lista-variaveis"]')) e.preventDefault();
+  });
+  container.addEventListener('focusout', (e) => {
+    if (e.target.tagName === 'INPUT' && e.target.dataset.listaVariavel) usarListaDoCampo(e.target, !!e.target.dataset.ehVariavel);
+  });
   container.addEventListener('focusin', (e) => {
     if (e.target.tagName === 'INPUT' && (e.target.hasAttribute('list') || e.target.dataset.lista)) {
       e.target.select();
@@ -1235,6 +1283,16 @@ export function initAcoesDelegadas() {
       case 'abrir-labels':
         alternarListaLabels(btn.closest('.labels-campo'));
         break;
+      // Destino de transferência: o campo busca só filas (ou agentes e bots) e
+      // este botão troca para a lista de variáveis, como no nativo.
+      case 'alternar-lista-variaveis': {
+        const campo = btn.parentElement.querySelector('input[data-lista-variavel]');
+        if (!campo) break;
+        const emVariaveis = (campo.dataset.lista || campo.getAttribute('list')) === campo.dataset.listaVariavel;
+        usarListaDoCampo(campo, !emVariaveis);
+        reabrirCombobox(campo);
+        break;
+      }
       // Exemplo da voz, o mesmo arquivo que o nativo toca (bot.php:4553-4563).
       case 'ouvir-voz': {
         const opcao = btn.parentElement.querySelector('select')?.selectedOptions[0];
@@ -1353,6 +1411,14 @@ export function initAcoesDelegadas() {
         rerenderTransicao(bot, el.dataset.transitionId);
         break;
       }
+      case 'mudar-destino-estado': {
+        if (el.value === el.defaultValue) return;
+        const numero = resolverEstadoDigitado(bot, el.value);
+        if (numero === null) { el.value = el.defaultValue; return; }
+        mudarCampoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, numero);
+        rerenderTransicao(bot, el.dataset.transitionId);
+        break;
+      }
       case 'mudar-estado-acao':
         mudarCampoEstadoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, el.value);
         rerenderTransicao(bot, el.dataset.transitionId);
@@ -1379,16 +1445,9 @@ export function initAcoesDelegadas() {
       // datalistDe(el) é a <datalist> do campo (atributo list=, que combobox.js
       // troca por data-lista para o popup nativo não abrir).
       case 'mudar-campo-acao-ambiente-buscavel': {
-        const datalist = datalistDe(el);
-        const opcoesLista = datalist ? Array.from(datalist.options) : [];
-        const opt = opcoesLista.find(o => o.value === el.value)
-          // Só o ID digitado ("77"): vale se houver um único cadastro com ele.
-          || (() => {
-            const porId = opcoesLista.filter(o => o.dataset.value !== undefined && o.dataset.value === el.value.trim());
-            return porId.length === 1 ? porId[0] : null;
-          })();
+        const opt = resolverOpcaoDaLista(lerOpcoes(datalistDe(el)), el.value);
         if (!opt) { el.value = el.defaultValue; return; }
-        mudarCampoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, opt.dataset.value);
+        mudarCampoAcao(bot, el.dataset.transitionId, el.dataset.actionId, el.dataset.campo, opt.id);
         rerenderTransicao(bot, el.dataset.transitionId);
         break;
       }
@@ -1406,10 +1465,20 @@ export function initAcoesDelegadas() {
       if (digitado) {
         const options = Array.from(datalistDe(e.target).options);
         // Um ID digitado por inteiro ("77") escolhe o cadastro com esse ID;
-        // senão prioriza quem começa com o texto; se não, quem apenas contém
+        // senão prioriza quem começa com o texto; se não, a primeira cujo NOME
+        // contém o texto ou todas as palavras dele. Com a lista fechada não se
+        // vê o que é "parecido", nem o grupo ou o apoio: ficam de fora.
+        // Número digitado só vale como ID ou nome exato: "7" não escolhe o "17 - …"
+        // nem o "70 - …" só porque o contém ou começa com ele.
+        const soNumero = /^\d+$/.test(digitado);
         let match = options.find(o => o.dataset.value !== undefined && o.dataset.value.toLowerCase() === digitado);
-        if (!match) match = options.find(o => o.value.toLowerCase().startsWith(digitado));
-        if (!match) match = options.find(o => o.value.toLowerCase().includes(digitado));
+        if (!match) match = options.find(o => correspondeExato(o.value, digitado));
+        if (!match && !soNumero) match = options.find(o => o.value.toLowerCase().startsWith(digitado));
+        if (!match && !soNumero) {
+          const soNomes = lerOpcoes(datalistDe(e.target)).map(o => ({ ...o, apoio: '', grupo: '' }));
+          const primeira = filtrarOpcoes(soNomes, digitado).find(o => !o.parecido);
+          match = primeira && options.find(o => o.value === primeira.valor);
+        }
 
         if (match && match.value !== e.target.value) {
           e.target.value = match.value;
@@ -1585,9 +1654,38 @@ export function initBotHeaderEdit() {
   // #bv-destino-valor tem o conteúdo trocado por atualizarSecaoDestino toda
   // vez que TIMEOUT_ACTION muda — delegação evita ter que religar listener
   // toda vez que esse innerHTML é substituído.
+  // Fora de #bv-estados, então sem o select-on-focus dos outros campos de
+  // busca: sem isso o texto digitado entrava no meio do valor que já estava.
+  $('#bv-destino-valor').addEventListener('focusin', (e) => {
+    if (e.target.tagName === 'INPUT' && (e.target.hasAttribute('list') || e.target.dataset.lista)) e.target.select();
+  });
   $('#bv-destino-valor').addEventListener('change', (e) => {
     const campo = e.target.dataset.campoBot;
-    if (state.botCarregado && campo) mudarCampoBot(state.botCarregado, campo, e.target.value);
+    if (!state.botCarregado || !campo) return;
+    if (e.target.dataset.buscaEstado) {
+      // Estado do timeout: campo de busca que só aceita um estado existente.
+      if (e.target.value === e.target.defaultValue) return;
+      const numero = resolverEstadoDigitado(state.botCarregado, e.target.value);
+      if (numero === null) { e.target.value = e.target.defaultValue; return; }
+      mudarCampoBot(state.botCarregado, campo, numero);
+      const estado = (state.botCarregado.BOT_STATES || []).find((s) => String(s.STATE_NUMBER) === numero);
+      e.target.value = `${numero} - ${estado?.ALIAS ?? ''}`;
+      e.target.defaultValue = e.target.value;
+      return;
+    }
+    if (e.target.dataset.buscaLista) {
+      // Fila e status CRM do timeout (cadastro do ambiente): grava o valor do
+      // item escolhido (data-value), não o rótulo; texto que não é da lista
+      // volta ao anterior, como o select do nativo, que não tem opção vazia.
+      if (e.target.value === e.target.defaultValue) return;
+      const opt = resolverOpcaoDaLista(lerOpcoes(datalistDe(e.target)), e.target.value);
+      if (!opt) { e.target.value = e.target.defaultValue; return; }
+      mudarCampoBot(state.botCarregado, campo, opt.id);
+      e.target.value = opt.valor;
+      e.target.defaultValue = opt.valor;
+      return;
+    }
+    mudarCampoBot(state.botCarregado, campo, e.target.value);
   });
 
   $('#btn-adicionar-estado').addEventListener('click', () => {

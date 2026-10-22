@@ -169,27 +169,26 @@ export function campoEstadoLivre(label, estadoPorNumero, transitionId, actionId,
 
 // Troca Estado (ACTION_TYPE 2) precisa ser sempre um dos estados reais do
 // bot — diferente de callback_state/fallback_state (que podem legitimamente
-// apontar pra algo fora do bot), aqui não faz sentido digitar valor livre,
-// então é um <select> travado na lista, sem datalist/texto livre. Ganha
-// também um botão de atalho pra pular direto pro estado apontado (abre o
+// apontar pra algo fora do bot), aqui não faz sentido digitar valor livre:
+// é um campo de busca (lista de estados com pesquisa por número ou nome) que
+// só aceita um estado existente; texto que não bate volta ao valor anterior.
+// Ganha também um botão de atalho pra pular direto pro estado apontado (abre o
 // card dele, mesmo se estiver fechado/fora da tela) — só faz sentido aqui,
 // já que é o único campo de estado com garantia de sempre apontar pra um
 // estado que existe de verdade no bot.
-// Opções de um <select> de estado que sempre mostram o que está gravado: sem
-// valor aparece "Selecione o estado…" e, com um número que não existe no bot,
-// uma opção própria. Sem isso o navegador exibia o primeiro estado enquanto o
-// dado continuava vazio (ou apontando para um estado inexistente).
-export function opcoesDeEstado(estadoPorNumero, selecionado) {
-  const opcoes = Object.values(estadoPorNumero).map(e => ({ value: e.STATE_NUMBER, label: `[${e.STATE_NUMBER}] ${e.ALIAS}` }));
-  const vazio = selecionado === undefined || selecionado === null || selecionado === '';
-  if (vazio) return [{ value: '', label: 'Selecione o estado…' }, ...opcoes];
-  if (!estadoPorNumero[selecionado]) return [...opcoes, { value: String(selecionado), label: `${selecionado} (estado inexistente)` }];
-  return opcoes;
+// Texto que o campo de busca de estado mostra para o que está gravado: "N -
+// ALIAS" (igual à <option> de #bv-estados-datalist), vazio quando não há valor
+// (o placeholder pede "Selecione o estado…") e, com um número que não existe no
+// bot, o próprio número marcado como inexistente.
+export function textoDeEstado(estadoPorNumero, selecionado) {
+  if (selecionado === undefined || selecionado === null || selecionado === '') return '';
+  const estado = estadoPorNumero[selecionado];
+  return estado ? `${estado.STATE_NUMBER} - ${estado.ALIAS}` : `${selecionado} (estado inexistente)`;
 }
 
 export function campoEstadoDestinoComAtalho(estadoPorNumero, transitionId, actionId, selected) {
-  const opcoes = opcoesDeEstado(estadoPorNumero, selected);
-  const selectHtml = `<select class="field-view flex-1" data-action="mudar-campo-acao" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="destiny">${optionsHtml(opcoes, selected)}</select>`;
+  const texto = textoDeEstado(estadoPorNumero, selected);
+  const selectHtml = `<input type="search" list="bv-estados-datalist" class="field-view flex-1" placeholder="Selecione o estado…" value="${escapeHtml(texto)}" data-action="mudar-destino-estado" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="destiny">`;
   const temEstado = selected !== undefined && selected !== null && selected !== '' && estadoPorNumero[selected];
   const btnHtml = `<button type="button" class="ir-para-estado-btn shrink-0" data-action="ir-para-estado" data-state="${escapeHtml(selected ?? '')}" title="Ir para este estado"${temEstado ? '' : ' disabled'}><i data-lucide="arrow-right" class="w-3.5 h-3.5 pointer-events-none"></i></button>`;
   return campoBloco('Estado de destino', `<div class="flex gap-1.5">${selectHtml}${btnHtml}</div>`);
@@ -225,21 +224,49 @@ export function campoBuscavel(label, dict, datalistId, transitionId, actionId, c
   return campoBloco(label, `<input type="search" list="${escapeHtml(datalistId)}" class="field-view" value="${escapeHtml(texto)}" data-action="mudar-campo-acao-buscavel" data-dict="${escapeHtml(datalistId)}" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`);
 }
 
+// Variáveis que um destino (agente, bot ou fila) aceita, gravadas como {$NOME}:
+// só as de verdade (do bot, gravadas pelo bot, de scripts e da Automação). As
+// fixas do motor (Mensagem, Contato, Atendimento, Agentes e filas, Calendário)
+// são dados para condição, não valores de destino.
+const GRUPOS_FIXOS_DE_CONDICAO = new Set([...GRUPOS_VARIAVEL.map(([g]) => g).filter((g) => g !== 'Automação'), 'Outras']);
+// `fixasPermitidas`: fixas que o destino aceita mesmo assim. O agente aceita
+// {$pref_agent} (AG. PREFERIDO), que o motor resolve para o agente preferido do
+// contato (Bot.class.php:1167-1168), e {$agent_last_att} (Último agente que
+// atendeu), que ele resolve para o agente do último atendimento
+// (Bot.class.php:1226-1227, 356); o nativo lista as duas (bot.php:3073-3079, 3192-3198).
+const opcoesVariaveisDestino = (fixasPermitidas = []) => variaveisDisponiveis()
+  .filter((v) => !GRUPOS_FIXOS_DE_CONDICAO.has(v.grupo) || fixasPermitidas.includes(v.valor))
+  .map((v) => ({ value: `{$${v.valor}}`, label: v.rotulo, grupo: v.grupo }));
+
 // Helper para renderizar dropdown nativo de campos do ambiente, com fallback
 // pra input de texto quando roda em standalone (sem dados vivos do Orpen).
-export function campoAmbienteSelect(label, optionsFn, transitionId, actionId, campo, selected) {
+// `variaveisFn` (opcional): campos de destino que também aceitam uma variável
+// ({$NOME}). Como no modal nativo (botão "Variáveis" ao lado do campo,
+// bot.php:3984-4026), as variáveis ficam numa lista À PARTE: o campo busca só
+// no que é dele (filas, agentes e bots) e o botão {$} troca para a lista de
+// variáveis. Misturar as duas fazia "su" achar "Possui OptIn" numa fila.
+export function campoAmbienteSelect(label, optionsFn, transitionId, actionId, campo, selected, variaveisFn) {
   if (temAmbiente()) {
-    const opcoes = comValorAtual(optionsFn(), selected);
+    const ehVariavel = !!variaveisFn && /^\{\$.*\}$/.test(String(selected ?? ''));
     // Para listas grandes (agentes, filas, scripts, etc.), uma barra de busca
     // (<input list="...">) é muito superior a um <select> comum.
     const datalistId = `dl-${actionId}-${campo}`;
-    const selectedOpt = opcoes.find(o => String(o.value) === String(selected));
+    const datalistVarId = `${datalistId}-var`;
+    const opcoes = ehVariavel ? optionsFn() : comValorAtual(optionsFn(), selected);
+    const opcoesVar = variaveisFn ? (ehVariavel ? comValorAtual(variaveisFn(), selected) : variaveisFn()) : [];
+    const atuais = ehVariavel ? opcoesVar : opcoes;
+    const selectedOpt = atuais.find(o => String(o.value) === String(selected));
     const textoExibido = selectedOpt ? selectedOpt.label : (selected ?? '');
 
-    const datalistHtml = `<datalist id="${escapeHtml(datalistId)}">${opcoes.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}"${o.grupo ? ` data-grupo="${escapeHtml(o.grupo)}"` : ''}>`).join('')}</datalist>`;
-    const inputHtml = `<input type="search" list="${escapeHtml(datalistId)}" class="field-view" value="${escapeHtml(textoExibido)}" data-action="mudar-campo-acao-ambiente-buscavel" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}">`;
-
-    return campoBloco(label, inputHtml + datalistHtml);
+    const montarDatalist = (id, lista) => `<datalist id="${escapeHtml(id)}">${lista.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}"${o.grupo ? ` data-grupo="${escapeHtml(o.grupo)}"` : ''}>`).join('')}</datalist>`;
+    const variavelAttrs = variaveisFn
+      ? ` data-lista-fila="${escapeHtml(datalistId)}" data-lista-variavel="${escapeHtml(datalistVarId)}" data-eh-variavel="${ehVariavel ? '1' : ''}"`
+      : '';
+    const inputHtml = `<input type="search" list="${escapeHtml(ehVariavel ? datalistVarId : datalistId)}" class="field-view${variaveisFn ? ' flex-1' : ''}" value="${escapeHtml(textoExibido)}" data-action="mudar-campo-acao-ambiente-buscavel" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}"${variavelAttrs}>`;
+    const listas = montarDatalist(datalistId, opcoes) + (variaveisFn ? montarDatalist(datalistVarId, opcoesVar) : '');
+    if (!variaveisFn) return campoBloco(label, inputHtml + listas);
+    const btnHtml = `<button type="button" class="ir-para-estado-btn shrink-0 btn-variavel" data-action="alternar-lista-variaveis" aria-pressed="${ehVariavel}" title="Alternar entre ${escapeHtml(label.toLowerCase())} e variáveis" aria-label="Alternar entre ${escapeHtml(label.toLowerCase())} e variáveis">{$}</button>`;
+    return campoBloco(label, `<div class="flex gap-1.5">${inputHtml}${btnHtml}</div>${listas}`);
   }
   return campoTextoEditavel(label + ' (ID)', transitionId, actionId, campo, selected);
 }
@@ -418,8 +445,7 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       corpo = campoAmbienteSelect('Agente / bot destino', () => [
         ...opcoesAgentes().map((o) => ({ ...o, grupo: 'Agentes' })),
         ...opcoesBots().map((o) => ({ ...o, grupo: 'Bots' })),
-        ...variaveisDisponiveis().map((v) => ({ value: `{$${v.valor}}`, label: v.rotulo, grupo: v.grupo })),
-      ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
+      ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny, () => opcoesVariaveisDestino(['pref_agent', 'agent_last_att']));
       break;
     case '5':
       // O motor sempre transfere como fila (tipo '1', Bot.class.php:1268-1276)
@@ -432,8 +458,7 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       // bot.php:3884-3902), que o motor resolve (Bot.class.php:1268-1276).
       corpo = campoAmbienteSelect('Fila destino', () => [
         ...opcoesFilas().map((o) => ({ ...o, grupo: 'Filas' })),
-        ...variaveisDisponiveis().map((v) => ({ value: `{$${v.valor}}`, label: v.rotulo, grupo: v.grupo })),
-      ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny);
+      ], a.TRANSITION_ID, a.ID, 'destiny', d.destiny, opcoesVariaveisDestino);
       break;
     case '6': {
       if (temAmbiente()) {
@@ -678,21 +703,31 @@ export function lerContaTranscricao(bot) {
 // completa disponível aqui (os próprios estados do bot); fila é cadastro
 // externo (texto livre); CRM tem uma lista pequena e conhecida (select).
 // Chamada tanto no render inicial quanto sempre que TIMEOUT_ACTION muda.
+// Fila e status CRM do timeout, com o cadastro do ambiente: campo de busca que
+// só aceita item da lista (como o select do nativo, que não tem opção vazia).
+// `opcoes` já passou por comValorAtual: o valor gravado que não está no
+// ambiente aparece como "não encontrado" e IDs de nome repetido ganham o ID.
+// A <datalist> guarda o valor real em data-value; o handler de #bv-destino-valor
+// (data-busca-lista) devolve o texto para esse valor.
+export function campoBuscaDoTimeout(opcoes, campoBot, valorAtual, placeholder) {
+  const atual = opcoes.find((o) => String(o.value) === String(valorAtual ?? ''));
+  const texto = atual ? atual.label : (valorAtual ?? '');
+  const lista = opcoes.filter((o) => o.value !== '').map((o) => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('');
+  return `<input type="search" id="bv-destino-select" list="bv-destino-datalist" class="field-view" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(texto)}" data-campo-bot="${escapeHtml(campoBot)}" data-busca-lista="1"><datalist id="bv-destino-datalist">${lista}</datalist>`;
+}
+
 export function atualizarSecaoDestino(bot, estadoPorNumero) {
   const destinoWrap = $('#bv-destino-wrap');
   const msgWrap = $('#bv-msg-encerrar-wrap');
   if (bot.TIMEOUT_ACTION === 'bot') {
-    const opcoesEstado = opcoesDeEstado(estadoPorNumero, bot.TIMEOUT_DESTINY);
     $('#bv-destino-label').textContent = 'Estado do bot (timeout)';
-    $('#bv-destino-valor').innerHTML = `<select id="bv-destino-select" class="field-view" data-campo-bot="TIMEOUT_DESTINY">${optionsHtml(opcoesEstado, bot.TIMEOUT_DESTINY)}</select>`;
+    $('#bv-destino-valor').innerHTML = `<input type="search" id="bv-destino-select" list="bv-estados-datalist" class="field-view" placeholder="Selecione o estado…" value="${escapeHtml(textoDeEstado(estadoPorNumero, bot.TIMEOUT_DESTINY))}" data-campo-bot="TIMEOUT_DESTINY" data-busca-estado="1">`;
     destinoWrap.classList.remove('hidden');
     msgWrap.classList.add('hidden');
   } else if (bot.TIMEOUT_ACTION === 'queue') {
     $('#bv-destino-label').textContent = 'Fila para entrega (timeout)';
     if (temAmbiente()) {
-      const opcoesFila = comValorAtual(opcoesFilas(), bot.CONF_DELIVERY_QUEUE);
-      if (!opcoesFila.some(o => o.value === '')) opcoesFila.unshift({ value: '', label: 'Selecione a fila...' });
-      $('#bv-destino-valor').innerHTML = `<select id="bv-destino-select" class="field-view" data-campo-bot="CONF_DELIVERY_QUEUE">${optionsHtml(opcoesFila, bot.CONF_DELIVERY_QUEUE)}</select>`;
+      $('#bv-destino-valor').innerHTML = campoBuscaDoTimeout(comValorAtual(opcoesFilas(), bot.CONF_DELIVERY_QUEUE), 'CONF_DELIVERY_QUEUE', bot.CONF_DELIVERY_QUEUE, 'Selecione a fila…');
     } else {
       $('#bv-destino-valor').innerHTML = `<input class="field-view" data-campo-bot="CONF_DELIVERY_QUEUE" value="${escapeHtml(bot.CONF_DELIVERY_QUEUE ?? '')}">`;
     }
@@ -700,15 +735,15 @@ export function atualizarSecaoDestino(bot, estadoPorNumero) {
     msgWrap.classList.add('hidden');
   } else if (bot.TIMEOUT_ACTION === 'close') {
     $('#bv-destino-label').textContent = 'Encerrar Atendimento — Status CRM';
-    let opcoesCrm;
     if (temAmbiente()) {
-      opcoesCrm = comValorAtual(opcoesCrmStatus(), bot.TIMEOUT_DESTINY);
+      $('#bv-destino-valor').innerHTML = campoBuscaDoTimeout(comValorAtual(opcoesCrmStatus(), bot.TIMEOUT_DESTINY), 'TIMEOUT_DESTINY', bot.TIMEOUT_DESTINY, 'Selecione o status…');
     } else {
-      opcoesCrm = entriesToOptions(CRM_STATUS_LABELS);
+      // Sem ambiente só há dois status conhecidos: lista curta, select.
+      const opcoesCrm = entriesToOptions(CRM_STATUS_LABELS);
       if (bot.TIMEOUT_DESTINY && !opcoesCrm.some(o => o.value === bot.TIMEOUT_DESTINY)) opcoesCrm.push({ value: bot.TIMEOUT_DESTINY, label: bot.TIMEOUT_DESTINY });
+      if (!opcoesCrm.some(o => o.value === '')) opcoesCrm.unshift({ value: '', label: 'Selecione o status...' });
+      $('#bv-destino-valor').innerHTML = `<select id="bv-destino-select" class="field-view" data-campo-bot="TIMEOUT_DESTINY">${optionsHtml(opcoesCrm, bot.TIMEOUT_DESTINY)}</select>`;
     }
-    if (!opcoesCrm.some(o => o.value === '')) opcoesCrm.unshift({ value: '', label: 'Selecione o status...' });
-    $('#bv-destino-valor').innerHTML = `<select id="bv-destino-select" class="field-view" data-campo-bot="TIMEOUT_DESTINY">${optionsHtml(opcoesCrm, bot.TIMEOUT_DESTINY)}</select>`;
     $('#bv-msg-encerrar').value = bot.TIMEOUT_MESSAGE ?? '';
     destinoWrap.classList.remove('hidden');
     msgWrap.classList.remove('hidden');
