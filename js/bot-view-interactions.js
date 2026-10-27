@@ -10,6 +10,7 @@ import {
   renderPainelConfirmacaoItem,
   renderPainelBloqueio,
   renderPainelConfirmacao,
+  renderPainelOrigens,
   abrirBotView,
   atualizarListaVariaveisCondicao,
   pedirFecharBotView,
@@ -704,42 +705,86 @@ export function moverTransicao(bot, transitionId, novoIndice) {
   });
 }
 
-// Varre o bot inteiro procurando referências a `stateNumber` vindas de FORA
-// das próprias transições desse estado (ação "Troca Estado" de outro estado,
-// callback_state/fallback_state de OpenAI/Áudio/Automação, ou o timeout do
-// bot). Referências das próprias transições do estado (self-loop) não contam
-// — elas seriam excluídas junto com ele. Retorna uma lista de descrições
-// legíveis; lista vazia = seguro excluir.
-export function referenciasParaEstado(bot, stateNumber) {
-  const referencias = [];
-  const estadoPorNumero = {};
-  (bot.BOT_STATES || []).forEach(s => estadoPorNumero[s.STATE_NUMBER] = s);
+// Tudo que leva o bot a `stateNumber`: ações com um campo de
+// CAMPOS_ESTADO_POR_TIPO gravado com esse número ("Troca Estado",
+// callback_state/fallback_state de OpenAI/Áudio/Automação) e o timeout do bot.
+// Cada origem traz o caminho até ela (estado, transição, ação), pra quem chama
+// montar o texto ou levar o usuário até lá. Ações das próprias transições do
+// estado (self-loop) vêm marcadas com proprioEstado.
+export function origensDoEstado(bot, stateNumber) {
+  const origens = [];
   const transicaoPorId = {};
   (bot.BOT_TRANSITIONS || []).forEach(t => transicaoPorId[t.ID] = t);
 
   (bot.BOT_ACTIONS || []).forEach(a => {
     const transicao = transicaoPorId[a.TRANSITION_ID];
-    if (!transicao || transicao.STATE === stateNumber) return; // self-loop do próprio estado — não bloqueia
-    const estadoOrigem = estadoPorNumero[transicao.STATE];
-    const nomeOrigem = `Estado "${escapeHtml(estadoOrigem ? estadoOrigem.ALIAS : '?')}" (nº ${escapeHtml(transicao.STATE)})`;
-
-    if (a.ACTION_TYPE === '2' && a.ACTION_DATA && a.ACTION_DATA.destiny === stateNumber) {
-      referencias.push(`${nomeOrigem} tem uma ação "Troca Estado" (transição prioridade ${escapeHtml(transicao.PRIORITY)}) que aponta para este estado.`);
-    }
-    if (['18', '20', '22'].includes(a.ACTION_TYPE) && a.ACTION_DATA) {
-      ['callback_state', 'fallback_state'].forEach(campo => {
-        if (a.ACTION_DATA[campo] === stateNumber) {
-          referencias.push(`${nomeOrigem} tem uma ação "${ACTION_TYPE_LABELS[a.ACTION_TYPE] || a.ACTION_TYPE}" (transição prioridade ${escapeHtml(transicao.PRIORITY)}) que aponta para este estado via "${campo}".`);
-        }
+    if (!transicao || !a.ACTION_DATA) return;
+    (CAMPOS_ESTADO_POR_TIPO[a.ACTION_TYPE] || []).forEach(campo => {
+      if (a.ACTION_DATA[campo] !== stateNumber) return;
+      origens.push({
+        tipo: 'acao', estado: transicao.STATE, transitionId: transicao.ID, prioridade: transicao.PRIORITY,
+        actionId: a.ID, actionType: a.ACTION_TYPE, campo, proprioEstado: transicao.STATE === stateNumber,
       });
-    }
+    });
   });
 
   if (bot.TIMEOUT_ACTION === 'bot' && bot.TIMEOUT_DESTINY === stateNumber) {
-    referencias.push('A configuração de timeout do bot ("Ações de timeout" → Trocar estado) aponta para este estado.');
+    origens.push({ tipo: 'timeout' });
   }
+  return origens;
+}
 
-  return referencias;
+// Ações e timeout cujo destino é uma {$variável}: o estado só se sabe na hora
+// da conversa, então qualquer estado pode ser alcançado por elas. O painel de
+// origens mostra estas à parte, pra "ninguém aponta aqui" não enganar.
+export function origensPorVariavel(bot) {
+  const origens = [];
+  const transicaoPorId = {};
+  (bot.BOT_TRANSITIONS || []).forEach(t => transicaoPorId[t.ID] = t);
+
+  (bot.BOT_ACTIONS || []).forEach(a => {
+    const transicao = transicaoPorId[a.TRANSITION_ID];
+    if (!transicao || !a.ACTION_DATA) return;
+    (CAMPOS_ESTADO_POR_TIPO[a.ACTION_TYPE] || []).forEach(campo => {
+      if (!String(a.ACTION_DATA[campo] ?? '').includes('{$')) return;
+      origens.push({
+        tipo: 'acao', estado: transicao.STATE, transitionId: transicao.ID, prioridade: transicao.PRIORITY,
+        actionId: a.ID, actionType: a.ACTION_TYPE, campo, variavel: a.ACTION_DATA[campo],
+      });
+    });
+  });
+
+  if (bot.TIMEOUT_ACTION === 'bot' && String(bot.TIMEOUT_DESTINY ?? '').includes('{$')) {
+    origens.push({ tipo: 'timeout', variavel: bot.TIMEOUT_DESTINY });
+  }
+  return origens;
+}
+
+// Texto de uma origem no painel que bloqueia a exclusão.
+function descreverReferencia(origem, estadoPorNumero) {
+  if (origem.tipo === 'timeout') return 'A configuração de timeout do bot ("Ações de timeout" → Trocar estado) aponta para este estado.';
+  const estadoOrigem = estadoPorNumero[origem.estado];
+  const nomeOrigem = `Estado "${escapeHtml(estadoOrigem ? estadoOrigem.ALIAS : '?')}" (nº ${escapeHtml(origem.estado)})`;
+  if (origem.actionType === '2') {
+    return `${nomeOrigem} tem uma ação "Troca Estado" (transição prioridade ${escapeHtml(origem.prioridade)}) que aponta para este estado.`;
+  }
+  return `${nomeOrigem} tem uma ação "${ACTION_TYPE_LABELS[origem.actionType] || origem.actionType}" (transição prioridade ${escapeHtml(origem.prioridade)}) que aponta para este estado via "${origem.campo}".`;
+}
+
+// Origens que impedem excluir `stateNumber`, cada uma com seu texto. As do
+// próprio estado (self-loop) não contam: seriam excluídas junto com ele.
+// Lista vazia = seguro excluir.
+export function bloqueiosDeExclusao(bot, stateNumber) {
+  const estadoPorNumero = {};
+  (bot.BOT_STATES || []).forEach(s => estadoPorNumero[s.STATE_NUMBER] = s);
+  return origensDoEstado(bot, stateNumber)
+    .filter(o => !o.proprioEstado)
+    .map(origem => ({ origem, texto: descreverReferencia(origem, estadoPorNumero) }));
+}
+
+// Só os textos de bloqueiosDeExclusao.
+export function referenciasParaEstado(bot, stateNumber) {
+  return bloqueiosDeExclusao(bot, stateNumber).map(b => b.texto);
 }
 
 // Exclui um estado e tudo que pertence só a ele (transições, condições,
@@ -794,9 +839,9 @@ export function iniciarExclusaoEstado(bot, stateNumber) {
   const painel = $(`#bv-estados .estado-wrap[data-estado-numero="${stateNumber}"] [data-role="estado-delete-panel"]`);
   if (!estado || !painel) return;
 
-  const referencias = referenciasParaEstado(bot, stateNumber);
-  if (referencias.length) {
-    painel.innerHTML = renderPainelBloqueio(estado, referencias);
+  const bloqueios = bloqueiosDeExclusao(bot, stateNumber);
+  if (bloqueios.length) {
+    painel.innerHTML = renderPainelBloqueio(estado, bloqueios);
   } else {
     const totalTransicoes = (bot.BOT_TRANSITIONS || []).filter(t => t.STATE === stateNumber).length;
     painel.innerHTML = renderPainelConfirmacao(estado, totalTransicoes);
@@ -813,6 +858,67 @@ function animarClasse(el, classe, ms) {
   el.classList.add(classe);
   clearTimeout(el._timerAnimacao);
   el._timerAnimacao = setTimeout(() => el.classList.remove(classe), ms);
+}
+
+// Painel "Quem aponta para este estado", abaixo do cabeçalho. Calculado ao
+// abrir: editar outro estado com ele aberto não o atualiza (fechar e abrir de
+// novo recalcula). Segundo clique no botão fecha.
+export function alternarPainelOrigens(bot, stateNumber) {
+  const estado = (bot.BOT_STATES || []).find(s => s.STATE_NUMBER === stateNumber);
+  const painel = $(`#bv-estados .estado-wrap[data-estado-numero="${stateNumber}"] [data-role="estado-origens-panel"]`);
+  if (!estado || !painel) return;
+  if (!painel.classList.contains('hidden')) {
+    painel.classList.add('hidden');
+    painel.innerHTML = '';
+    return;
+  }
+  const estadoPorNumero = {};
+  (bot.BOT_STATES || []).forEach(s => estadoPorNumero[s.STATE_NUMBER] = s);
+  painel.innerHTML = renderPainelOrigens(estado, origensDoEstado(bot, stateNumber), origensPorVariavel(bot), estadoPorNumero);
+  painel.classList.remove('hidden');
+  criarIcones();
+}
+
+// Abre o estado (se fechado), destaca e rola até ele: "ir para o estado" e "ir
+// para a origem" usam o mesmo caminho. `focar` false só abre: quem chamou rola
+// e destaca um ponto de dentro do estado.
+function abrirEstadoNaTela(wrap, focar = true) {
+  const corpo = wrap.querySelector('.estado-body');
+  const jaAberto = !corpo.classList.contains('hidden');
+  corpo.classList.remove('hidden');
+  wrap.classList.add('estado-expandido');
+  wrap.querySelector('.estado-chevron').classList.add('rotate-180');
+  // O estado abre antes da rolagem (o corpo aberto aumenta a altura da
+  // lista) e a rolagem leva o TOPO dele ao topo da área visível.
+  // Sem checar prefers-reduced-motion de propósito: é feedback curto de
+  // um clique, e com "efeitos de animação" desligados no Windows o
+  // navegador reporta "reduzir" e o botão ficaria seco.
+  if (!jaAberto) animarClasse(corpo, 'estado-abrindo', 400);
+  if (!focar) return;
+  animarClasse(wrap, 'estado-destaque', 1500);
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Leva até o lugar exato que aponta para um estado: a ação dentro do estado de
+// origem, ou o campo de destino do timeout (fora da lista de estados). O link
+// guarda a ação em data-origem-acao, não data-action-id: analise.js procura
+// `#bv-estados [data-action-id]` e acharia o link antes da ação.
+function irParaOrigem(btn) {
+  if (btn.dataset.origem === 'timeout') {
+    const campo = $('#bv-destino-select');
+    if (!campo) return;
+    campo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    animarClasse(campo, 'bs-alvo', 1600);
+    return;
+  }
+  const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${btn.dataset.state}"]`);
+  if (!wrap) return;
+  const acao = wrap.querySelector(`.acao-item[data-action-id="${btn.dataset.origemAcao}"]`);
+  abrirEstadoNaTela(wrap, !acao);
+  if (!acao) return;
+  acao.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Mesmo piscar da busca e da análise.
+  animarClasse(acao, 'bs-alvo', 1600);
 }
 
 // Reabre a tela mantendo os estados que já estavam expandidos (senão cada
@@ -1305,22 +1411,12 @@ export function initAcoesDelegadas() {
         const stateNumber = btn.dataset.state;
         if (!stateNumber) break;
         const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${stateNumber}"]`);
-        if (!wrap) break;
-        const corpo = wrap.querySelector('.estado-body');
-        const jaAberto = !corpo.classList.contains('hidden');
-        corpo.classList.remove('hidden');
-        wrap.classList.add('estado-expandido');
-        wrap.querySelector('.estado-chevron').classList.add('rotate-180');
-        // O estado abre antes da rolagem (o corpo aberto aumenta a altura da
-        // lista) e a rolagem leva o TOPO dele ao topo da área visível.
-        // Sem checar prefers-reduced-motion de propósito: é feedback curto de
-        // um clique, e com "efeitos de animação" desligados no Windows o
-        // navegador reporta "reduzir" e o botão ficaria seco.
-        if (!jaAberto) animarClasse(corpo, 'estado-abrindo', 400);
-        animarClasse(wrap, 'estado-destaque', 1500);
-        wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (wrap) abrirEstadoNaTela(wrap);
         break;
       }
+      case 'ir-para-origem':
+        irParaOrigem(btn);
+        break;
     }
   });
 
@@ -1502,6 +1598,12 @@ export function initEstadoDeleteFlow() {
     if (!btn || !state.botCarregado) return;
     if (btn.dataset.action === 'delete-estado') {
       iniciarExclusaoEstado(state.botCarregado, btn.dataset.state);
+    } else if (btn.dataset.action === 'origens-estado') {
+      alternarPainelOrigens(state.botCarregado, btn.dataset.state);
+    } else if (btn.dataset.action === 'fechar-origens-estado') {
+      const painel = btn.closest('[data-role="estado-origens-panel"]');
+      painel.classList.add('hidden');
+      painel.innerHTML = '';
     } else if (btn.dataset.action === 'fechar-alerta-estado' || btn.dataset.action === 'cancelar-exclusao-estado') {
       const painel = btn.closest('[data-role="estado-delete-panel"]');
       painel.classList.add('hidden');
