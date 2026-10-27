@@ -570,7 +570,7 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
       corpo = `<textarea readonly rows="2" class="textarea-view">${escapeHtml(JSON.stringify(d))}</textarea>`;
   }
   return `
-    <div class="acao-item">
+    <div class="acao-item" data-action-id="${escapeHtml(a.ID)}">
       <div class="flex gap-1.5">
         <div class="reorder-stack shrink-0">
           <button type="button" class="reorder-btn" data-action="mover-acao" data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}" data-dir="-1"${indice === 0 ? ' disabled' : ''} title="Mover para cima"><i data-lucide="chevron-up" class="w-3 h-3 pointer-events-none"></i></button>
@@ -640,9 +640,11 @@ export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao,
         <span class="estado-header-espaco" aria-hidden="true"></span>
         <button class="w-8 h-8 rounded-lg bg-[var(--success)] text-white flex items-center justify-center shrink-0 opacity-70" disabled title="Elemento decorativo (réplica visual do ORPEN) — sem campo correspondente no JSON"><i data-lucide="check" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-warn flex items-center justify-center shrink-0 transition-colors" data-action="duplicate-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Duplicar estado (com todas as transições, condições e ações)"><i data-lucide="copy" class="w-4 h-4"></i></button>
+        <button type="button" class="w-8 h-8 rounded-lg obd-btn-origens flex items-center justify-center shrink-0 transition-colors" data-action="origens-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Quem aponta para este estado"><i data-lucide="log-in" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-danger flex items-center justify-center shrink-0 transition-colors" data-action="delete-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Excluir estado"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
         <i data-lucide="chevron-down" class="estado-chevron w-4 h-4 shrink-0 transition-transform"></i>
       </div>
+      <div class="estado-delete-panel hidden" data-role="estado-origens-panel"></div>
       <div class="estado-delete-panel hidden" data-role="estado-delete-panel"></div>
       <div class="estado-body hidden">
         <div class="grid grid-cols-2 gap-4 px-4 pt-4">
@@ -670,13 +672,88 @@ export function renderPainelConfirmacaoItem(rotulo, acaoConfirmar, dadosExtraHtm
     </div>`;
 }
 
-export function renderPainelBloqueio(estado, referencias) {
+// Atributos do link que leva até uma origem (handler "ir-para-origem"). A ação
+// vai em data-origem-acao, não data-action-id: ver irParaOrigem.
+function atributosIrParaOrigem(o) {
+  return o.tipo === 'timeout'
+    ? 'data-action="ir-para-origem" data-origem="timeout"'
+    : `data-action="ir-para-origem" data-origem="acao" data-state="${escapeHtml(o.estado)}" data-origem-acao="${escapeHtml(o.actionId)}"`;
+}
+
+// `bloqueios` vem de bloqueiosDeExclusao: { origem, texto } com o texto já
+// escapado. Cada linha leva até a origem.
+export function renderPainelBloqueio(estado, bloqueios) {
   return `
     <div class="estado-alert estado-alert-blocked">
       <div class="estado-alert-head"><i data-lucide="shield-alert" class="w-4 h-4"></i><p>Não é possível excluir o estado "${escapeHtml(estado.ALIAS)}" (nº ${escapeHtml(estado.STATE_NUMBER)})</p></div>
-      <p class="estado-alert-sub">Este estado ainda é referenciado em ${referencias.length} ${referencias.length === 1 ? 'lugar' : 'lugares'}:</p>
-      <ul class="estado-alert-list">${referencias.map(r => `<li>${r}</li>`).join('')}</ul>
+      <p class="estado-alert-sub">Este estado ainda é referenciado em ${bloqueios.length} ${bloqueios.length === 1 ? 'lugar' : 'lugares'}:</p>
+      <ul class="estado-alert-list">${bloqueios.map(b => `<li><button type="button" class="estado-origem-link" ${atributosIrParaOrigem(b.origem)} title="Ir para este ponto">${b.texto}</button></li>`).join('')}</ul>
       <div class="estado-alert-actions"><button type="button" class="estado-alert-btn-ghost" data-action="fechar-alerta-estado">Entendi</button></div>
+    </div>`;
+}
+
+// Nome do campo de estado como aparece na própria ação (renderAcao); "Troca
+// Estado" só tem um, então não precisa.
+const ROTULO_CAMPO_ESTADO = {
+  '18': { callback_state: 'Estado de callback' },
+  '20': { callback_state: 'Estado de retorno (callback)', fallback_state: 'Estado de falha (fallback)' },
+  '22': { callback_state: 'Estado de retorno', fallback_state: 'Estado de falha (timeout)' },
+};
+
+// Uma linha do painel de origens, na linguagem da lista de estados: selo
+// laranja do número do estado, chip roxo da transição, tipo da ação e campo.
+function linhaOrigem(o, estadoPorNumero) {
+  const variavel = o.variavel ? `<code class="origem-variavel">${escapeHtml(o.variavel)}</code>` : '';
+  let corpo;
+  if (o.tipo === 'timeout') {
+    corpo = `<span class="origem-selo origem-selo-timeout"><i data-lucide="timer"></i></span>
+      <span class="origem-nome">Timeout do bot</span>
+      <span class="origem-detalhe">Trocar estado</span>${variavel}`;
+  } else {
+    const origem = estadoPorNumero[o.estado];
+    const campo = ROTULO_CAMPO_ESTADO[o.actionType]?.[o.campo];
+    corpo = `<span class="origem-selo obd-badge-solid">${escapeHtml(o.estado)}</span>
+      <span class="origem-nome">${escapeHtml(origem?.ALIAS || 'Sem nome')}</span>
+      ${o.proprioEstado ? '<span class="origem-marca">este estado</span>' : ''}
+      <span class="origem-transicao" title="Transição ${escapeHtml(o.prioridade)}">T${escapeHtml(o.prioridade)}</span>
+      <span class="origem-detalhe">${escapeHtml(ACTION_TYPE_LABELS[o.actionType] || `Tipo ${o.actionType}`)}${campo ? ` · ${escapeHtml(campo)}` : ''}</span>${variavel}`;
+  }
+  return `<li><button type="button" class="origem-item" ${atributosIrParaOrigem(o)} title="Ir para este ponto">${corpo}<i data-lucide="arrow-right" class="origem-ir"></i></button></li>`;
+}
+
+// Fixas em ordem de estado e transição; o timeout por último.
+function ordenarOrigens(origens) {
+  const chave = (o) => (o.tipo === 'timeout' ? [Infinity, 0] : [parseInt(o.estado, 10), parseInt(o.prioridade, 10)]);
+  return origens.slice().sort((a, b) => {
+    const [ea, pa] = chave(a);
+    const [eb, pb] = chave(b);
+    return ea - eb || pa - pb;
+  });
+}
+
+// "Quem aponta para este estado": origens com número fixo (origensDoEstado) e,
+// à parte, as que vão para um estado definido por {$variável}
+// (origensPorVariavel), que podem ou não chegar aqui.
+export function renderPainelOrigens(estado, origens, porVariavel, estadoPorNumero) {
+  const lista = (itens) => `<ul class="origens-lista">${ordenarOrigens(itens).map(o => linhaOrigem(o, estadoPorNumero)).join('')}</ul>`;
+  const inicial = estado.STATE_NUMBER === '0'
+    ? '<p class="origens-aviso"><i data-lucide="flag"></i>Estado inicial: toda conversa nova começa aqui.</p>'
+    : '';
+  const fixas = origens.length
+    ? lista(origens)
+    : '<p class="origens-vazio">Nenhuma ação nem o timeout apontam para este estado.</p>';
+  const variaveis = porVariavel.length
+    ? `<p class="origens-subtitulo">Destino por variável <span>pode chegar aqui</span></p>${lista(porVariavel)}`
+    : '';
+  return `
+    <div class="origens-card">
+      <div class="origens-topo">
+        <i data-lucide="log-in" class="origens-topo-icone"></i>
+        <p class="bv-eyebrow">Quem aponta para este estado</p>
+        <span class="origens-qtd">${origens.length}</span>
+        <button type="button" class="origens-fechar" data-action="fechar-origens-estado" title="Fechar" aria-label="Fechar"><i data-lucide="x"></i></button>
+      </div>
+      ${inicial}${fixas}${variaveis}
     </div>`;
 }
 
