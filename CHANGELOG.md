@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.30] - 2026-10-28
+* **Transições recuadas dentro do estado**: no estado aberto, cada transição fica presa ao estado por uma linha-guia e o conteúdo dela fica recuado mais um nível, com as colunas **Se** (condições) e **Então** (ações). O cabeçalho "Condições | Ações" do topo do estado saiu, já que cada transição tem o seu. Fica mais fácil ver o que pertence a cada transição e onde uma termina e a próxima começa.
+* **A regra da transição na barra**: ao lado do número de cada transição aparece a regra resumida numa linha, por exemplo `se MENSAGEM Igual a 1 → 9 - Segunda via`. Mostra a primeira condição (e quantas mais existem) e o destino da Troca Estado; sem Troca Estado, mostra os tipos de ação. O texto se atualiza ao confirmar cada campo (ao sair dele ou com Enter). É só exibição: nada do que é gravado no bot muda.
+* Arrastar uma transição continua funcionando ao soltar na faixa do recuo, ao lado da linha.
+
 ## [0.8.29] - 2026-10-27
 * **Quem aponta para este estado**: um botão novo no cabeçalho de cada estado, ao lado de duplicar e excluir, abre a lista de tudo que leva o bot até ele: ações "Troca Estado", estados de retorno e de falha de OpenAI, Enviar mensagem de áudio e Executar Automação, e o timeout "Trocar estado". Cada linha mostra o estado de origem, a transição, a ação e o campo; clicar leva até a ação exata (o estado de origem abre e a ação pisca) ou até o destino do timeout. Uma ação do próprio estado aparece marcada como "este estado". Ações e timeout com destino por variável (`{$...}`) aparecem à parte, porque podem chegar a qualquer estado. No estado 0, o painel lembra que é onde toda conversa nova começa. A lista é calculada ao abrir: depois de editar outro estado, feche e abra de novo para atualizar.
 * **Exclusão leva até o que impede**: no aviso "Não é possível excluir o estado", cada referência listada agora é clicável e leva até a ação ou ao timeout que aponta para o estado. O texto do aviso não mudou.
