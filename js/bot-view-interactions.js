@@ -25,6 +25,7 @@ import { abrirModalMenu } from './menu-modal.js';
 import { abrirModalTratamento } from './menu-tratamento.js';
 import { initBusca } from './busca.js';
 import { initAnalise } from './analise.js';
+import { initRegrasTransicao } from './regra-transicao.js';
 import { initCopiarColar } from './copiar-colar.js';
 import { initTesteBot } from './teste-bot.js';
 import { initCombobox, datalistDe, correspondeExato, filtrarOpcoes, lerOpcoes, reabrirCombobox } from './combobox.js';
@@ -921,6 +922,20 @@ function irParaOrigem(btn) {
   animarClasse(acao, 'bs-alvo', 1600);
 }
 
+// Transição sob o ponteiro ao arrastar. Com o recuo, a linha não ocupa a
+// largura toda do estado: soltar na faixa ao lado dela (onde ficam as
+// linhas-guia) vale como soltar na própria linha, como antes do recuo.
+function linhaDeTransicaoNoPonto(e) {
+  const linha = e.target.closest('.estado-row');
+  if (linha) return linha;
+  const corpo = e.target.closest('.estado-body');
+  if (!corpo) return null;
+  return [...corpo.querySelectorAll(':scope > .estado-row')].find((r) => {
+    const caixa = r.getBoundingClientRect();
+    return e.clientY >= caixa.top && e.clientY <= caixa.bottom;
+  }) || null;
+}
+
 // Reabre a tela mantendo os estados que já estavam expandidos (senão cada
 // duplicação recolheria tudo de novo). `focarNumero`, se passado, só recebe
 // scroll pra ficar visível — não é expandido automaticamente, pra não confundir
@@ -1114,7 +1129,7 @@ export function initEstadoReorderDnD() {
 
   container.addEventListener('dragover', (e) => {
     if (e.dataTransfer.types.includes('application/x-mover-transicao')) {
-      const alvoRow = e.target.closest('.estado-row');
+      const alvoRow = linhaDeTransicaoNoPonto(e);
       if (!alvoRow) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
@@ -1136,7 +1151,7 @@ export function initEstadoReorderDnD() {
 
   container.addEventListener('drop', (e) => {
     if (e.dataTransfer.types.includes('application/x-mover-transicao')) {
-      const alvoRow = e.target.closest('.estado-row');
+      const alvoRow = linhaDeTransicaoNoPonto(e);
       container.querySelectorAll('.estado-drop-before, .estado-drop-after').forEach(el => el.classList.remove('estado-drop-before', 'estado-drop-after'));
       if (!alvoRow || !state.botCarregado) return;
       e.preventDefault();
@@ -1915,6 +1930,8 @@ export function initBotViewWiring() {
   initBusca();
   initTesteBot();
   initAnalise();
+  // Resumo "se ... → destino" na barra de cada transição.
+  initRegrasTransicao();
   // Lista de sugestões própria em todos os campos de busca (combobox.js).
   initCombobox($('#bot-view-overlay'));
   // Botão direito ou {$ nas caixas de texto insere variável (variaveis-texto.js).
