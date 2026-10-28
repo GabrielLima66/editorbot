@@ -593,10 +593,12 @@ function resumoTransicao(nCondicoes, nAcoes) {
 }
 
 // Barra no topo da transição (mesmo padrão do header do estado): alça,
-// prioridade e resumo à esquerda; duplicar/excluir à direita. Deixa claro que
-// os controles valem pra transição inteira (antes pareciam da 1ª condição) e
-// devolve a largura toda pra coluna de condições. O painel de exclusão
-// continua filho direto de .estado-row (bot-view-interactions.js depende disso).
+// prioridade, regra resumida e contagem à esquerda; duplicar/excluir à
+// direita. A regra ("se ... → destino") é preenchida por regra-transicao.js a
+// partir dos campos. O painel de exclusão continua filho direto de
+// .estado-row (bot-view-interactions.js depende disso).
+// Recuo em dois níveis (CSS): a transição pendurada no estado por uma
+// linha-guia e o corpo (Se | Então) pendurado na transição.
 export function renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, totalTransicoes) {
   const condicoes = condicoesPorTransicao[t.ID] || [];
   const acoes = acoesPorTransicao[t.ID] || [];
@@ -606,6 +608,7 @@ export function renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, 
         <span class="transicao-drag-handle shrink-0" draggable="true" title="Arraste para reordenar"><i data-lucide="grip-vertical" class="w-3.5 h-3.5 pointer-events-none"></i></span>
         <span class="transicao-rotulo">Transição</span>
         <input type="number" class="transicao-numero-input transicao-numero-badge shrink-0" min="0" max="${totalTransicoes - 1}" value="${escapeHtml(t.PRIORITY)}" data-action="mover-transicao" data-transition-id="${escapeHtml(t.ID)}" title="Digite a posição desejada (0 a ${totalTransicoes - 1}) e aperte Enter">
+        <span class="transicao-regra"></span>
         <span class="transicao-resumo">${resumoTransicao(condicoes.length, acoes.length)}</span>
         <button type="button" class="transicao-barra-btn obd-btn-warn" data-action="duplicate-transicao" data-transition-id="${escapeHtml(t.ID)}" title="Duplicar esta transição (condições + ações)"><i data-lucide="copy"></i></button>
         <button type="button" class="transicao-barra-btn obd-btn-copiar" data-action="copiar-transicao" data-transition-id="${escapeHtml(t.ID)}" title="Copiar esta transição para colar em outro estado ou bot"><i data-lucide="clipboard-copy"></i></button>
@@ -613,10 +616,12 @@ export function renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, 
       </div>
       <div class="transicao-corpo grid grid-cols-2 gap-4">
         <div class="min-w-0">
+          <p class="transicao-col-titulo transicao-col-se">Se</p>
           ${condicoes.length ? condicoes.map((c, i) => renderCondicao(c, i, condicoes.length)).join('') : '<p class="estado-empty text-xs italic mb-1.5">Sem condição (padrão)</p>'}
           <button type="button" class="mb-builder-add-btn" data-action="add-condicao" data-transition-id="${escapeHtml(t.ID)}"><i data-lucide="plus" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i>Condição</button>
         </div>
         <div class="min-w-0">
+          <p class="transicao-col-titulo transicao-col-entao">Então</p>
           ${acoes.length ? acoes.map((a, i) => renderAcao(a, estadoPorNumero, i, acoes.length)).join('') : '<p class="estado-empty text-xs italic mb-1.5">Nenhuma ação</p>'}
           <button type="button" class="mb-builder-add-btn" data-action="add-acao" data-transition-id="${escapeHtml(t.ID)}"><i data-lucide="plus" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i>Ação</button>
         </div>
@@ -647,10 +652,6 @@ export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao,
       <div class="estado-delete-panel hidden" data-role="estado-origens-panel"></div>
       <div class="estado-delete-panel hidden" data-role="estado-delete-panel"></div>
       <div class="estado-body hidden">
-        <div class="grid grid-cols-2 gap-4 px-4 pt-4">
-          <p class="estado-col-title text-sm font-semibold">Condições</p>
-          <p class="estado-col-title text-sm font-semibold">Ações</p>
-        </div>
         ${transicoes.length ? transicoes.map(t => renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, transicoes.length)).join('') : '<p class="estado-empty text-xs italic p-4">Nenhuma transição para este estado.</p>'}
         <div class="px-4 py-3">
           <button type="button" class="mb-builder-add-btn" data-action="add-transicao" data-state="${escapeHtml(estado.STATE_NUMBER)}"><i data-lucide="plus" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i>Transição</button>
