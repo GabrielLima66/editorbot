@@ -102,7 +102,12 @@ function desenhar() {
   if (passos.length && !trilhaValida()) { passos = []; cortado = false; }
   const ativa = passos.length >= 2;
   const htmlB = ativa ? htmlBarra() : '';
-  if (barra.innerHTML !== htmlB) barra.innerHTML = htmlB;
+  if (barra.innerHTML !== htmlB) {
+    barra.innerHTML = htmlB;
+    // Passos demais para a largura: mostra o fim (onde se está).
+    const lista = barra.querySelector('.trilha-passos');
+    if (lista) lista.scrollLeft = lista.scrollWidth;
+  }
   barra.classList.toggle('hidden', !ativa);
   // Com a barra fixa no topo, quem rola até um estado (scrollIntoView) para
   // abaixo dela, e não por baixo.
