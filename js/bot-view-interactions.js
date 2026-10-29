@@ -26,6 +26,8 @@ import { abrirModalTratamento } from './menu-tratamento.js';
 import { initBusca } from './busca.js';
 import { initAnalise } from './analise.js';
 import { initRegrasTransicao } from './regra-transicao.js';
+import { initFluxoCabecalhos } from './fluxo-cabecalho.js';
+import { initTrilha, registrarSalto, limparTrilha } from './trilha.js';
 import { initCopiarColar } from './copiar-colar.js';
 import { initTesteBot } from './teste-bot.js';
 import { initCombobox, datalistDe, correspondeExato, filtrarOpcoes, lerOpcoes, reabrirCombobox } from './combobox.js';
@@ -922,6 +924,19 @@ function irParaOrigem(btn) {
   animarClasse(acao, 'bs-alvo', 1600);
 }
 
+// Voltar da trilha: o ponto de onde se saiu (a ação, a transição ou só o
+// estado, quando o salto saiu do cabeçalho).
+function irParaPonto({ estado, transitionId, actionId }) {
+  const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${estado}"]`);
+  if (!wrap) return;
+  const alvo = (actionId && wrap.querySelector(`.acao-item[data-action-id="${actionId}"]`))
+    || (transitionId && wrap.querySelector(`.estado-row[data-transition-id="${transitionId}"]`));
+  abrirEstadoNaTela(wrap, !alvo);
+  if (!alvo) return;
+  alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  animarClasse(alvo, 'bs-alvo', 1600);
+}
+
 // Transição sob o ponteiro ao arrastar. Com o recuo, a linha não ocupa a
 // largura toda do estado: soltar na faixa ao lado dela (onde ficam as
 // linhas-guia) vale como soltar na própria linha, como antes do recuo.
@@ -1336,7 +1351,7 @@ export function initAcoesDelegadas() {
       if (campo !== campoLabelsClicado) fecharListaLabels(campo);
     });
     const header = e.target.closest('.estado-header');
-    if (header && !e.target.closest('button, select, input, .estado-drag-handle')) {
+    if (header && !e.target.closest('button, select, input, .estado-drag-handle, .estado-fluxo')) {
       const wrap = header.closest('.estado-wrap');
       wrap.querySelector('.estado-body').classList.toggle('hidden');
       wrap.classList.toggle('estado-expandido');
@@ -1426,10 +1441,13 @@ export function initAcoesDelegadas() {
         const stateNumber = btn.dataset.state;
         if (!stateNumber) break;
         const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${stateNumber}"]`);
-        if (wrap) abrirEstadoNaTela(wrap);
+        if (!wrap) break;
+        registrarSalto(btn, { estado: stateNumber });
+        abrirEstadoNaTela(wrap);
         break;
       }
       case 'ir-para-origem':
+        if (btn.dataset.origem === 'acao') registrarSalto(btn, { estado: btn.dataset.state, actionId: btn.dataset.origemAcao });
         irParaOrigem(btn);
         break;
     }
@@ -1932,6 +1950,11 @@ export function initBotViewWiring() {
   initAnalise();
   // Resumo "se ... → destino" na barra de cada transição.
   initRegrasTransicao();
+  // Chips "vem de / vai para" no cabeçalho de cada estado.
+  initFluxoCabecalhos();
+  // Trilha dos saltos entre estados, com Voltar.
+  initTrilha(irParaPonto);
+  registrarAoFechar(limparTrilha);
   // Lista de sugestões própria em todos os campos de busca (combobox.js).
   initCombobox($('#bot-view-overlay'));
   // Botão direito ou {$ nas caixas de texto insere variável (variaveis-texto.js).

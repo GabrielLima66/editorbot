@@ -1929,3 +1929,86 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
   transform: scale(var(--ed-k));
   transform-origin: top right;
 }
+
+/* ---- "Vem de / vai para" no cabeçalho do estado (js/fluxo-cabecalho.js) ----
+   Chips com o número dos estados de origem (azul) e de destino (roxo). Ficam à
+   direita, antes dos botões; numa janela estreita encolhem e cortam antes do
+   nome do estado. */
+#bot-view-overlay { --fluxo-entrada: #4FB3E8; --fluxo-entrada-bg: rgba(79, 179, 232, 0.1); }
+:host([data-tema="claro"]) #bot-view-overlay,
+:root[data-tema="claro"] #bot-view-overlay { --fluxo-entrada: #1D7FB8; --fluxo-entrada-bg: rgba(29, 127, 184, 0.08); }
+#bot-view-overlay .estado-fluxo { display: flex; align-items: center; gap: 0.75rem; flex: 0 1 auto; min-width: 0; overflow: hidden; }
+#bot-view-overlay .estado-fluxo:empty { display: none; }
+#bot-view-overlay .fluxo-grupo { display: flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+#bot-view-overlay .fluxo-rotulo { margin-right: 0.125rem; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); }
+#bot-view-overlay .fluxo-chip {
+  display: inline-flex; align-items: center;
+  padding: 0.125rem 0.4375rem;
+  font-size: 0.6875rem; font-weight: 600; line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  background: var(--obd-surface);
+  border: 1px solid var(--obd-border-field);
+  border-radius: 9999px;
+}
+#bot-view-overlay button.fluxo-chip { cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease; }
+#bot-view-overlay .fluxo-entrada { color: var(--fluxo-entrada); border-color: color-mix(in srgb, var(--fluxo-entrada) 55%, transparent); }
+#bot-view-overlay .fluxo-entrada:hover { background: var(--fluxo-entrada-bg); border-color: var(--fluxo-entrada); }
+#bot-view-overlay .fluxo-saida { color: var(--accent); border-color: var(--fx-acento-borda); }
+#bot-view-overlay .fluxo-saida:hover { background: var(--fx-acento-hover-bg); border-color: var(--accent); }
+#bot-view-overlay .fluxo-variavel { color: var(--warn); border-style: dashed; border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+#bot-view-overlay .fluxo-final,
+#bot-view-overlay .fluxo-inicio { color: var(--success); border-color: color-mix(in srgb, var(--success) 50%, transparent); }
+#bot-view-overlay .fluxo-nenhum,
+#bot-view-overlay .fluxo-erro { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
+#bot-view-overlay button.fluxo-chip:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--foco-anel); }
+
+/* ---- Trilha de navegação (js/trilha.js) ----
+   Fixa no topo da área rolável enquanto houver saltos. O top negativo
+   compensa o padding (py-5) da .bv-body, para colar na borda de cima. */
+#bot-view-overlay #bv-trilha {
+  position: sticky; top: -1.25rem; z-index: 6;
+  display: flex; align-items: center; gap: 0.625rem;
+  margin: 0 0 0.75rem; padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  background: var(--obd-panel);
+  border: 1px solid var(--obd-border-field);
+  border-radius: 0.625rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+#bot-view-overlay #bv-trilha.hidden { display: none; }
+/* Altura da barra: rolar até um estado (block: start) para logo abaixo dela. */
+#bot-view-overlay.trilha-ativa .bv-body { scroll-padding-top: 3.75rem; }
+#bot-view-overlay .trilha-voltar {
+  flex-shrink: 0; padding: 0.25rem 0.625rem;
+  font-weight: 600; color: var(--text);
+  background: var(--fx-acento-hover-bg);
+  border: 1px solid var(--accent); border-radius: 0.375rem;
+}
+#bot-view-overlay .trilha-voltar:hover { background: var(--accent); color: var(--sobre-cor); }
+/* Sempre numa linha (a altura fixa é o que o scroll-padding-top acima
+   desconta): com muitos passos, rola na horizontal e mostra o atual. */
+#bot-view-overlay .trilha-passos { display: flex; align-items: center; gap: 0.375rem; flex-wrap: nowrap; min-width: 0; flex: 1; overflow-x: auto; scrollbar-width: none; }
+#bot-view-overlay .trilha-passos::-webkit-scrollbar { display: none; }
+#bot-view-overlay .trilha-passo { color: var(--text-muted); white-space: nowrap; }
+#bot-view-overlay button.trilha-passo:hover { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+#bot-view-overlay .trilha-atual { color: var(--accent); font-weight: 600; }
+#bot-view-overlay .trilha-sep { color: var(--text-faint); }
+#bot-view-overlay .trilha-via {
+  padding: 0 0.3125rem;
+  font-size: 0.6875rem; font-weight: 700; color: var(--accent);
+  background: var(--fx-acento-hover-bg); border: 1px solid var(--fx-acento-borda); border-radius: 0.25rem;
+}
+#bot-view-overlay .trilha-fechar { flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 0.375rem; color: var(--text-faint); font-size: 1rem; line-height: 1; }
+#bot-view-overlay .trilha-fechar:hover { color: var(--text); background: var(--obd-surface); }
+
+/* Aviso no estado de chegada. */
+#bot-view-overlay .estado-chegada {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4375rem 1rem;
+  font-size: 0.75rem; color: var(--text);
+  background: var(--fx-acento-hover-bg);
+  border-top: 1px solid var(--fx-acento-borda);
+  border-bottom: 1px solid var(--fx-acento-borda);
+}
+#bot-view-overlay .estado-chegada-link { font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }

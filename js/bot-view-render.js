@@ -643,6 +643,7 @@ export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao,
         </span>
         <span class="estado-resumo">${transicoes.length === 0 ? 'sem transições' : `${transicoes.length} ${transicoes.length === 1 ? 'transição' : 'transições'}`}</span>
         <span class="estado-header-espaco" aria-hidden="true"></span>
+        <span class="estado-fluxo" data-role="estado-fluxo"></span>
         <button class="w-8 h-8 rounded-lg bg-[var(--success)] text-white flex items-center justify-center shrink-0 opacity-70" disabled title="Elemento decorativo (réplica visual do ORPEN) — sem campo correspondente no JSON"><i data-lucide="check" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-warn flex items-center justify-center shrink-0 transition-colors" data-action="duplicate-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Duplicar estado (com todas as transições, condições e ações)"><i data-lucide="copy" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-origens flex items-center justify-center shrink-0 transition-colors" data-action="origens-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Quem aponta para este estado"><i data-lucide="log-in" class="w-4 h-4"></i></button>
