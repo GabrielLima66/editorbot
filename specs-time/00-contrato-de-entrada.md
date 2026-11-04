@@ -163,6 +163,7 @@ Não reimplemente: estão em `js/`, têm testes e são o que mantém o formato i
 | `getRootNode()` (`dom-root.js`) | Raiz do DOM da extensão (o `ShadowRoot`); na página avulsa é o `document`. **Toda busca de elemento usa isto**, nunca `document`. |
 | `$(seletor)` (`utils.js`) | Atalho: `getRootNode().querySelector(seletor)`. |
 | `empilharEsc(fn)` (`dom-root.js`) | Registra tratamento da tecla Esc numa **pilha**. Quem registrou por último trata primeiro; se `fn(evento)` devolver `false`, o Esc passa para o de baixo; qualquer outro retorno consome a tecla. Devolve a função que remove o tratamento (chame ao fechar a janela). |
+| `listaCompartilhada(opcoes)` (`listas-compartilhadas.js`) | Id da `<datalist>` com estas opções (`{ value, label, grupo? }`), criada em `#bv-listas` na primeira vez. Use no atributo `list` do campo em vez de pôr uma `<datalist>` no HTML dele: campos com as mesmas opções (todas as filas, todos os agentes) passam a apontar para a mesma lista. A lista de um campo se acha com `datalistDe(input)` (`combobox.js`). |
 | `criarIcones()` (`dom-root.js`) | Desenha os ícones Lucide (`<i data-lucide="nome">`) dentro da raiz ativa. Chame depois de inserir HTML novo. |
 | `mostrarToast(texto)` (`utils.js`) | Aviso transitório (~3,2 s) no canto da tela; o texto entra via `textContent`. |
 | `marcarCamposSemAutopreenchimento(elemento)` (`dom-root.js`) | Marca campos de uma janela nova para os gerenciadores de senha não oferecerem preenchimento. Chame em toda janela com `input`/`textarea`. |
@@ -221,7 +222,8 @@ As features que desenham sobre o editor (Testar bot, Localizar, Copiar/colar) de
 |---|---|
 | `#bot-view-overlay` | Raiz do editor (um `<div>` fixo em tela cheia). Ganha a classe `hidden` quando o editor fecha. |
 | `.bv-header` | Cabeçalho; features inserem seus botões antes do `#btn-fechar-bot-view`. |
-| `#bv-estados` | Contêiner da lista de estados. É **recriado por inteiro** a cada alteração estrutural (duplicar, mover, excluir, salvar). Features que marcam elementos precisam remarcar depois disso (observar `childList`). |
+| `#bv-estados` | Contêiner da lista de estados. É **recriado por inteiro** a cada alteração estrutural (duplicar, mover, excluir, salvar). Features que marcam elementos precisam remarcar depois disso (observar `childList`). Com o editor **fechado fica vazio**: o bot sai da página ao fechar e é redesenhado ao abrir. |
+| `#bv-listas` | Listas de sugestões (`<datalist>`) dos campos de busca, compartilhadas entre os campos com as mesmas opções (`listaCompartilhada`, abaixo). Fica fora de `#bv-estados`; zera a cada desenho do bot e ao fechar. |
 | `.estado-wrap[data-estado-numero]` | Cartão de um estado. Filhos: `.estado-header`, `.estado-body` (classe `hidden` quando fechado), `.estado-chevron`, `.estado-resumo`. Aberto = `.estado-expandido` no wrap e sem `hidden` no body. |
 | `.estado-row[data-transition-id]` | Bloco de uma transição dentro do estado. |
 | `.condicao-item` / `.acao-item` | Cartões de condição e de ação; contêm campos com `data-condition-id` / `data-action-id`. |

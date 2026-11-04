@@ -2,7 +2,7 @@
 // nomes, o bot grava IDs; sem a lista do ambiente, cai no campo de IDs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { botsDeExemplo, servidorOrpen, js } from './apoio.mjs';
+import { botsDeExemplo, servidorOrpen, js, comListas } from './apoio.mjs';
 
 const { state } = await js('state.js');
 const { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation } = await js('orpen-adapter.js');
@@ -70,7 +70,7 @@ const R = await js('bot-view-render.js');
 test('anexo: com a lista, mostra "<tipo> - <título>"; sem a lista, campo de ID', () => {
   const acao = { ID: '1', TRANSITION_ID: '1', ACTION_TYPE: '17', ACTION_DATA: { send_file: '55' } };
   state.ambienteOrpen = { anexos: [{ id: 55, name: 'imagem - Boas-vindas' }, { id: 56, name: 'vídeo - Tutorial' }] };
-  const html = R.renderAcao(acao, {}, 0, 1);
+  const html = comListas(R.renderAcao(acao, {}, 0, 1));
   assert.match(html, /value="imagem - Boas-vindas"/);
   assert.match(html, /option value="vídeo - Tutorial" data-value="56"/);
   assert.doesNotMatch(html, /Arquivo \(ID\)/);

@@ -2,7 +2,7 @@
 // e nenhum padrão pode fazer a condição ou o destino sumirem ao salvar.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { js } from './apoio.mjs';
+import { js, comListas, idDaLista, opcoesDaLista } from './apoio.mjs';
 
 const { state } = await js('state.js');
 const I = await js('bot-view-interactions.js');
@@ -128,7 +128,7 @@ test('Transf. Fila lista filas e variáveis; valor de bot/agente já gravado con
     agents: [{ id: '5', name: 'Ana' }],
     variables: [{ id: 'FILA_ESCOLHIDA', name: 'Fila escolhida', parent: null, fixa: false, tipo: 'queue' }],
   };
-  const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '77' } }, {}, 0, 1);
+  const html = comListas(R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '77' } }, {}, 0, 1));
   assert.match(html, /Vendas/);
   assert.doesNotMatch(html, /Bot X/);
   assert.doesNotMatch(html, /Ana/);
@@ -146,7 +146,7 @@ test('Transf. Agente lista agentes, bots e variáveis; variável gravada aparece
     agents: [{ id: '5', name: 'Ana' }],
     variables: [{ id: 'AGENTE_DESTINO', name: 'Agente destino', parent: null, fixa: false, tipo: 'agent' }],
   };
-  const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '4', ACTION_DATA: { destiny: '{$AGENTE_DESTINO}' } }, {}, 0, 1);
+  const html = comListas(R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '4', ACTION_DATA: { destiny: '{$AGENTE_DESTINO}' } }, {}, 0, 1));
   assert.match(html, /Ana/);
   assert.match(html, /Bot X/);
   assert.doesNotMatch(html, /Vendas/);
@@ -168,8 +168,9 @@ test('destino de transferência: a lista do campo é só de filas; variáveis fi
     ],
   };
   const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '10' } }, {}, 0, 1);
-  const listaFila = /<datalist id="dl-a1-destiny">(.*?)<\/datalist>/s.exec(html)[1];
-  const listaVar = /<datalist id="dl-a1-destiny-var">(.*?)<\/datalist>/s.exec(html)[1];
+  const idFila = idDaLista(html, 'data-lista-fila');
+  const listaFila = opcoesDaLista(idFila);
+  const listaVar = opcoesDaLista(idDaLista(html, 'data-lista-variavel'));
   assert.match(listaFila, /Suporte/);
   assert.doesNotMatch(listaFila, /MENSAGEM|Fila escolhida|\{\$/);
   assert.match(listaVar, /data-value="\{\$FILA_ESCOLHIDA\}"/);
@@ -177,7 +178,7 @@ test('destino de transferência: a lista do campo é só de filas; variáveis fi
   // só variáveis: as fixas de condição (Mensagem, Agentes e filas, Calendário) ficam de fora
   assert.doesNotMatch(listaVar, /MENSAGEM|AGENTES NA FILA|CALENDARIO|data-grupo="(Mensagem|Agentes e filas|Calendário)"/);
   // valor de fila: o campo usa a lista de filas; o botão {$} começa desligado
-  assert.match(html, /<input type="search" list="dl-a1-destiny" /);
+  assert.match(html, new RegExp(`<input type="search" list="${idFila}" `));
   assert.match(html, /data-action="alternar-lista-variaveis" aria-pressed="false"/);
   state.ambienteOrpen = null;
 });
@@ -195,13 +196,13 @@ test('Transf. Agente oferece AG. PREFERIDO e Último agente que atendeu entre as
     ],
   };
   const agente = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '4', ACTION_DATA: { destiny: '5' } }, {}, 0, 1);
-  const listaAgente = /<datalist id="dl-a1-destiny-var">(.*?)<\/datalist>/s.exec(agente)[1];
+  const listaAgente = opcoesDaLista(idDaLista(agente, 'data-lista-variavel'));
   assert.match(listaAgente, /data-value="\{\$pref_agent\}"/);
   assert.match(listaAgente, /data-value="\{\$agent_last_att\}"/);
   assert.match(listaAgente, /data-value="\{\$AGENTE_DESTINO\}"/);
   assert.doesNotMatch(listaAgente, /MENSAGEM|name_pref_agent/);
   const fila = R.renderAcao({ ID: 'a2', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '10' } }, {}, 0, 1);
-  const listaFila = /<datalist id="dl-a2-destiny-var">(.*?)<\/datalist>/s.exec(fila)[1];
+  const listaFila = opcoesDaLista(idDaLista(fila, 'data-lista-variavel'));
   assert.doesNotMatch(listaFila, /pref_agent|agent_last_att|AG\. PREFERIDO|Último agente/);
   // gravado na 0.8.27: aparece pelo nome, não como "não encontrado"
   const gravado = R.renderAcao({ ID: 'a3', TRANSITION_ID: 't1', ACTION_TYPE: '4', ACTION_DATA: { destiny: '{$agent_last_att}' } }, {}, 0, 1);
@@ -217,7 +218,7 @@ test('destino de transferência com {$variável} gravada: o campo usa a lista de
     variables: [{ id: 'FILA_ESCOLHIDA', name: 'Fila escolhida', parent: null }],
   };
   const html = R.renderAcao({ ID: 'a1', TRANSITION_ID: 't1', ACTION_TYPE: '5', ACTION_DATA: { destiny: '{$FILA_ESCOLHIDA}' } }, {}, 0, 1);
-  assert.match(html, /<input type="search" list="dl-a1-destiny-var" [^>]*value="Fila escolhida"/);
+  assert.match(html, new RegExp(`<input type="search" list="${idDaLista(html, 'data-lista-variavel')}" [^>]*value="Fila escolhida"`));
   assert.match(html, /aria-pressed="true"/);
   assert.doesNotMatch(html, /não encontrado no ambiente/);
   state.ambienteOrpen = null;
