@@ -164,7 +164,7 @@ Não reimplemente: estão em `js/`, têm testes e são o que mantém o formato i
 | `$(seletor)` (`utils.js`) | Atalho: `getRootNode().querySelector(seletor)`. |
 | `empilharEsc(fn)` (`dom-root.js`) | Registra tratamento da tecla Esc numa **pilha**. Quem registrou por último trata primeiro; se `fn(evento)` devolver `false`, o Esc passa para o de baixo; qualquer outro retorno consome a tecla. Devolve a função que remove o tratamento (chame ao fechar a janela). |
 | `listaCompartilhada(opcoes)` (`listas-compartilhadas.js`) | Id da `<datalist>` com estas opções (`{ value, label, grupo? }`), criada em `#bv-listas` na primeira vez. Use no atributo `list` do campo em vez de pôr uma `<datalist>` no HTML dele: campos com as mesmas opções (todas as filas, todos os agentes) passam a apontar para a mesma lista. A lista de um campo se acha com `datalistDe(input)` (`combobox.js`). |
-| `criarIcones()` (`dom-root.js`) | Desenha os ícones Lucide (`<i data-lucide="nome">`) dentro da raiz ativa. Chame depois de inserir HTML novo. |
+| `criarIcones()` (`dom-root.js`) | Desenha os ícones Lucide (`<i data-lucide="nome">`) dentro da raiz ativa. Chame depois de inserir HTML novo. Só desenha os ícones novos: o SVG pronto perde o `data-lucide` (o nome segue na classe `lucide-<nome>`), então chamar de novo não refaz os que já estão na tela. Para trocar um ícone, insira um `<i data-lucide>` novo; mudar o atributo de um já desenhado não tem efeito. |
 | `mostrarToast(texto)` (`utils.js`) | Aviso transitório (~3,2 s) no canto da tela; o texto entra via `textContent`. |
 | `marcarCamposSemAutopreenchimento(elemento)` (`dom-root.js`) | Marca campos de uma janela nova para os gerenciadores de senha não oferecerem preenchimento. Chame em toda janela com `input`/`textarea`. |
 
