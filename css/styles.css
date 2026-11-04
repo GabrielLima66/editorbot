@@ -1239,6 +1239,8 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 .bs-painel[data-modo="estados"], .bs-painel [data-modo="estados"] { --bs-cor: #D97706; }
 .bs-painel[data-modo="calendarios"], .bs-painel [data-modo="calendarios"] { --bs-cor: #2563EB; }
 .bs-painel[data-modo="scripts"], .bs-painel [data-modo="scripts"] { --bs-cor: #DB2777; }
+.bs-painel[data-modo="filas"], .bs-painel [data-modo="filas"] { --bs-cor: #65A30D; }
+.bs-painel[data-modo="transferencias"], .bs-painel [data-modo="transferencias"] { --bs-cor: #0891B2; }
 
 .bs-nav { display: flex; align-items: center; gap: 4px; margin: 8px 14px; min-height: 28px; }
 .bs-contagem { flex: 1; font-size: 12px; color: var(--text-muted); }
