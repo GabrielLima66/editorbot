@@ -20,8 +20,9 @@ import {
   agruparOpcoes,
 } from './dictionaries.js';
 import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
-import { criarIcones, marcarCamposSemAutopreenchimento } from './dom-root.js';
+import { getRootNode, criarIcones, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { fecharCombobox } from './combobox.js';
+import { listaCompartilhada, zerarListasCompartilhadas } from './listas-compartilhadas.js';
 import { fecharVariaveisTexto, variaveisDisponiveis } from './variaveis-texto.js';
 import { parseMenuModel, renderMenuBuilderShell, initMenuBuilders } from './menu-builder.js';
 import { renderVariaveisBuilder, initVariaveisBuilders, atualizarDatalistsVariaveis } from './variaveis-builder.js';
@@ -103,6 +104,7 @@ export function renderCondicao(c, indice, total) {
   // CONDITION_DATA.type (Bot.class.php:609-629).
   const currentType = isAssistant ? (iaStatus ? '1' : '2') : (c.CONDITION_TYPE ?? '');
   const operatorOptions = buildOperatorOptions(kind, currentType);
+  const listaOperador = listaCompartilhada(operatorOptions.map((o) => ({ value: o.value, label: o.label })));
 
   // Mesmo nome da lista (nome do nativo quando há ambiente).
   let textoVariavel = nomeVariavelCondicao(variable);
@@ -114,8 +116,7 @@ export function renderCondicao(c, indice, total) {
     const detalheOpcoes = iaStatus ? IA_STATUS : IA_CONTEUDO;
     const detalheAtual = String((iaStatus ? c.CONDITION_DATA.value : c.CONDITION_DATA.type) ?? '');
     const detalheTexto = detalheOpcoes.find((o) => o.value === detalheAtual)?.label ?? detalheAtual;
-    const listaId = `ia-detalhe-${c.ID}`;
-    assistantLine = `<div class="mb-1.5"><input type="search" list="${escapeHtml(listaId)}" class="field-view" value="${escapeHtml(detalheTexto)}" data-action="mudar-condicao-ia-detalhe" ${attrsCond}><datalist id="${escapeHtml(listaId)}">${detalheOpcoes.map((o) => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist></div>`;
+    assistantLine = `<div class="mb-1.5"><input type="search" list="${listaCompartilhada(detalheOpcoes)}" class="field-view" value="${escapeHtml(detalheTexto)}" data-action="mudar-condicao-ia-detalhe" ${attrsCond}></div>`;
   }
 
   const valorBruto = c.CONDITION_DATA?.value ?? '';
@@ -138,8 +139,7 @@ export function renderCondicao(c, indice, total) {
         <div class="flex-1 min-w-0">
           <div class="flex gap-2 mb-1.5">
             <input type="search" list="variaveis-datalist" class="field-view condicao-variavel flex-1" value="${escapeHtml(textoVariavel)}"${isAssistant ? ' placeholder="Escolha o assistente"' : ''} data-action="mudar-condicao-variavel" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
-            <input type="search" list="operador-datalist-${escapeHtml(c.ID)}" class="field-view condicao-operador flex-1" value="${escapeHtml((operatorOptions.find(o => String(o.value) === String(currentType)) || {}).label ?? '')}" data-action="mudar-condicao-operador" data-kind="${escapeHtml(kind)}" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
-            <datalist id="operador-datalist-${escapeHtml(c.ID)}">${operatorOptions.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}">`).join('')}</datalist>
+            <input type="search" list="${listaOperador}" class="field-view condicao-operador flex-1" value="${escapeHtml((operatorOptions.find(o => String(o.value) === String(currentType)) || {}).label ?? '')}" data-action="mudar-condicao-operador" data-kind="${escapeHtml(kind)}" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
           </div>
           ${assistantLine}
           ${valorHtml}
@@ -249,24 +249,24 @@ export function campoAmbienteSelect(label, optionsFn, transitionId, actionId, ca
   if (temAmbiente()) {
     const ehVariavel = !!variaveisFn && /^\{\$.*\}$/.test(String(selected ?? ''));
     // Para listas grandes (agentes, filas, scripts, etc.), uma barra de busca
-    // (<input list="...">) é muito superior a um <select> comum.
-    const datalistId = `dl-${actionId}-${campo}`;
-    const datalistVarId = `${datalistId}-var`;
+    // (<input list="...">) é muito superior a um <select> comum. As listas são
+    // compartilhadas entre os campos com as mesmas opções
+    // (js/listas-compartilhadas.js): cada campo só aponta para a sua.
     const opcoes = ehVariavel ? optionsFn() : comValorAtual(optionsFn(), selected);
     const opcoesVar = variaveisFn ? (ehVariavel ? comValorAtual(variaveisFn(), selected) : variaveisFn()) : [];
+    const datalistId = listaCompartilhada(opcoes);
+    const datalistVarId = variaveisFn ? listaCompartilhada(opcoesVar) : '';
     const atuais = ehVariavel ? opcoesVar : opcoes;
     const selectedOpt = atuais.find(o => String(o.value) === String(selected));
     const textoExibido = selectedOpt ? selectedOpt.label : (selected ?? '');
 
-    const montarDatalist = (id, lista) => `<datalist id="${escapeHtml(id)}">${lista.map(o => `<option value="${escapeHtml(o.label)}" data-value="${escapeHtml(o.value)}"${o.grupo ? ` data-grupo="${escapeHtml(o.grupo)}"` : ''}>`).join('')}</datalist>`;
     const variavelAttrs = variaveisFn
       ? ` data-lista-fila="${escapeHtml(datalistId)}" data-lista-variavel="${escapeHtml(datalistVarId)}" data-eh-variavel="${ehVariavel ? '1' : ''}"`
       : '';
     const inputHtml = `<input type="search" list="${escapeHtml(ehVariavel ? datalistVarId : datalistId)}" class="field-view${variaveisFn ? ' flex-1' : ''}" value="${escapeHtml(textoExibido)}" data-action="mudar-campo-acao-ambiente-buscavel" data-transition-id="${escapeHtml(transitionId)}" data-action-id="${escapeHtml(actionId)}" data-campo="${escapeHtml(campo)}"${variavelAttrs}>`;
-    const listas = montarDatalist(datalistId, opcoes) + (variaveisFn ? montarDatalist(datalistVarId, opcoesVar) : '');
-    if (!variaveisFn) return campoBloco(label, inputHtml + listas);
+    if (!variaveisFn) return campoBloco(label, inputHtml);
     const btnHtml = `<button type="button" class="ir-para-estado-btn shrink-0 btn-variavel" data-action="alternar-lista-variaveis" aria-pressed="${ehVariavel}" title="Alternar entre ${escapeHtml(label.toLowerCase())} e variáveis" aria-label="Alternar entre ${escapeHtml(label.toLowerCase())} e variáveis">{$}</button>`;
-    return campoBloco(label, `<div class="flex gap-1.5">${inputHtml}${btnHtml}</div>${listas}`);
+    return campoBloco(label, `<div class="flex gap-1.5">${inputHtml}${btnHtml}</div>`);
   }
   return campoTextoEditavel(label + ' (ID)', transitionId, actionId, campo, selected);
 }
@@ -898,6 +898,9 @@ export function abrirBotView(bot) {
   (bot.BOT_ACTIONS || []).forEach(a => (acoesPorTransicao[a.TRANSITION_ID] ||= []).push(a));
   Object.values(acoesPorTransicao).forEach(arr => arr.sort((a, b) => parseInt(a.ID) - parseInt(b.ID)));
 
+  // Todos os campos são recriados aqui: as listas do desenho anterior saem e
+  // cada campo registra de novo a sua (js/listas-compartilhadas.js).
+  zerarListasCompartilhadas();
   $('#bv-estados').innerHTML = estados.length
     ? estados.map(e => renderEstado(e, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, estados.length)).join('')
     : '<p class="estado-empty text-xs italic p-4">Nenhum estado neste bot.</p>';
@@ -946,10 +949,20 @@ export function registrarAoFechar(fn) {
 }
 
 export function fecharBotView() {
+  // O campo com o cursor confirma o que foi digitado antes de sair da tela (o
+  // blur dispara o `change`, que grava no bot).
+  const estados = $('#bv-estados');
+  const ativo = getRootNode().activeElement;
+  if (ativo && estados?.contains(ativo)) ativo.blur();
   fecharCombobox();
   fecharVariaveisTexto();
   aoFechar.forEach((fn) => { try { fn(); } catch { /* um fechamento não impede os outros */ } });
   $('#bot-view-overlay').classList.add('hidden');
+  // Libera a memória: escondido, o bot continuava inteiro na página (num bot
+  // grande, centenas de milhares de elementos) até o F5. Abrir de novo sempre
+  // redesenha (abrirBotView).
+  if (estados) estados.innerHTML = '';
+  zerarListasCompartilhadas();
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';
 }

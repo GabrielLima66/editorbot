@@ -30,6 +30,8 @@ Tudo é **string**. Cada linha tem chaves numéricas espelhadas ("0","1"...): ig
 
 - Esquecer que o `#bv-estados` é **recriado inteiro** a cada alteração estrutural: classes e listeners colocados em elementos dele somem. Use delegação ou observe `childList`.
 - Usar `document` em vez de `getRootNode()` (o editor vive num Shadow DOM).
+- Pôr uma `<datalist>` no HTML de um campo: cada campo repetia a lista inteira do ambiente e um bot grande chegava a 100 mil+ `<option>`. Use `listaCompartilhada(opcoes)` e ache a lista com `datalistDe(input)`.
+- Contar com o `#bv-estados` com o editor fechado: ao fechar ele é esvaziado.
 - Usar `rem` em janela fora do editor (a página da Orpen redefine a raiz para 10px). Use `px`.
 - Pôr texto do bot/cliente em `innerHTML` sem `escapeHtml`, inclusive em `data-*`.
 - Criar ID com `Math.random`/contador próprio. Use `nextId`.
@@ -37,6 +39,6 @@ Tudo é **string**. Cada linha tem chaves numéricas espelhadas ("0","1"...): ig
 
 ## Funções que já existem (não reescrever)
 
-`nextId`, `withMirrors`, `remapStateNumbers`, `tipoDaCondicao`, `escapeHtml`, `parseMenuModel`, `extrairItensMenu`, `empilharEsc`, `getRootNode`, `criarIcones`, cadastros `opcoes*()` (listas `{value,label}`, vazias fora da Orpen).
+`nextId`, `withMirrors`, `remapStateNumbers`, `tipoDaCondicao`, `escapeHtml`, `parseMenuModel`, `extrairItensMenu`, `empilharEsc`, `getRootNode`, `criarIcones`, `listaCompartilhada`, cadastros `opcoes*()` (listas `{value,label}`, vazias fora da Orpen).
 
 Exibição de cadastro: `"Nome" (ID n)`; sem nome, `ID n`.

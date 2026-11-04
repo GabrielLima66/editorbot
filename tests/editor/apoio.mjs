@@ -26,6 +26,18 @@ globalThis.window ??= globalThis;
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const js = (arquivo) => import(new URL(`file:///${path.join(raiz, 'js', arquivo).replace(/\\/g, '/')}`).href);
 
+// Os campos de busca apontam para listas compartilhadas (js/listas-compartilhadas.js),
+// que ficam fora do HTML do campo. `comListas` devolve o HTML com as <datalist>
+// usadas por ele no fim, para as asserções enxergarem as opções.
+const listas = await js('listas-compartilhadas.js');
+const ID_LISTA = /(?:list|data-lista-fila|data-lista-variavel)="(bv-lista-\d+)"/g;
+export function comListas(html) {
+  const ids = [...new Set([...html.matchAll(ID_LISTA)].map((m) => m[1]))];
+  return html + ids.map((id) => `<datalist id="${id}">${listas.opcoesDaLista(id) ?? ''}</datalist>`).join('');
+}
+export const idDaLista = (html, atributo = 'list') => new RegExp(`${atributo}="(bv-lista-\\d+)"`).exec(html)?.[1];
+export const opcoesDaLista = (id) => listas.opcoesDaLista(id) ?? '';
+
 export function botsDeExemplo() {
   const pastas = [
     path.join(raiz, 'fluxograma', 'tests', 'fixtures'),

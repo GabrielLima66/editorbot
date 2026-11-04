@@ -2,7 +2,7 @@
 // raiz 1 (status) ou 2 (conteúdo), operador dentro do data.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { botsDeExemplo, servidorOrpen, js } from './apoio.mjs';
+import { botsDeExemplo, servidorOrpen, js, comListas } from './apoio.mjs';
 
 const { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, payloadEsperadoNoServidor } = await js('orpen-adapter.js');
 const I = await js('bot-view-interactions.js');
@@ -129,7 +129,7 @@ test('condição de I.A. mostra "[Conta] Assistente: Nome", sem campo de ID', ()
 
 test('ação OpenAI: só contas com assistentes, e os assistentes da conta escolhida', () => {
   state.ambienteOrpen = { openAiAccounts: CONTAS };
-  const html = R.renderAcao({ ID: '1', TRANSITION_ID: '1', ACTION_TYPE: '18', ACTION_DATA: { openai: 'call_assistant', openai_account: '7', assistant_id: 'asst_def' } }, {}, 0, 1);
+  const html = comListas(R.renderAcao({ ID: '1', TRANSITION_ID: '1', ACTION_TYPE: '18', ACTION_DATA: { openai: 'call_assistant', openai_account: '7', assistant_id: 'asst_def' } }, {}, 0, 1));
   assert.match(html, /value="Conta Suporte"/);
   assert.doesNotMatch(html, /Conta Vazia/);
   assert.match(html, /value="Cobrança"/);

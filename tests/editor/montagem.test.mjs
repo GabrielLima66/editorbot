@@ -22,6 +22,16 @@ test('todo overlay do editor no bot_transform.html é injetado pela ponte', () =
   ids.forEach((id) => assert.ok(ponte.includes(`'#${id}'`), `orpen-bridge.js não injeta #${id}`));
 });
 
+test('a caixa das listas compartilhadas está dentro do #bot-view-overlay (a extensão só injeta ele)', () => {
+  const pos = html.indexOf('id="bv-listas"');
+  assert.ok(pos > inicioEditor, '#bv-listas não está no bot_transform.html ou está fora do editor');
+  const doc = html.slice(inicioEditor);
+  // o primeiro overlay depois do editor marca o fim dele
+  const fim = doc.search(/<div id="(?!bot-view-overlay)[a-z-]+-overlay"/);
+  assert.ok(fim < 0 || pos - inicioEditor < fim, '#bv-listas ficou depois do fim do #bot-view-overlay');
+  assert.ok(ler('js', 'listas-compartilhadas.js').includes("'#bv-listas'"));
+});
+
 test('os elementos que copiar-colar.js procura estão dentro do editor, não no standalone', () => {
   const codigo = ler('js', 'copiar-colar.js');
   const usados = [...new Set([...codigo.matchAll(/\$\('#([a-z-]+)'\)/g)].map((m) => m[1]))];
