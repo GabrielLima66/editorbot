@@ -630,10 +630,26 @@ export function renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, 
     </div>`;
 }
 
-export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, totalEstados) {
+// Conteúdo do corpo do estado: as transições (com condições e ações) e os
+// botões de adicionar/colar transição.
+export function renderCorpoEstado(estado, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero) {
   const transicoes = transicoesPorEstado[estado.STATE_NUMBER] || [];
   return `
-    <div class="estado-wrap mb-4 rounded-xl overflow-hidden border" data-estado-numero="${escapeHtml(estado.STATE_NUMBER)}">
+        ${transicoes.length ? transicoes.map(t => renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, transicoes.length)).join('') : '<p class="estado-empty text-xs italic p-4">Nenhuma transição para este estado.</p>'}
+        <div class="px-4 py-3">
+          <button type="button" class="mb-builder-add-btn" data-action="add-transicao" data-state="${escapeHtml(estado.STATE_NUMBER)}"><i data-lucide="plus" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i>Transição</button>
+          <button type="button" class="mb-builder-add-btn btn-colar btn-colar-transicoes" data-action="colar-transicoes" data-state="${escapeHtml(estado.STATE_NUMBER)}"><i data-lucide="clipboard-paste" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i>Colar transições</button>
+        </div>`;
+}
+
+// `corpo: false` desenha só o cabeçalho, com o corpo vazio marcado
+// data-pendente: ele é montado quando o estado abre (garantirCorpoDoEstado).
+// `aberto: true` já desenha o estado expandido (exige o corpo).
+export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, totalEstados, { corpo = true, aberto = false } = {}) {
+  const transicoes = transicoesPorEstado[estado.STATE_NUMBER] || [];
+  const expandido = aberto && corpo;
+  return `
+    <div class="estado-wrap${expandido ? ' estado-expandido' : ''} mb-4 rounded-xl overflow-hidden border" data-estado-numero="${escapeHtml(estado.STATE_NUMBER)}">
       <div class="estado-header flex items-center gap-3 px-4 py-3 cursor-pointer select-none">
         <span class="estado-drag-handle shrink-0" draggable="true" title="Arraste para reordenar"><i data-lucide="grip-vertical" class="w-4 h-4 pointer-events-none"></i></span>
         <input type="number" class="estado-numero-input shrink-0 obd-badge-solid text-xs font-bold rounded px-1 py-1.5 border-0" min="0" max="${totalEstados - 1}" value="${escapeHtml(estado.STATE_NUMBER)}" data-action="mover-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Digite a posição desejada (0 a ${totalEstados - 1}) e aperte Enter">
@@ -648,18 +664,75 @@ export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao,
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-warn flex items-center justify-center shrink-0 transition-colors" data-action="duplicate-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Duplicar estado (com todas as transições, condições e ações)"><i data-lucide="copy" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-origens flex items-center justify-center shrink-0 transition-colors" data-action="origens-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Quem aponta para este estado"><i data-lucide="log-in" class="w-4 h-4"></i></button>
         <button type="button" class="w-8 h-8 rounded-lg obd-btn-danger flex items-center justify-center shrink-0 transition-colors" data-action="delete-estado" data-state="${escapeHtml(estado.STATE_NUMBER)}" title="Excluir estado"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-        <i data-lucide="chevron-down" class="estado-chevron w-4 h-4 shrink-0 transition-transform"></i>
+        <i data-lucide="chevron-down" class="estado-chevron${expandido ? ' rotate-180' : ''} w-4 h-4 shrink-0 transition-transform"></i>
       </div>
       <div class="estado-delete-panel hidden" data-role="estado-origens-panel"></div>
       <div class="estado-delete-panel hidden" data-role="estado-delete-panel"></div>
-      <div class="estado-body hidden">
-        ${transicoes.length ? transicoes.map(t => renderTransicaoRow(t, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, transicoes.length)).join('') : '<p class="estado-empty text-xs italic p-4">Nenhuma transição para este estado.</p>'}
-        <div class="px-4 py-3">
-          <button type="button" class="mb-builder-add-btn" data-action="add-transicao" data-state="${escapeHtml(estado.STATE_NUMBER)}"><i data-lucide="plus" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i>Transição</button>
-          <button type="button" class="mb-builder-add-btn btn-colar btn-colar-transicoes" data-action="colar-transicoes" data-state="${escapeHtml(estado.STATE_NUMBER)}"><i data-lucide="clipboard-paste" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i>Colar transições</button>
-        </div>
+      <div class="estado-body${expandido ? '' : ' hidden'}"${corpo ? '' : ' data-pendente="1"'}>${corpo ? renderCorpoEstado(estado, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero) : ''}
       </div>
     </div>`;
+}
+
+// Mapas que renderEstado/renderCorpoEstado usam, só com o que é deste estado.
+export function dadosDoEstado(bot, stateNumber) {
+  const estado = (bot.BOT_STATES || []).find(s => s.STATE_NUMBER === stateNumber);
+  const estadoPorNumero = {};
+  (bot.BOT_STATES || []).forEach(e => estadoPorNumero[e.STATE_NUMBER] = e);
+  const transicoesDoEstado = (bot.BOT_TRANSITIONS || []).filter(t => t.STATE === stateNumber).sort((a, b) => parseInt(a.PRIORITY, 10) - parseInt(b.PRIORITY, 10));
+  const idsTransicoes = new Set(transicoesDoEstado.map(t => t.ID));
+  const condicoesPorTransicao = {};
+  (bot.BOT_CONDITIONS || []).filter(c => idsTransicoes.has(c.TRANSITION_ID)).forEach(c => (condicoesPorTransicao[c.TRANSITION_ID] ||= []).push(c));
+  Object.values(condicoesPorTransicao).forEach(arr => arr.sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10)));
+  const acoesPorTransicao = {};
+  (bot.BOT_ACTIONS || []).filter(a => idsTransicoes.has(a.TRANSITION_ID)).forEach(a => (acoesPorTransicao[a.TRANSITION_ID] ||= []).push(a));
+  Object.values(acoesPorTransicao).forEach(arr => arr.sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10)));
+  return {
+    estado,
+    transicoesPorEstado: { [stateNumber]: transicoesDoEstado },
+    condicoesPorTransicao,
+    acoesPorTransicao,
+    estadoPorNumero,
+    totalEstados: (bot.BOT_STATES || []).length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Corpo do estado sob demanda. abrirBotView desenha só os cabeçalhos: num bot
+// grande, os campos dos estados fechados eram quase toda a página. O corpo de
+// um estado é montado na primeira vez que ele abre e fica montado enquanto o
+// editor estiver aberto (fechar e abrir o estado não monta de novo).
+// Quem procura algo dentro de um estado (uma ação, uma transição) chama
+// garantirCorpoDoEstado antes; quem abre um estado usa expandirEstado.
+// ---------------------------------------------------------------------------
+
+/** Monta o corpo do estado se ainda não foi montado. Devolve o próprio wrap. */
+export function garantirCorpoDoEstado(wrap, bot = state.botCarregado) {
+  const corpo = wrap?.querySelector(':scope > .estado-body');
+  if (!corpo || !corpo.hasAttribute('data-pendente') || !bot) return wrap;
+  const numero = wrap.dataset.estadoNumero;
+  const d = dadosDoEstado(bot, numero);
+  if (!d.estado) return wrap;
+  corpo.innerHTML = renderCorpoEstado(d.estado, d.transicoesPorEstado, d.condicoesPorTransicao, d.acoesPorTransicao, d.estadoPorNumero);
+  corpo.removeAttribute('data-pendente');
+  // Antes de os gerenciadores de senha classificarem os campos novos.
+  marcarCamposSemAutopreenchimento(corpo);
+  initMenuBuilders(corpo);
+  initVariaveisBuilders(corpo);
+  criarIcones();
+  // Quem marca linhas do estado (Testar bot) refaz as marcas no corpo novo.
+  corpo.dispatchEvent(new CustomEvent('editor:corpo-montado', { bubbles: true, detail: numero }));
+  return wrap;
+}
+
+/** Abre o estado (montando o corpo antes). true se ele estava fechado. */
+export function expandirEstado(wrap) {
+  garantirCorpoDoEstado(wrap);
+  const corpo = wrap?.querySelector(':scope > .estado-body');
+  if (!corpo || !corpo.classList.contains('hidden')) return false;
+  corpo.classList.remove('hidden');
+  wrap.classList.add('estado-expandido');
+  wrap.querySelector('.estado-chevron')?.classList.add('rotate-180');
+  return true;
 }
 
 export function renderPainelConfirmacaoItem(rotulo, acaoConfirmar, dadosExtraHtml) {
@@ -841,7 +914,9 @@ export function atualizarContadorRodape(bot) {
   if (el) el.textContent = label;
 }
 
-export function abrirBotView(bot) {
+// `abertos` (Set de números de estado): estados desenhados já abertos, com o
+// corpo (reabrirPreservandoExpansao). Os demais ficam só com o cabeçalho.
+export function abrirBotView(bot, { abertos } = {}) {
   state.MENU_MODELS = {};
   state.MENU_PENDENTES_TRUNCAMENTO = {};
   state.menuBuilderSeq = 0;
@@ -902,7 +977,10 @@ export function abrirBotView(bot) {
   // cada campo registra de novo a sua (js/listas-compartilhadas.js).
   zerarListasCompartilhadas();
   $('#bv-estados').innerHTML = estados.length
-    ? estados.map(e => renderEstado(e, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, estados.length)).join('')
+    ? estados.map(e => {
+      const aberto = !!abertos?.has(e.STATE_NUMBER);
+      return renderEstado(e, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, estados.length, { corpo: aberto, aberto });
+    }).join('')
     : '<p class="estado-empty text-xs italic p-4">Nenhum estado neste bot.</p>';
   // No mesmo instante da inserção, antes que gerenciadores de senha
   // classifiquem os campos (o observador deles roda depois deste código).

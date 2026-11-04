@@ -22,6 +22,7 @@ import { parseMenuModel } from './menu-builder.js';
 import { VARIABLE_LABELS, VARIABLE_KIND, TEXT_OPERATORS, ACTION_TYPE_LABELS } from './dictionaries.js';
 import { opcoesCalendarios, opcoesScripts } from './orpen-env.js';
 import { abrirModalMenu } from './menu-modal.js';
+import { expandirEstado } from './bot-view-render.js';
 
 const MODOS = [
   { id: 'textos', rotulo: 'Textos enviados', icone: 'message-square', dica: 'Mensagens e menus que o bot envia' },
@@ -231,13 +232,10 @@ function elementoDoAlvo(r) {
   }
 }
 
+// Abre o estado do resultado (montando o corpo dele, se ainda não foi): o
+// campo do resultado só existe depois disso.
 function abrirEstado(numero) {
-  const wrap = $r(`#bv-estados .estado-wrap[data-estado-numero="${String(numero).replace(/"/g, '\\"')}"]`);
-  const corpo = wrap?.querySelector('.estado-body');
-  if (!corpo || !corpo.classList.contains('hidden')) return;
-  corpo.classList.remove('hidden');
-  wrap.classList.add('estado-expandido');
-  wrap.querySelector('.estado-chevron')?.classList.add('rotate-180');
+  expandirEstado($r(`#bv-estados .estado-wrap[data-estado-numero="${String(numero).replace(/"/g, '\\"')}"]`));
 }
 
 /** Leva até o resultado. selecionar=true põe o foco no campo com o termo selecionado. */

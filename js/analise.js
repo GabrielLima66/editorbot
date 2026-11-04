@@ -13,6 +13,7 @@ import { state } from './state.js';
 import { escapeHtml } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 import { analisarBot, REGRAS } from './analise-bot.js';
+import { expandirEstado } from './bot-view-render.js';
 
 const SEVERIDADES = [
   { id: 'erro', rotulo: 'Erros', um: 'erro', icone: 'circle-x', dica: 'Quebram o fluxo: o bot trava, repete sem parar ou nunca executa o que foi configurado.' },
@@ -74,13 +75,10 @@ function agendar() {
 
 const cssId = (v) => String(v).replace(/"/g, '\\"');
 
+// Abre o estado do achado (montando o corpo dele, se ainda não foi): a ação e a
+// transição do achado só existem depois disso.
 function abrirEstado(numero) {
-  const wrap = $r(`#bv-estados .estado-wrap[data-estado-numero="${cssId(numero)}"]`);
-  const corpo = wrap?.querySelector('.estado-body');
-  if (!corpo || !corpo.classList.contains('hidden')) return;
-  corpo.classList.remove('hidden');
-  wrap.classList.add('estado-expandido');
-  wrap.querySelector('.estado-chevron')?.classList.add('rotate-180');
+  expandirEstado($r(`#bv-estados .estado-wrap[data-estado-numero="${cssId(numero)}"]`));
 }
 
 /** O elemento mais específico do achado: a ação, senão a transição, senão o nome do estado. */
