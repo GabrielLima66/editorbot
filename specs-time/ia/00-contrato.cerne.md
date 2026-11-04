@@ -32,6 +32,7 @@ Tudo é **string**. Cada linha tem chaves numéricas espelhadas ("0","1"...): ig
 - Usar `document` em vez de `getRootNode()` (o editor vive num Shadow DOM).
 - Pôr uma `<datalist>` no HTML de um campo: cada campo repetia a lista inteira do ambiente e um bot grande chegava a 100 mil+ `<option>`. Use `listaCompartilhada(opcoes)` e ache a lista com `datalistDe(input)`.
 - Contar com o `#bv-estados` com o editor fechado: ao fechar ele é esvaziado.
+- Trocar um ícone mudando o `data-lucide` de um SVG já desenhado: `criarIcones()` só desenha os `<i data-lucide>` novos. Insira um `<i>` novo.
 - Usar `rem` em janela fora do editor (a página da Orpen redefine a raiz para 10px). Use `px`.
 - Pôr texto do bot/cliente em `innerHTML` sem `escapeHtml`, inclusive em `data-*`.
 - Criar ID com `Math.random`/contador próprio. Use `nextId`.

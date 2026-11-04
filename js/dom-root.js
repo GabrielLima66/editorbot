@@ -95,8 +95,18 @@ export function ignorarGerenciadoresDeSenha(raiz) {
 // função createIcons) — só precisa sempre receber o root ativo em vez de
 // depender do `document` implícito, senão ícones dentro do shadow root nunca
 // são substituídos pelo SVG.
+//
+// O createIcons troca todo elemento com data-lucide da raiz, e o SVG que ele
+// gera mantém o data-lucide: cada chamada redesenhava TODOS os ícones já na
+// tela (num bot grande, ~15 mil a cada campo editado), e cada troca ainda
+// acordava os observers de #bv-estados. Tirando o atributo do SVG pronto, a
+// chamada seguinte só encontra os <i data-lucide> novos. O desenho é o mesmo
+// (nenhum CSS usa o atributo; o nome do ícone segue na classe lucide-<nome>).
+// Para trocar um ícone, insira um <i data-lucide> novo: mudar o atributo de
+// um ícone já desenhado não o redesenha.
 export function criarIcones() {
   if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
     lucide.createIcons({ root: rootNode });
+    rootNode.querySelectorAll('svg[data-lucide]').forEach((svg) => svg.removeAttribute('data-lucide'));
   }
 }

@@ -2,6 +2,7 @@
 
 ## [0.8.32] - 2026-11-04
 * **Editor mais leve em bots grandes**: cada campo de busca (Transf. Agente, Transf. Fila, Executar Script, operador das condições e outros) levava uma cópia própria da lista inteira do ambiente, com todos os agentes e todas as filas, escondida na página. Agora os campos com as mesmas opções usam uma lista só. Num teste com um bot de 180 estados, 400 agentes e 150 filas, os itens de lista escondidos caíram de cerca de 178 mil para 1,6 mil, o editor passou a ocupar menos da metade da memória e abrir de novo, renomear ou mover um estado ficaram 2 a 3 vezes mais rápidos. As listas mostram exatamente as mesmas opções de antes, inclusive o "não encontrado no ambiente" de um valor que não existe mais.
+* **Editar ficou rápido em bots grandes**: a cada campo confirmado, "+ Ação", "+ Condição", mover ou excluir um item, o editor redesenhava todos os ícones da tela (num bot de 180 estados, mais de 15 mil). Agora desenha só os ícones novos. No mesmo teste, editar um campo caiu de cerca de 0,6 s para 0,1 s, e num computador mais lento, de 1,3 s para 0,25 s. Os ícones continuam iguais.
 * **Fechar o editor libera a memória**: ao fechar, o bot saía da vista mas continuava inteiro na página até o F5. Agora ele sai da página ao fechar e é desenhado de novo ao abrir. O texto que estava sendo digitado é confirmado antes de fechar, como antes.
 * Nada do que é gravado no bot muda.
 
