@@ -1963,6 +1963,47 @@ textarea.mt-input { resize: vertical; line-height: 1.4; }
 #bot-view-overlay .fluxo-erro { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
 #bot-view-overlay button.fluxo-chip:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--foco-anel); }
 
+/* ---- Selo do "Analisar bot" no cabeçalho do estado (js/selos-analise.js) ----
+   Erros (vermelho) e avisos (laranja) do estado, ao lado do "N transições".
+   A borda segue o mais grave. Só tokens de cor. */
+#bot-view-overlay .estado-selo-wrap { display: inline-flex; flex-shrink: 0; }
+#bot-view-overlay .estado-selo-wrap:empty { display: none; }
+#bot-view-overlay .estado-selo {
+  --selo-cor: var(--danger);
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  padding: 0.125rem 0.4375rem;
+  font-size: 0.6875rem; font-weight: 700; line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--selo-cor) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--selo-cor) 50%, transparent);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+#bot-view-overlay .estado-selo[data-gravidade="aviso"] { --selo-cor: var(--warn); }
+#bot-view-overlay .estado-selo:hover { background: color-mix(in srgb, var(--selo-cor) 20%, transparent); border-color: var(--selo-cor); }
+#bot-view-overlay .estado-selo:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--foco-anel); }
+#bot-view-overlay .estado-selo-parte { display: inline-flex; align-items: center; gap: 0.1875rem; }
+#bot-view-overlay .estado-selo-parte svg { width: 0.75rem; height: 0.75rem; pointer-events: none; }
+#bot-view-overlay .estado-selo-erro { color: var(--danger); }
+#bot-view-overlay .estado-selo-aviso { color: var(--warn); }
+
+/* ---- Expandir / Recolher todos os estados (js/estados-expansao.js) ----
+   Par de botões discretos na barra "Transições", antes do "Copiar / colar". */
+#bot-view-overlay .bv-expansao { display: flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--obd-border-field); border-radius: 0.5rem; }
+#bot-view-overlay .bv-expansao-btn {
+  display: flex; align-items: center; gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem; font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+#bot-view-overlay .bv-expansao-btn:hover { color: var(--text); background: var(--hover-bg); }
+#bot-view-overlay .bv-expansao-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--foco-anel); }
+
 /* ---- Trilha de navegação (js/trilha.js) ----
    Fixa no topo da área rolável enquanto houver saltos. O top negativo
    compensa o padding (py-5) da .bv-body, para colar na borda de cima. */

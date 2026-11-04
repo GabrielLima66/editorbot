@@ -24,7 +24,8 @@ import { initVariaveisBuilders } from './variaveis-builder.js';
 import { abrirModalMenu } from './menu-modal.js';
 import { abrirModalTratamento } from './menu-tratamento.js';
 import { initBusca } from './busca.js';
-import { initAnalise } from './analise.js';
+import { initAnalise, abrirAnaliseNoEstado } from './analise.js';
+import { alternarPeloCabecalho, initExpansaoTodos } from './estados-expansao.js';
 import { initRegrasTransicao } from './regra-transicao.js';
 import { initFluxoCabecalhos } from './fluxo-cabecalho.js';
 import { initTrilha, registrarSalto, limparTrilha } from './trilha.js';
@@ -1352,10 +1353,8 @@ export function initAcoesDelegadas() {
     });
     const header = e.target.closest('.estado-header');
     if (header && !e.target.closest('button, select, input, .estado-drag-handle, .estado-fluxo')) {
-      const wrap = header.closest('.estado-wrap');
-      wrap.querySelector('.estado-body').classList.toggle('hidden');
-      wrap.classList.toggle('estado-expandido');
-      header.querySelector('.estado-chevron').classList.toggle('rotate-180');
+      // Alt+clique abre ou fecha todos (estados-expansao.js).
+      alternarPeloCabecalho(header.closest('.estado-wrap'), e.altKey);
       return;
     }
 
@@ -1449,6 +1448,11 @@ export function initAcoesDelegadas() {
       case 'ir-para-origem':
         if (btn.dataset.origem === 'acao') registrarSalto(btn, { estado: btn.dataset.state, actionId: btn.dataset.origemAcao });
         irParaOrigem(btn);
+        break;
+      // Selo de erros/avisos no cabeçalho (selos-analise.js): o painel do
+      // Analisar abre no primeiro problema do estado.
+      case 'ir-para-analise':
+        abrirAnaliseNoEstado(btn.dataset.state);
         break;
     }
   });
@@ -1948,6 +1952,8 @@ export function initBotViewWiring() {
   initBusca();
   initTesteBot();
   initAnalise();
+  // "Expandir" / "Recolher" todos os estados.
+  initExpansaoTodos();
   // Resumo "se ... → destino" na barra de cada transição.
   initRegrasTransicao();
   // Chips "vem de / vai para" no cabeçalho de cada estado.

@@ -146,7 +146,7 @@ export function initTrilha(irParaPonto) {
   // ou excluir estados pode invalidar a trilha.
   new MutationObserver((registros) => {
     if (!passos.length) return;
-    if (registros.every((r) => r.target.closest?.('[data-role="estado-chegada"], .estado-fluxo, .transicao-regra'))) return;
+    if (registros.every((r) => r.target.closest?.('[data-role="estado-chegada"], .estado-fluxo, .transicao-regra, .estado-selo-wrap'))) return;
     desenhar();
   }).observe(estados, { childList: true, subtree: true });
   // Renomear um estado da trilha muda o texto dela.

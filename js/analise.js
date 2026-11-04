@@ -4,15 +4,17 @@
 // sem saída, loop que reenvia sem esperar o cliente, opção de menu sem
 // tratamento, condição que espera outro ID. Clicar num achado leva ao estado,
 // à transição ou à ação. Só leitura: nada é alterado nem bloqueia o salvar.
-// A análise lê state.botCarregado e refaz sozinha a cada edição. Erros e avisos
-// aparecem abertos; "informativos" (dependem do que a análise não enxerga)
-// ficam recolhidos.
+// A análise lê state.botCarregado e refaz sozinha a cada edição, com o painel
+// aberto ou não: o contador do botão e o selo no cabeçalho de cada estado
+// (js/selos-analise.js) acompanham. Erros e avisos aparecem abertos;
+// "informativos" (dependem do que a análise não enxerga) ficam recolhidos.
 // ---------------------------------------------------------------------------
 
 import { state } from './state.js';
 import { escapeHtml } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc } from './dom-root.js';
 import { analisarBot, REGRAS } from './analise-bot.js';
+import { atualizarSelosEstados } from './selos-analise.js';
 
 const SEVERIDADES = [
   { id: 'erro', rotulo: 'Erros', um: 'erro', icone: 'circle-x', dica: 'Quebram o fluxo: o bot trava, repete sem parar ou nunca executa o que foi configurado.' },
@@ -20,6 +22,9 @@ const SEVERIDADES = [
   { id: 'info', rotulo: 'Informativos', um: 'informativo', icone: 'info', dica: 'Dependem de algo que a análise não enxerga (destino {$variável}, entrada, timeout). Confira, mas podem estar certos.' },
 ];
 const EVENTO_PAINEL = 'editor:painel-aberto';
+// Partes do cabeçalho e da barra da transição que só exibem algo calculado do
+// bot (selo, chips "vem de / vai para", resumo da regra).
+const SO_EXIBICAO = '.estado-selo-wrap, .estado-fluxo, .transicao-regra';
 
 const analise = {
   aberta: false,
@@ -51,6 +56,7 @@ function executar() {
   if (analise.atual && !analise.achados.some((a) => a.chave === analise.atual)) analise.atual = null;
   desenhar();
   atualizarContador();
+  atualizarSelosEstados(analise.achados);
 }
 
 function atualizarContador() {
@@ -238,6 +244,19 @@ export function fecharAnalise() {
   $r('#btn-bv-analisar')?.setAttribute('aria-pressed', 'false');
 }
 
+/**
+ * Selo do cabeçalho do estado: abre o painel (sem filtro) no primeiro erro do
+ * estado, ou no primeiro aviso se não houver erro, e leva até ele no editor.
+ */
+export function abrirAnaliseNoEstado(numero) {
+  if (analise.aberta) executar();
+  else abrirAnalise();
+  const a = analise.achados.find((x) => String(x.estadoNumero) === String(numero) && x.severidade !== 'info');
+  if (!a) return;
+  analise.filtro = null;
+  irPara(a.chave);
+}
+
 function visivel() {
   const overlay = $r('#bot-view-overlay');
   return !!overlay && !overlay.classList.contains('hidden');
@@ -262,8 +281,21 @@ export function initAnalise() {
     overlay.addEventListener('input', (e) => { if (foraDosPaineis(e)) agendar(); });
     overlay.addEventListener('change', (e) => { if (foraDosPaineis(e)) agendar(); });
   }
+  // A escrita dos selos, dos chips e do resumo da regra não muda o bot. Com um
+  // estado recriado (abrir o bot, mover, duplicar, excluir, colar) a análise
+  // roda na hora, antes da pintura: o cabeçalho novo já aparece com o selo
+  // certo, mesmo com os números trocados. Num bot de 180 estados ela leva
+  // poucos milissegundos; edições de campo continuam esperando a digitação.
   const estados = $r('#bv-estados');
-  if (estados) new MutationObserver(agendar).observe(estados, { childList: true, subtree: true });
+  if (estados) {
+    new MutationObserver((registros) => {
+      if (registros.every((r) => r.target.closest?.(SO_EXIBICAO))) return;
+      const estadoNovo = registros.some((r) => [...r.addedNodes].some((n) => n.classList?.contains('estado-wrap')));
+      if (!estadoNovo) return agendar();
+      clearTimeout(timer);
+      executar();
+    }).observe(estados, { childList: true, subtree: true });
+  }
   // Editor fechado = painel fechado (não reabre sozinho no próximo bot).
   if (overlay) {
     new MutationObserver(() => { if (!visivel() && analise.aberta) fecharAnalise(); })

@@ -213,6 +213,14 @@
         <div class="flex items-center justify-between mb-3">
           <p class="bv-estados-title text-sm font-medium">Transições</p>
           <div class="flex items-center gap-2">
+            <div class="bv-expansao" role="group" aria-label="Abrir ou fechar todos os estados">
+              <button id="btn-expandir-todos" type="button" class="bv-expansao-btn" title="Abrir todos os estados (ou Alt+clique no cabeçalho de um estado)">
+                <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i> Expandir
+              </button>
+              <button id="btn-recolher-todos" type="button" class="bv-expansao-btn" title="Fechar todos os estados (ou Alt+clique no cabeçalho de um estado aberto)">
+                <i data-lucide="chevrons-down-up" class="w-3.5 h-3.5"></i> Recolher
+              </button>
+            </div>
             <button id="btn-copiar-colar" type="button" class="btn-copiar-colar flex items-center gap-1.5 text-sm font-medium rounded-lg px-3 py-1.5 transition-colors" title="Copiar estados deste bot ou colar estados copiados de outro">
               <i data-lucide="clipboard-copy" class="w-3.5 h-3.5"></i> Copiar / colar
               <span class="btn-copiar-colar-ponto" aria-hidden="true"></span>

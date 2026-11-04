@@ -642,6 +642,7 @@ export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao,
           <button type="button" class="estado-alias-lapis" data-action="focar-nome-estado" tabindex="-1" title="Renomear estado"><i data-lucide="pencil"></i></button>
         </span>
         <span class="estado-resumo">${transicoes.length === 0 ? 'sem transições' : `${transicoes.length} ${transicoes.length === 1 ? 'transição' : 'transições'}`}</span>
+        <span class="estado-selo-wrap" data-role="estado-selo"></span>
         <span class="estado-header-espaco" aria-hidden="true"></span>
         <span class="estado-fluxo" data-role="estado-fluxo"></span>
         <button class="w-8 h-8 rounded-lg bg-[var(--success)] text-white flex items-center justify-center shrink-0 opacity-70" disabled title="Elemento decorativo (réplica visual do ORPEN) — sem campo correspondente no JSON"><i data-lucide="check" class="w-4 h-4"></i></button>
