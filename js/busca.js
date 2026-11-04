@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // Localizar no editor (SPEC-busca-editor.md): painel encaixado à direita do
-// editor, fora do .bv-panel. A busca corre nos cinco tipos de uma vez e a
+// editor, fora do .bv-panel. A busca corre em todos os tipos de uma vez e a
 // lista vem separada em blocos, pra nunca misturar o que o bot envia com o
 // que o cliente digita:
 //   - textos:    Mensagem, áudio, forma de contato e menus (cabeçalho, corpo,
@@ -8,6 +8,8 @@
 //   - condicoes: valores das condições (o que o cliente digita)
 //   - calendarios: condições de calendário, pelo nome do calendário (ou ID)
 //   - scripts:   ação Executar Script, pelo nome do script de integração (ou ID)
+//   - filas:     Transf. Fila e condição AGENTES NA FILA, pelo nome da fila (ou ID)
+//   - transferencias: Transf. Agente, pelo agente ou bot de destino (nome ou ID)
 //   - estados:   nomes dos estados
 // Os filtros mostram quantos resultados há em cada tipo; clicar num deles
 // deixa só aquele bloco, clicar de novo volta para todos.
@@ -20,7 +22,7 @@ import { escapeHtml } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import { parseMenuModel } from './menu-builder.js';
 import { VARIABLE_LABELS, VARIABLE_KIND, TEXT_OPERATORS, ACTION_TYPE_LABELS } from './dictionaries.js';
-import { opcoesCalendarios, opcoesScripts } from './orpen-env.js';
+import { opcoesCalendarios, opcoesScripts, opcoesFilas, opcoesAgentes, opcoesBots } from './orpen-env.js';
 import { abrirModalMenu } from './menu-modal.js';
 import { expandirEstado } from './bot-view-render.js';
 
@@ -29,6 +31,8 @@ const MODOS = [
   { id: 'condicoes', rotulo: 'Condições', icone: 'split', dica: 'Valores que o cliente digita' },
   { id: 'calendarios', rotulo: 'Calendários', icone: 'calendar-clock', dica: 'Condições de calendário, pelo nome ou ID do calendário' },
   { id: 'scripts', rotulo: 'Scripts', icone: 'plug-zap', dica: 'Ação Executar Script, pelo nome ou ID do script de integração' },
+  { id: 'filas', rotulo: 'Filas', icone: 'list-ordered', dica: 'Transf. Fila e condição Agentes na fila, pelo nome ou ID da fila' },
+  { id: 'transferencias', rotulo: 'Agentes / bots', icone: 'headset', dica: 'Transf. Agente, pelo nome ou ID do agente ou bot de destino' },
   { id: 'estados', rotulo: 'Estados', icone: 'circle-dot', dica: 'Nomes dos estados' },
 ];
 // Campos de texto enviados ao cliente, por ACTION_TYPE.
@@ -38,6 +42,7 @@ const CAMPOS_TEXTO = {
   '21': [['message_text', 'Forma de contato']],
 };
 const TRECHO = 34;
+const SO_DESTACAR = new Set(['calendario', 'script', 'fila-condicao', 'destino']);
 
 const busca = {
   aberta: false,
@@ -114,6 +119,48 @@ export function textoDeScript(a, nomeDe) {
   return nome ? `${nome} (ID ${id})` : `ID ${id}`;
 }
 
+const ehVariavel = (v) => /^\{\$.*\}$/.test(v);
+
+/**
+ * Ação "Transf. Fila" (tipo 5): a fila fica em ACTION_DATA.destiny (ID) ou é uma
+ * variável `{$NOME}`. Procura o termo no nome da fila e no ID; a variável entra
+ * como "{$NOME} (variável)". Devolve null se não for a ação ou não houver destino.
+ */
+export function textoDeFila(a, nomeDe) {
+  if (String(a.ACTION_TYPE) !== '5') return null;
+  const id = String(a.ACTION_DATA?.destiny ?? '').trim();
+  if (!id) return null;
+  if (ehVariavel(id)) return `${id} (variável)`;
+  const nome = nomeDe(id);
+  return nome ? `${nome} (ID ${id})` : `ID ${id}`;
+}
+
+/**
+ * Condição "AGENTES NA FILA" (agent_on_queue): a fila fica em CONDITION_TYPE (ID),
+ * como o calendário. Devolve null se não for essa condição ou não houver fila.
+ */
+export function textoDeFilaCondicao(c, nomeDe) {
+  if (VARIABLE_KIND[c.CONDITION_DATA?.variable] !== 'ref_fila') return null;
+  const id = String(c.CONDITION_TYPE ?? '').trim();
+  if (!id || id === '0') return null;
+  const nome = nomeDe(id);
+  return nome ? `${nome} (ID ${id})` : `ID ${id}`;
+}
+
+/**
+ * Ação "Transf. Agente" (tipo 4): agente ou bot em ACTION_DATA.destiny (ID) ou
+ * variável `{$NOME}`. `nomeDe(id)` devolve o rótulo como a lista do editor mostra
+ * ("[Agente 12] Maria", "[Bot 3] Cobrança"), agentes primeiro, ou null. Devolve
+ * null se não for a ação ou não houver destino.
+ */
+export function textoDeTransferencia(a, nomeDe) {
+  if (String(a.ACTION_TYPE) !== '4') return null;
+  const id = String(a.ACTION_DATA?.destiny ?? '').trim();
+  if (!id) return null;
+  if (ehVariavel(id)) return `${id} (variável)`;
+  return nomeDe(id) || `ID ${id}`;
+}
+
 function camposDoMenu(raw) {
   const m = parseMenuModel(raw || '');
   const campos = [];
@@ -148,7 +195,7 @@ function valoresNaTela() {
   return mapa;
 }
 
-/** Resultados dos cinco tipos; o filtro escolhido é aplicado em atualizar(). */
+/** Resultados de todos os tipos; o filtro escolhido é aplicado em atualizar(). */
 function coletar() {
   const bot = state.botCarregado;
   const termoNorm = normalizar(busca.termo.trim(), busca.diferenciarMaiusculas).norm;
@@ -158,9 +205,12 @@ function coletar() {
   const opcoes = { diferenciarMaiusculas: busca.diferenciarMaiusculas, palavraInteira: busca.palavraInteira };
   const estados = [...(bot.BOT_STATES || [])].sort((a, b) => parseInt(a.STATE_NUMBER, 10) - parseInt(b.STATE_NUMBER, 10));
   const porId = (a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10);
-  const porModo = { textos: [], condicoes: [], calendarios: [], scripts: [], estados: [] };
+  const porModo = Object.fromEntries(MODOS.map((m) => [m.id, []]));
   const nomeDoCalendario = (id) => opcoesCalendarios().find((o) => o.value === String(id))?.label ?? null;
   const nomeDoScript = (id) => opcoesScripts().find((o) => o.value === String(id))?.label ?? null;
+  const nomeDaFila = (id) => opcoesFilas().find((o) => o.value === String(id))?.label ?? null;
+  // Mesma ordem do campo da ação 4: agentes, depois bots (o primeiro que bate é o mostrado).
+  const nomeDoDestino = (id) => [...opcoesAgentes(), ...opcoesBots()].find((o) => o.value === String(id))?.label ?? null;
 
   estados.forEach((est) => {
     const base = { estadoNumero: est.STATE_NUMBER, estadoAlias: est.ALIAS || '' };
@@ -180,6 +230,13 @@ function coletar() {
             porModo.calendarios.push({ ...local, alvo: { tipo: 'calendario', id: c.ID }, rotulo: rotuloCal, texto: calendario, ...o, chave: `k:${c.ID}:${n}` }));
           return;
         }
+        const filaCond = textoDeFilaCondicao(c, nomeDaFila);
+        if (filaCond) {
+          const rotuloFila = VARIABLE_LABELS[d.variable] || d.variable || 'Fila';
+          ocorrencias(filaCond, termoNorm, opcoes).forEach((o, n) =>
+            porModo.filas.push({ ...local, alvo: { tipo: 'fila-condicao', id: c.ID }, rotulo: rotuloFila, texto: filaCond, ...o, chave: `q:${c.ID}:${n}` }));
+          return;
+        }
         if (typeof d.value !== 'string') return;
         const valor = aoVivo(`c:${c.ID}`, d.value);
         const rotulo = `${VARIABLE_LABELS[d.variable] || d.variable || 'Condição'} ${TEXT_OPERATORS[c.CONDITION_TYPE] || ''}`.trim();
@@ -192,6 +249,18 @@ function coletar() {
         if (script) {
           ocorrencias(script, termoNorm, opcoes).forEach((o, n) =>
             porModo.scripts.push({ ...local, alvo: { tipo: 'script', id: a.ID }, rotulo: ACTION_TYPE_LABELS['7'], texto: script, ...o, chave: `s:${a.ID}:${n}` }));
+          return;
+        }
+        const fila = textoDeFila(a, nomeDaFila);
+        if (fila) {
+          ocorrencias(fila, termoNorm, opcoes).forEach((o, n) =>
+            porModo.filas.push({ ...local, alvo: { tipo: 'destino', id: a.ID }, rotulo: ACTION_TYPE_LABELS['5'], texto: fila, ...o, chave: `f:${a.ID}:${n}` }));
+          return;
+        }
+        const destino = textoDeTransferencia(a, nomeDoDestino);
+        if (destino) {
+          ocorrencias(destino, termoNorm, opcoes).forEach((o, n) =>
+            porModo.transferencias.push({ ...local, alvo: { tipo: 'destino', id: a.ID }, rotulo: ACTION_TYPE_LABELS['4'], texto: destino, ...o, chave: `g:${a.ID}:${n}` }));
           return;
         }
         if (a.ACTION_TYPE === '10') {
@@ -224,9 +293,12 @@ function elementoDoAlvo(r) {
     case 'menu': return $r(`#bv-estados [data-action="editar-menu"][data-action-id="${cssId(r.alvo.id)}"]`)?.closest('.menu-resumo') || null;
     case 'condicao': return $r(`#bv-estados [data-action="mudar-condicao-valor"][data-condition-id="${cssId(r.alvo.id)}"]`);
     // O calendário aparece no campo do operador da condição (lista de calendários).
-    case 'calendario': return $r(`#bv-estados .condicao-operador[data-condition-id="${cssId(r.alvo.id)}"]`);
+    case 'calendario':
+    case 'fila-condicao': return $r(`#bv-estados .condicao-operador[data-condition-id="${cssId(r.alvo.id)}"]`);
     // O script aparece no campo "Script" da ação (lista de scripts).
     case 'script': return $r(`#bv-estados [data-action-id="${cssId(r.alvo.id)}"][data-campo="script_name"]`);
+    // Fila / agente / bot de destino: campo "destiny" da ação 4 ou 5.
+    case 'destino': return $r(`#bv-estados [data-action-id="${cssId(r.alvo.id)}"][data-campo="destiny"]`);
     case 'estado': return $r(`#bv-estados .estado-alias[data-state="${cssId(r.alvo.id)}"]`);
     default: return null;
   }
@@ -252,9 +324,9 @@ function irPara(indice, selecionar) {
     el.classList.add('bs-alvo');
     clearTimeout(el._bsTimer);
     el._bsTimer = setTimeout(() => el.classList.remove('bs-alvo'), 1600);
-    // Calendário e script: só leva e destaca; o campo mostra o nome (não o texto
-    // buscado) e focar abriria a lista do ambiente.
-    if (selecionar && r.alvo.tipo !== 'calendario' && r.alvo.tipo !== 'script' && typeof el.setSelectionRange === 'function') {
+    // Calendário, script, fila e destino de transferência: só leva e destaca; o
+    // campo mostra o nome (não o texto buscado) e focar abriria a lista do ambiente.
+    if (selecionar && !SO_DESTACAR.has(r.alvo.tipo) && typeof el.setSelectionRange === 'function') {
       el.focus({ preventScroll: true });
       el.setSelectionRange(r.inicio, r.fim);
     }
@@ -305,7 +377,7 @@ function desenharLista() {
 
   const lista = p.querySelector('.bs-lista');
   if (!temTermo) {
-    lista.innerHTML = `<p class="bs-vazio">${modo ? `${escapeHtml(modo.dica)}. Digite para buscar.` : 'Digite para buscar em textos enviados, condições, calendários, scripts e nomes de estados.'}</p>`;
+    lista.innerHTML = `<p class="bs-vazio">${modo ? `${escapeHtml(modo.dica)}. Digite para buscar.` : 'Digite para buscar em textos enviados, condições, calendários, scripts, filas, agentes e bots e nomes de estados.'}</p>`;
   } else if (!busca.resultados.length) {
     lista.innerHTML = `<p class="bs-vazio">${modo && busca.todos.length ? `Nenhum resultado em ${escapeHtml(modo.rotulo.toLowerCase())}. Os outros filtros têm resultados.` : 'Nenhum resultado.'}</p>`;
   } else {

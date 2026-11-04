@@ -34,9 +34,9 @@ Serve, por exemplo, para trocar um horário, um telefone ou o nome da empresa; r
 
 ---
 
-## 2. Os cinco tipos de resultado
+## 2. Os tipos de resultado
 
-Ordem fixa dos blocos e dos filtros: **Textos enviados, Condições, Calendários, Scripts, Estados**.
+Ordem fixa dos blocos e dos filtros: **Textos enviados, Condições, Calendários, Scripts, Filas, Agentes / bots, Estados**.
 
 | Id | Rótulo | Ícone (Lucide) | Cor | Onde busca |
 |---|---|---|---|---|
@@ -44,13 +44,19 @@ Ordem fixa dos blocos e dos filtros: **Textos enviados, Condições, Calendário
 | `condicoes` | Condições | `split` | `#0E9384` (verde-azulado) | `CONDITION_DATA.value` quando for **texto** (string) |
 | `calendarios` | Calendários | `calendar-clock` | `#2563EB` (azul) | condições das variáveis `calendario` e `calendario_falso` |
 | `scripts` | Scripts | `plug-zap` | `#DB2777` (rosa) | ação 7 "Executar Script" (`ACTION_DATA.script_name`); ver abaixo |
+| `filas` | Filas | `list-ordered` | `#65A30D` (verde-oliva) | ação 5 "Transf. Fila" (`ACTION_DATA.destiny`) e condição `agent_on_queue` (`CONDITION_TYPE`); ver abaixo |
+| `transferencias` | Agentes / bots | `headset` | `#0891B2` (ciano) | ação 4 "Transf. Agente" (`ACTION_DATA.destiny`); ver abaixo |
 | `estados` | Estados | `circle-dot` | `#D97706` (laranja) | `ALIAS` (nome) de cada estado |
 
 **Scripts:** o texto pesquisado é `"<nome> (ID <id>)"` (nome vindo de `opcoesScripts()`) ou `"ID <id>"` sem cadastro; `script_name` vazio não entra; o rótulo do resultado é "Executar Script"; alvo `{ tipo: 'script', id: <ID da ação> }`, elemento `[data-action-id=<ID>][data-campo="script_name"]`, chave `s:<ID da ação>:<n>`. Como o calendário, só leva e pisca: nunca é focado. Consequência: digitar "id" casa com todos os scripts. Teste: `tests/editor/busca-script.test.mjs`.
 
+**Filas:** ação 5: texto `"<nome> (ID <id>)"` (nome de `opcoesFilas()`), `"ID <id>"` sem cadastro, ou `"{$NOME} (variável)"`; rótulo "Transf. Fila"; alvo `{ tipo: 'destino', id: <ID da ação> }`, elemento `[data-action-id=<ID>][data-campo="destiny"]`, chave `f:<ID da ação>:<n>`. Condição `agent_on_queue`: mesmo texto, lido de `CONDITION_TYPE` (vazio ou `0` não entra); rótulo "AGENTES NA FILA"; alvo `{ tipo: 'fila-condicao', id: <ID da condição> }`, elemento `.condicao-operador[data-condition-id=<ID>]`, chave `q:<ID>:<n>`.
+
+**Agentes / bots:** ação 4: texto = rótulo da lista do campo (`opcoesAgentes()` e depois `opcoesBots()`, o primeiro que bate: `"[Agente 12] Maria"`, `"[Bot 3] Nome"`), `"ID <id>"` sem cadastro, ou `"{$NOME} (variável)"`; rótulo "Transf. Agente"; alvo `{ tipo: 'destino', id }`, chave `g:<ID da ação>:<n>`. Filas e Agentes / bots, como calendário e script, só levam e piscam: nunca são focados. Teste: `tests/editor/busca-filas-transferencias.test.mjs`.
+
 Os `<campo>` possíveis em `a:<ID da ação>:<campo>` são só as chaves de `ACTION_DATA` que guardam texto de ações comuns: `message_text` (ações 1 e 21) e `message_content` (ação 20); o mesmo `<campo>` é o valor do atributo `data-campo` do elemento na tela. **O menu (ação 10) é outro caso:** a chave é `m:<ID da ação>:<rótulo do campo>` (cabeçalho, corpo, rodapé, botão da lista, título ou descrição de cada item) e o elemento de destino é o resumo do menu (`.menu-resumo`), que **não** tem `data-campo`.
 
-Dica (tooltip) de cada filtro: textos = "Mensagens e menus que o bot envia"; condições = "Valores que o cliente digita"; calendários = "Condições de calendário, pelo nome ou ID do calendário"; scripts = "Ação Executar Script, pelo nome ou ID do script de integração"; estados = "Nomes dos estados".
+Dica (tooltip) de cada filtro: textos = "Mensagens e menus que o bot envia"; condições = "Valores que o cliente digita"; calendários = "Condições de calendário, pelo nome ou ID do calendário"; scripts = "Ação Executar Script, pelo nome ou ID do script de integração"; filas = "Transf. Fila e condição Agentes na fila, pelo nome ou ID da fila"; transferencias = "Transf. Agente, pelo nome ou ID do agente ou bot de destino"; estados = "Nomes dos estados".
 
 ---
 
@@ -191,7 +197,7 @@ Chaves (usadas para manter a posição ao refazer a busca):
 
 ### 7.4 A lista
 
-- **Sem termo:** com filtro, "<dica do tipo>. Digite para buscar."; sem filtro, "Digite para buscar em textos enviados, condições, calendários, scripts e nomes de estados."
+- **Sem termo:** com filtro, "<dica do tipo>. Digite para buscar."; sem filtro, "Digite para buscar em textos enviados, condições, calendários, scripts, filas, agentes e bots e nomes de estados."
 - **Termo sem resultado:** se há filtro e os **outros** têm resultados: "Nenhum resultado em <tipo>. Os outros filtros têm resultados."; senão "Nenhum resultado."
 - **Sem filtro (todos):** um **bloco por tipo** que tenha resultado: título com ícone, nome e quantidade, na cor do tipo.
 - **Dentro do bloco:** um grupo por estado, com cabeçalho `<número> <nome do estado ou "Sem nome"> <quantidade no bloco>`.

@@ -4,7 +4,7 @@ Spec completa: `../02-localizar.md`. Código: `js/busca.js`, estilos `.bs-*`. An
 
 ## Em uma frase
 
-Busca em **todo o bot de uma vez**, em cinco tipos separados (Textos enviados, Condições, Calendários, Scripts, Estados), e **leva até o campo** com o termo selecionado. Só lê; nunca altera o bot.
+Busca em **todo o bot de uma vez**, em sete tipos separados (Textos enviados, Condições, Calendários, Scripts, Filas, Agentes / bots, Estados), e **leva até o campo** com o termo selecionado. Só lê; nunca altera o bot.
 
 ## O que explica o desenho
 
@@ -28,6 +28,8 @@ Uma ocorrência = um resultado. Termo vazio → nada.
 - Ações: 1 `message_text`, 20 `message_content`, 21 `message_text`; ação 10 só pelo `parseMenuModel` (cabeçalho, corpo, rodapé, **títulos**, descrições, botão da lista, texto das opções WebChat, JSON cru se desconhecido). **Nunca** os `id` do menu.
 - Condições: só `value` **string**. Listas (labels) ficam de fora.
 - Calendário: condição `calendario`/`calendario_falso`, texto `"nome (ID n)"` ou `"ID n"`; **não** passa pela busca de texto de condições.
+- Filas: ação 5 `destiny` e condição `agent_on_queue` (`CONDITION_TYPE`), texto `"nome (ID n)"`, `"ID n"` ou `"{$X} (variável)"`.
+- Agentes / bots: ação 4 `destiny`, texto `"[Agente n] Nome"`/`"[Bot n] Nome"`, `"ID n"` ou `"{$X} (variável)"`.
 - Estados: `ALIAS`.
 - **Fora:** destinos, URLs, payloads, formulário JSON, nomes de variáveis.
 
@@ -36,7 +38,7 @@ Uma ocorrência = um resultado. Termo vazio → nada.
 1. Abrir o estado (nunca fechar).
 2. Achar o elemento (`mudar-campo-acao`, `.menu-resumo`, `mudar-condicao-valor`, `.condicao-operador`, `.estado-alias`).
 3. Rolar centralizado, piscar (`bs-alvo`, 1,6 s).
-4. Só em **clique** e fora de calendário: focar e selecionar `[inicio, fim)`. **Calendário nunca recebe foco** (abriria a lista).
+4. Só em **clique** e fora de calendário/script/fila/destino: focar e selecionar `[inicio, fim)`. **Calendário, script, fila e destino de transferência nunca recebem foco** (abririam a lista).
 
 ## Ao vivo
 
