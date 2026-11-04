@@ -59,7 +59,7 @@ M*:  espera = estadoDeEspera(destino do menu)   // segue automática certa; cond
 
 - Botão `#btn-bv-analisar` (classe `bv-btn-busca bv-btn-analisar`) antes de `#btn-bv-buscar`; painel `#an-painel` reaproveita `.bs-painel`/`.bs-topo`/`.bs-lista`.
 - Mesmo encaixe do Localizar: abrir um fecha o outro pelo evento `editor:painel-aberto` no `document` (`detail: 'busca' | 'analise'`). Classe do editor: `analise-aberta` (como `busca-aberta`).
-- Navegar: ação → `.acao-item` de `[data-action-id]`; senão `.estado-row[data-transition-id]`; senão `.estado-alias[data-state]`. Abre `.estado-body` antes e aplica `bs-alvo` por 1,6 s.
+- Navegar: ação → `.acao-item` de `[data-action-id]`; senão `.estado-row[data-transition-id]`; senão `.estado-alias[data-state]`. Abre o estado antes com `expandirEstado` (que monta o corpo, se ainda não foi montado) e aplica `bs-alvo` por 1,6 s.
 - Reanalisa com debounce de 400 ms em `input`, `change` e `MutationObserver` de `#bv-estados`. Falha da análise é capturada: painel avisa, console recebe o erro.
 
 ## Armadilhas

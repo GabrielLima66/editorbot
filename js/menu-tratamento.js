@@ -20,6 +20,7 @@ import {
   mensagemAnteriorNaTransicao,
   reabrirPreservandoExpansao,
 } from './bot-view-interactions.js';
+import { expandirEstado } from './bot-view-render.js';
 
 // Mensagem padrão do limite, por ação. Troca junto com a ação enquanto o
 // usuário não tiver editado o texto.
@@ -304,12 +305,7 @@ export function abrirModalTratamento(transitionId, actionId) {
     fechar();
     reabrirPreservandoExpansao(b, numero);
     // Estado novo já aberto: é onde o usuário vai completar as opções.
-    const wrap = getRootNode().querySelector(`#bv-estados .estado-wrap[data-estado-numero="${numero}"]`);
-    if (wrap) {
-      wrap.querySelector('.estado-body')?.classList.remove('hidden');
-      wrap.classList.add('estado-expandido');
-      wrap.querySelector('.estado-chevron')?.classList.add('rotate-180');
-    }
+    expandirEstado(getRootNode().querySelector(`#bv-estados .estado-wrap[data-estado-numero="${numero}"]`));
     mostrarToast(`Estado "${estadoPorNumero(b, numero)?.ALIAS}" criado com ${info.opcoes.length + 2} transições. Complete o que cada opção faz e salve o bot.`);
   };
 

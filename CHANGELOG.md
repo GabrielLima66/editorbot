@@ -1,5 +1,10 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.33] - 2026-11-04
+* **Editor abre bem mais rápido em bots grandes**: abrir o editor desenhava todos os estados com todas as transições, condições e ações, mesmo os fechados. Agora ele desenha só os cabeçalhos (número, nome, "vem de / vai para" e os botões), e as transições de um estado aparecem quando ele é aberto. Num teste com um bot de 180 estados, abrir caiu de cerca de 1,3 s para 0,3 s, renomear, mover ou duplicar um estado de 2 s para 0,2 s, e o editor passou a ocupar cerca de 70 MB em vez de 220 MB. Abrir um estado pela primeira vez pode levar um instante a mais (as transições dele são montadas nessa hora); fechar e abrir de novo é imediato.
+* Tudo que leva até um estado fechado continua funcionando e abre o estado no ponto certo: a seta "Ir para este estado", os chips, "Quem aponta para este estado", o Voltar da trilha, o Localizar, o Analisar, o Testar bot (as marcas do teste aparecem quando o estado é aberto), colar estados e o Gerar tratamento.
+* Nada do que é gravado no bot muda.
+
 ## [0.8.32] - 2026-11-04
 * **Editor mais leve em bots grandes**: cada campo de busca (Transf. Agente, Transf. Fila, Executar Script, operador das condições e outros) levava uma cópia própria da lista inteira do ambiente, com todos os agentes e todas as filas, escondida na página. Agora os campos com as mesmas opções usam uma lista só. Num teste com um bot de 180 estados, 400 agentes e 150 filas, os itens de lista escondidos caíram de cerca de 178 mil para 1,6 mil, o editor passou a ocupar menos da metade da memória e abrir de novo, renomear ou mover um estado ficaram 2 a 3 vezes mais rápidos. As listas mostram exatamente as mesmas opções de antes, inclusive o "não encontrado no ambiente" de um valor que não existe mais.
 * **Editar ficou rápido em bots grandes**: a cada campo confirmado, "+ Ação", "+ Condição", mover ou excluir um item, o editor redesenhava todos os ícones da tela (num bot de 180 estados, mais de 15 mil). Agora desenha só os ícones novos. No mesmo teste, editar um campo caiu de cerca de 0,6 s para 0,1 s, e num computador mais lento, de 1,3 s para 0,25 s. Os ícones continuam iguais.

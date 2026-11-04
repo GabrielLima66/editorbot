@@ -210,7 +210,7 @@ Chaves (usadas para manter a posição ao refazer a busca):
 
 ### 8.1 Como "ir até" um resultado
 
-1. Se o alvo não for um nome de estado, **abrir o estado** (se o corpo estiver fechado: remover `hidden` do `.estado-body`, `estado-expandido` no cartão, `rotate-180` no chevron). Nunca fechar nada.
+1. Se o alvo não for um nome de estado, **abrir o estado** com `expandirEstado(wrap)`: monta o corpo, se ainda não foi montado (o campo do resultado só existe depois disso), e abre (remove `hidden` do `.estado-body`, `estado-expandido` no cartão, `rotate-180` no chevron). Nunca fechar nada.
 2. Encontrar o elemento do alvo:
 
 | `alvo.tipo` | Elemento |

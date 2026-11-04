@@ -18,6 +18,9 @@ import {
   atualizarSecaoDestino,
   lerContaTranscricao,
   atualizarContadorRodape,
+  dadosDoEstado,
+  garantirCorpoDoEstado,
+  expandirEstado,
 } from './bot-view-render.js';
 import { initMenuBuilders } from './menu-builder.js';
 import { initVariaveisBuilders } from './variaveis-builder.js';
@@ -886,17 +889,12 @@ export function alternarPainelOrigens(bot, stateNumber) {
 // para a origem" usam o mesmo caminho. `focar` false só abre: quem chamou rola
 // e destaca um ponto de dentro do estado.
 function abrirEstadoNaTela(wrap, focar = true) {
-  const corpo = wrap.querySelector('.estado-body');
-  const jaAberto = !corpo.classList.contains('hidden');
-  corpo.classList.remove('hidden');
-  wrap.classList.add('estado-expandido');
-  wrap.querySelector('.estado-chevron').classList.add('rotate-180');
   // O estado abre antes da rolagem (o corpo aberto aumenta a altura da
   // lista) e a rolagem leva o TOPO dele ao topo da área visível.
   // Sem checar prefers-reduced-motion de propósito: é feedback curto de
   // um clique, e com "efeitos de animação" desligados no Windows o
   // navegador reporta "reduzir" e o botão ficaria seco.
-  if (!jaAberto) animarClasse(corpo, 'estado-abrindo', 400);
+  if (expandirEstado(wrap)) animarClasse(wrap.querySelector(':scope > .estado-body'), 'estado-abrindo', 400);
   if (!focar) return;
   animarClasse(wrap, 'estado-destaque', 1500);
   wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -914,7 +912,7 @@ function irParaOrigem(btn) {
     animarClasse(campo, 'bs-alvo', 1600);
     return;
   }
-  const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${btn.dataset.state}"]`);
+  const wrap = garantirCorpoDoEstado($(`#bv-estados .estado-wrap[data-estado-numero="${btn.dataset.state}"]`));
   if (!wrap) return;
   const acao = wrap.querySelector(`.acao-item[data-action-id="${btn.dataset.origemAcao}"]`);
   abrirEstadoNaTela(wrap, !acao);
@@ -927,7 +925,7 @@ function irParaOrigem(btn) {
 // Voltar da trilha: o ponto de onde se saiu (a ação, a transição ou só o
 // estado, quando o salto saiu do cabeçalho).
 function irParaPonto({ estado, transitionId, actionId }) {
-  const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${estado}"]`);
+  const wrap = garantirCorpoDoEstado($(`#bv-estados .estado-wrap[data-estado-numero="${estado}"]`));
   if (!wrap) return;
   const alvo = (actionId && wrap.querySelector(`.acao-item[data-action-id="${actionId}"]`))
     || (transitionId && wrap.querySelector(`.estado-row[data-transition-id="${transitionId}"]`));
@@ -960,15 +958,8 @@ export function reabrirPreservandoExpansao(bot, focarNumero) {
   getRootNode().querySelectorAll('#bv-estados .estado-wrap').forEach(w => {
     if (!w.querySelector('.estado-body').classList.contains('hidden')) abertos.add(w.dataset.estadoNumero);
   });
-  abrirBotView(bot);
+  abrirBotView(bot, { abertos });
   atualizarContadorRodape(bot);
-  abertos.forEach(num => {
-    const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${num}"]`);
-    if (!wrap) return;
-    wrap.querySelector('.estado-body').classList.remove('hidden');
-        wrap.classList.add('estado-expandido');
-        wrap.querySelector('.estado-chevron').classList.add('rotate-180');
-  });
   if (focarNumero !== undefined) {
     $(`#bv-estados .estado-wrap[data-estado-numero="${focarNumero}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1027,31 +1018,14 @@ export function rerenderEstado(bot, stateNumber) {
   const wrapAtual = $(`#bv-estados .estado-wrap[data-estado-numero="${stateNumber}"]`);
   if (!estado || !wrapAtual) { reabrirPreservandoExpansao(bot); return; }
 
-  const estavaAberto = !wrapAtual.querySelector('.estado-body').classList.contains('hidden');
+  const estavaAberto = !wrapAtual.querySelector(':scope > .estado-body').classList.contains('hidden');
 
-  const estadoPorNumero = {};
-  (bot.BOT_STATES || []).forEach(e => estadoPorNumero[e.STATE_NUMBER] = e);
-  const transicoesDoEstado = (bot.BOT_TRANSITIONS || []).filter(t => t.STATE === stateNumber).sort((a, b) => parseInt(a.PRIORITY, 10) - parseInt(b.PRIORITY, 10));
-  const transicoesPorEstado = { [stateNumber]: transicoesDoEstado };
-  const idsTransicoes = new Set(transicoesDoEstado.map(t => t.ID));
-  const condicoesPorTransicao = {};
-  (bot.BOT_CONDITIONS || []).filter(c => idsTransicoes.has(c.TRANSITION_ID)).forEach(c => (condicoesPorTransicao[c.TRANSITION_ID] ||= []).push(c));
-  Object.values(condicoesPorTransicao).forEach(arr => arr.sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10)));
-  const acoesPorTransicao = {};
-  (bot.BOT_ACTIONS || []).filter(a => idsTransicoes.has(a.TRANSITION_ID)).forEach(a => (acoesPorTransicao[a.TRANSITION_ID] ||= []).push(a));
-  Object.values(acoesPorTransicao).forEach(arr => arr.sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10)));
-  const totalEstados = (bot.BOT_STATES || []).length;
-
+  const d = dadosDoEstado(bot, stateNumber);
   const temp = document.createElement('div');
-  temp.innerHTML = renderEstado(estado, transicoesPorEstado, condicoesPorTransicao, acoesPorTransicao, estadoPorNumero, totalEstados).trim();
+  temp.innerHTML = renderEstado(estado, d.transicoesPorEstado, d.condicoesPorTransicao, d.acoesPorTransicao, d.estadoPorNumero, d.totalEstados, { aberto: estavaAberto }).trim();
   const novoWrap = temp.firstElementChild;
   marcarCamposSemAutopreenchimento(novoWrap); // antes de entrar na tela
   wrapAtual.replaceWith(novoWrap);
-  if (estavaAberto) {
-    novoWrap.querySelector('.estado-body').classList.remove('hidden');
-      novoWrap.classList.add('estado-expandido');
-      novoWrap.querySelector('.estado-chevron').classList.add('rotate-180');
-  }
   initMenuBuilders(novoWrap);
   initVariaveisBuilders(novoWrap);
   atualizarContadorRodape(bot);
@@ -1353,9 +1327,11 @@ export function initAcoesDelegadas() {
     const header = e.target.closest('.estado-header');
     if (header && !e.target.closest('button, select, input, .estado-drag-handle, .estado-fluxo')) {
       const wrap = header.closest('.estado-wrap');
-      wrap.querySelector('.estado-body').classList.toggle('hidden');
-      wrap.classList.toggle('estado-expandido');
-      header.querySelector('.estado-chevron').classList.toggle('rotate-180');
+      if (!expandirEstado(wrap)) {
+        wrap.querySelector(':scope > .estado-body').classList.add('hidden');
+        wrap.classList.remove('estado-expandido');
+        header.querySelector('.estado-chevron').classList.remove('rotate-180');
+      }
       return;
     }
 

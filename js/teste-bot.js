@@ -14,6 +14,7 @@ import {
   criarSessao, enviarMensagem, continuar, continuarDaParada, definirExterna, responderCallback, simularTimeout, requisitosDeContexto, variaveisUsadas,
 } from './simulador.js';
 import { opcoesCrmStatus, opcoesEntradasCondicao } from './orpen-env.js';
+import { expandirEstado } from './bot-view-render.js';
 
 const $r = (sel) => getRootNode().querySelector(sel);
 const modalEl = () => $r('#tb-overlay');
@@ -451,12 +452,9 @@ function limparMarcas() {
   CLASSES_SIM.forEach((c) => lista.querySelectorAll(`.${c}`).forEach((el) => el.classList.remove(c)));
 }
 
+// Montando o corpo, se ainda não foi: as linhas da transição só existem depois.
 function abrirNoEditor(wrap) {
-  const corpo = wrap?.querySelector('.estado-body');
-  if (!corpo || !corpo.classList.contains('hidden')) return;
-  corpo.classList.remove('hidden');
-  wrap.classList.add('estado-expandido');
-  wrap.querySelector('.estado-chevron')?.classList.add('rotate-180');
+  expandirEstado(wrap);
 }
 
 /**
@@ -532,10 +530,14 @@ export function initTesteBot() {
     // Editou o bot com o teste aberto (minimizado dá para editar): acende o aviso.
     ['input', 'change'].forEach((ev) => estados.addEventListener(ev, () => { if (tb.aberto) setTimeout(atualizarAviso, 0); }));
     let timer = 0;
-    new MutationObserver(() => {
+    const remarcar = () => {
       if (!tb.aberto) return;
       clearTimeout(timer);
       timer = setTimeout(() => marcarNoEditor(false), 120);
-    }).observe(estados, { childList: true });
+    };
+    new MutationObserver(remarcar).observe(estados, { childList: true });
+    // Estado fechado só ganha as linhas quando abre (corpo sob demanda,
+    // bot-view-render.js): as marcas da rodada entram nelas nessa hora.
+    estados.addEventListener('editor:corpo-montado', remarcar);
   }
 }

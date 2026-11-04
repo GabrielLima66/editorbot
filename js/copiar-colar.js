@@ -17,7 +17,7 @@ import { ACTION_TYPE_LABELS, CAMPOS_PENDENCIA_POR_TIPO, CAMPOS_ESTADO_POR_TIPO }
 import { extrairTrecho, colarTrecho, simularColagem } from './trechos.js';
 import { salvarTrecho, lerTrecho, limparTrecho, observarTrecho } from './area-copia.js';
 import { rerenderEstado, abrirPendenciasModal } from './bot-view-interactions.js';
-import { abrirBotView, atualizarContadorRodape } from './bot-view-render.js';
+import { abrirBotView, atualizarContadorRodape, expandirEstado } from './bot-view-render.js';
 
 let trechoAtual = null;
 
@@ -299,9 +299,7 @@ function previaColagem(conf) {
 function mostrarEstadoNovo(numero) {
   const wrap = $(`#bv-estados .estado-wrap[data-estado-numero="${numero}"]`);
   if (!wrap) return;
-  wrap.querySelector('.estado-body').classList.remove('hidden');
-  wrap.classList.add('estado-expandido');
-  wrap.querySelector('.estado-chevron').classList.add('rotate-180');
+  expandirEstado(wrap);
   wrap.classList.add('estado-destaque');
   setTimeout(() => wrap.classList.remove('estado-destaque'), 1500);
   wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });

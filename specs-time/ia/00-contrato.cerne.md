@@ -32,6 +32,7 @@ Tudo é **string**. Cada linha tem chaves numéricas espelhadas ("0","1"...): ig
 - Usar `document` em vez de `getRootNode()` (o editor vive num Shadow DOM).
 - Pôr uma `<datalist>` no HTML de um campo: cada campo repetia a lista inteira do ambiente e um bot grande chegava a 100 mil+ `<option>`. Use `listaCompartilhada(opcoes)` e ache a lista com `datalistDe(input)`.
 - Contar com o `#bv-estados` com o editor fechado: ao fechar ele é esvaziado.
+- Procurar uma ação, transição ou condição num estado fechado: o corpo dele só é montado quando o estado abre (`data-pendente` até lá). Use `expandirEstado(wrap)` para levar a pessoa até ele, ou `garantirCorpoDoEstado(wrap)` antes de procurar. Quem marca linhas (como o Testar bot) refaz as marcas no evento `editor:corpo-montado`.
 - Trocar um ícone mudando o `data-lucide` de um SVG já desenhado: `criarIcones()` só desenha os `<i data-lucide>` novos. Insira um `<i>` novo.
 - Usar `rem` em janela fora do editor (a página da Orpen redefine a raiz para 10px). Use `px`.
 - Pôr texto do bot/cliente em `innerHTML` sem `escapeHtml`, inclusive em `data-*`.
@@ -40,6 +41,6 @@ Tudo é **string**. Cada linha tem chaves numéricas espelhadas ("0","1"...): ig
 
 ## Funções que já existem (não reescrever)
 
-`nextId`, `withMirrors`, `remapStateNumbers`, `tipoDaCondicao`, `escapeHtml`, `parseMenuModel`, `extrairItensMenu`, `empilharEsc`, `getRootNode`, `criarIcones`, `listaCompartilhada`, cadastros `opcoes*()` (listas `{value,label}`, vazias fora da Orpen).
+`nextId`, `withMirrors`, `remapStateNumbers`, `tipoDaCondicao`, `escapeHtml`, `parseMenuModel`, `extrairItensMenu`, `empilharEsc`, `getRootNode`, `criarIcones`, `listaCompartilhada`, `expandirEstado`, `garantirCorpoDoEstado`, cadastros `opcoes*()` (listas `{value,label}`, vazias fora da Orpen).
 
 Exibição de cadastro: `"Nome" (ID n)`; sem nome, `ID n`.
