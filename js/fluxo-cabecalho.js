@@ -32,8 +32,9 @@ export function atualizarFluxoCabecalhos() {
 }
 
 // Mutações que são só a escrita dos próprios chips (ou do resumo da regra da
-// transição, regra-transicao.js) não mudam o fluxo.
-const SO_EXIBICAO = '.estado-fluxo, .transicao-regra';
+// transição, regra-transicao.js, ou do selo da análise, selos-analise.js) não
+// mudam o fluxo.
+const SO_EXIBICAO = '.estado-fluxo, .transicao-regra, .estado-selo-wrap';
 
 /** Ligado uma vez (initBotViewWiring). */
 export function initFluxoCabecalhos() {

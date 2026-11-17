@@ -658,6 +658,7 @@ export function renderEstado(estado, transicoesPorEstado, condicoesPorTransicao,
           <button type="button" class="estado-alias-lapis" data-action="focar-nome-estado" tabindex="-1" title="Renomear estado"><i data-lucide="pencil"></i></button>
         </span>
         <span class="estado-resumo">${transicoes.length === 0 ? 'sem transições' : `${transicoes.length} ${transicoes.length === 1 ? 'transição' : 'transições'}`}</span>
+        <span class="estado-selo-wrap" data-role="estado-selo"></span>
         <span class="estado-header-espaco" aria-hidden="true"></span>
         <span class="estado-fluxo" data-role="estado-fluxo"></span>
         <button class="w-8 h-8 rounded-lg bg-[var(--success)] text-white flex items-center justify-center shrink-0 opacity-70" disabled title="Elemento decorativo (réplica visual do ORPEN) — sem campo correspondente no JSON"><i data-lucide="check" class="w-4 h-4"></i></button>
@@ -705,8 +706,13 @@ export function dadosDoEstado(bot, stateNumber) {
 // garantirCorpoDoEstado antes; quem abre um estado usa expandirEstado.
 // ---------------------------------------------------------------------------
 
-/** Monta o corpo do estado se ainda não foi montado. Devolve o próprio wrap. */
-export function garantirCorpoDoEstado(wrap, bot = state.botCarregado) {
+/**
+ * Monta o corpo do estado se ainda não foi montado. Devolve o próprio wrap.
+ * `icones: false` deixa os ícones para quem chamou: quem monta vários estados
+ * de uma vez ("Expandir todos", estados-expansao.js) chama criarIcones() uma
+ * vez só no fim, em vez de varrer a página a cada estado.
+ */
+export function garantirCorpoDoEstado(wrap, bot = state.botCarregado, { icones = true } = {}) {
   const corpo = wrap?.querySelector(':scope > .estado-body');
   if (!corpo || !corpo.hasAttribute('data-pendente') || !bot) return wrap;
   const numero = wrap.dataset.estadoNumero;
@@ -718,7 +724,7 @@ export function garantirCorpoDoEstado(wrap, bot = state.botCarregado) {
   marcarCamposSemAutopreenchimento(corpo);
   initMenuBuilders(corpo);
   initVariaveisBuilders(corpo);
-  criarIcones();
+  if (icones) criarIcones();
   // Quem marca linhas do estado (Testar bot) refaz as marcas no corpo novo.
   corpo.dispatchEvent(new CustomEvent('editor:corpo-montado', { bubbles: true, detail: numero }));
   return wrap;

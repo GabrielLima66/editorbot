@@ -33,6 +33,7 @@ import { fromGetBotResponse, toUpdateBotPayload, serializeBracketNotation, paylo
 import { problemaAntesDeSalvar } from './validacao-salvar.js';
 import { fotografarNumeros, mudancasDeNumero } from './renumeracao.js';
 import { criarTravaDeSalvamento } from './trava-salvamento.js';
+import { ehAtalhoSalvar, janelaPorCima, localizadorDoCampo, campoVoltaAoFoco } from './atalhos.js';
 import { abrirBotView, pedirFecharBotView, definirGuardaFechar } from './bot-view-render.js';
 import { initBotViewWiring, listarPendencias, abrirPendenciasModal } from './bot-view-interactions.js';
 import {
@@ -154,7 +155,7 @@ async function extrairEsqueletoOverlay() {
     btnBaixar.title = 'Baixar uma cópia de segurança deste bot em JSON antes de salvar';
     btnBaixar.insertAdjacentHTML(
       'afterend',
-      `<button id="btn-bv-salvar" type="button" class="flex items-center gap-2 text-sm font-medium text-white bg-primary rounded-lg px-5 py-2.5 transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+      `<button id="btn-bv-salvar" type="button" title="Salvar na plataforma (Ctrl+S)" class="flex items-center gap-2 text-sm font-medium text-white bg-primary rounded-lg px-5 py-2.5 transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
         <i data-lucide="save" class="w-4.5 h-4.5" id="btn-bv-salvar-icon"></i>
         <span id="btn-bv-salvar-spinner" class="hidden w-4.5 h-4.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
         <span id="btn-bv-salvar-label">Salvar</span>
@@ -522,6 +523,50 @@ function ligarBotoesExtensao(shadowRoot) {
     pedirFecharBotView();
   });
   definirGuardaFechar(confirmarFechar);
+
+  // Ctrl+S (Cmd+S): o mesmo que clicar em "Salvar". Com o editor aberto o
+  // "Salvar página" do navegador nunca abre. Com uma janela por cima (menu,
+  // teste, confirmação...) não salva: o que se edita ali ainda não foi
+  // aplicado ao bot. Segurar as teclas não repete o salvamento.
+  document.addEventListener('keydown', (e) => {
+    if (!ehAtalhoSalvar(e)) return;
+    const overlay = shadowRoot.getElementById('bot-view-overlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.repeat) return;
+    if (janelaPorCima(shadowRoot)) {
+      mostrarToast('Feche a janela aberta antes de salvar.');
+      return;
+    }
+    salvarPeloAtalho();
+  }, true);
+}
+
+// Ctrl+S no meio da digitação: o campo confirma o texto (como no clique em
+// "Salvar") e, terminado o salvamento, o cursor volta para onde estava. A
+// confirmação costuma redesenhar a transição, então o campo é achado de novo
+// pelos mesmos atributos. Não volta se a pessoa já foi para outro lugar, se
+// abriu uma janela por cima ou se o campo é de busca com lista.
+async function salvarPeloAtalho() {
+  const campo = campoEmEdicao();
+  const seletor = campo && campoVoltaAoFoco(campo) ? localizadorDoCampo(campo) : null;
+  let selecao = null;
+  try { if (seletor) selecao = [campo.selectionStart, campo.selectionEnd]; } catch { /* campo numérico não tem seleção */ }
+
+  await salvarBotNaOrpen();
+
+  if (!seletor) return;
+  const raiz = getRootNode();
+  if (raiz.activeElement && raiz.activeElement !== document.body) return;
+  if (janelaPorCima(raiz)) return;
+  const achados = raiz.querySelectorAll(`#bot-view-overlay ${seletor}`);
+  if (achados.length !== 1) return;
+  const alvo = achados[0];
+  try {
+    alvo.focus({ preventScroll: true });
+    if (selecao && selecao[0] !== null) alvo.setSelectionRange(selecao[0], selecao[1]);
+  } catch { /* campo saiu da tela ou não aceita seleção */ }
 }
 
 // Guarda do fechamento (X, clique fora, Esc): sem alteração não salva, fecha

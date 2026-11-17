@@ -1,6 +1,6 @@
 # Cerne · Analisar bot (para IA)
 
-Spec completa: `../08-analisar-bot.md`. Código: `js/analise-bot.js` (regras, puro), `js/analise.js` (painel), estilos `.an-*`. Antes, leia `00-contrato.cerne.md` e `01-testar-bot.cerne.md`.
+Spec completa: `../08-analisar-bot.md`. Código: `js/analise-bot.js` (regras, puro), `js/analise.js` (painel), `js/selos-analise.js` (selo de erros/avisos no cabeçalho de cada estado), estilos `.an-*` e `.estado-selo*`. Antes, leia `00-contrato.cerne.md` e `01-testar-bot.cerne.md`.
 
 ## Em uma frase
 
