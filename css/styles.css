@@ -387,6 +387,13 @@ body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe U
 
 /* ---- Fontes e estados ---- */
 #bot-view-overlay .estado-empty { color: var(--text-faint); font-size: 0.8125rem; }
+/* Ação "Enviar Flow (WhatsApp)" (23): dica, status da lista e variáveis. */
+#bot-view-overlay .flow-dica { color: var(--text-faint); font-size: 0.75rem; line-height: 1.4; margin-bottom: 0.5rem; }
+#bot-view-overlay .flow-dica code,
+#bot-view-overlay .flow-variaveis { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; }
+#bot-view-overlay .flow-variaveis { color: var(--text-faint); word-break: break-word; }
+#bot-view-overlay .flow-status { color: var(--text-faint); font-size: 0.75rem; margin-top: 0.25rem; }
+#bot-view-overlay .flow-status-erro { color: var(--danger); }
 /* Nome do estado: em repouso é um título (semibold, sem caixa), com um lápis
    apagado dizendo que dá pra editar; hover acende o fundo e o lápis; foco
    vira campo de verdade. A largura acompanha o texto (field-sizing), com

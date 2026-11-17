@@ -9,6 +9,8 @@
 
 import { ACTION_TYPE_LABELS, VARIABLE_KIND } from './dictionaries.js';
 import { lerContaTranscricao } from './bot-view-render.js';
+import { problemaDoFlow } from './flows.js';
+import { temFlows } from './orpen-env.js';
 
 const CAMPO_JSON_OBRIGATORIO = { '10': 'message_option_text', '11': 'message_option_form', '13': 'bot_variables_text' };
 
@@ -41,6 +43,12 @@ export function problemaAntesDeSalvar(bot) {
     if (campo && jsonInvalido(d[campo])) return `a ação "${rotulo}"${onde(a)} está vazia ou com JSON inválido.`;
     if (tipo === '22' && d.payload && jsonInvalido(d.payload)) return `o payload da ação "${rotulo}"${onde(a)} não é um JSON válido.`;
     if ((tipo === '18' && d.openai === 'call_assistant') || tipo === '20') usaIa = true;
+    // Enviar Flow: as quatro travas do nativo, na ordem dele (bot.php da PRD-2594).
+    // Só onde a ação existe: sem Flows, rota e Flow não podem ser escolhidos aqui.
+    if (tipo === '23' && temFlows()) {
+      const falha = problemaDoFlow(d);
+      if (falha) return `na ação "${rotulo}"${onde(a)}, ${falha}`;
+    }
   }
   // Condição de cadastro (fila, agente, calendário, status CRM, entrada) guarda o
   // cadastro em CONDITION_TYPE. Vazio vira tipo 0 no payload e o servidor descarta a

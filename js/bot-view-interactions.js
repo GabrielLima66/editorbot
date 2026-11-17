@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO, CAMPOS_ESTADO_POR_TIPO, GRUPOS_ACAO, agruparOpcoes } from './dictionaries.js';
+import { TABLE_KEY_ORDER, ACTION_TYPE_LABELS, VARIABLE_LABELS, VARIABLE_KIND, UPDATE_CONTACT_LABELS, DICTS_BUSCAVEIS, CAMPOS_PENDENCIA_POR_TIPO, CAMPOS_ESTADO_POR_TIPO } from './dictionaries.js';
 import { $, escapeHtml, resolverPorLabel, resolverPorLabelLista, entriesToOptions, mostrarToast } from './utils.js';
 import { getRootNode, criarIcones, empilharEsc, ignorarGerenciadoresDeSenha, marcarCamposSemAutopreenchimento } from './dom-root.js';
 import {
@@ -21,7 +21,10 @@ import {
   dadosDoEstado,
   garantirCorpoDoEstado,
   expandirEstado,
+  tiposDeAcaoDisponiveis,
+  atualizarListaTiposAcao,
 } from './bot-view-render.js';
+import { limparSelecaoFlow, buscarFlowsDaRota, buscarDetalheDoFlow, memoriaFlows } from './flows.js';
 import { initMenuBuilders } from './menu-builder.js';
 import { initVariaveisBuilders } from './variaveis-builder.js';
 import { abrirModalMenu } from './menu-modal.js';
@@ -437,6 +440,13 @@ export function mudarTipoAcao(bot, transitionId, actionId, novoTipo) {
   // primeiro estado da lista (bot.php:3956-3964). Aqui o campo mostra o mesmo
   // estado, então o dado tem que ser esse e não ''.
   if (String(novoTipo) === '2') acao.ACTION_DATA.destiny = primeiroNumeroDeEstado(bot);
+  // "Enviar Flow": os dois selects de estado do nativo também não têm opção
+  // vazia (bot.php da PRD-2594, createAction case 23).
+  if (String(novoTipo) === '23') {
+    const primeiro = primeiroNumeroDeEstado(bot);
+    acao.ACTION_DATA.callback_state = primeiro;
+    acao.ACTION_DATA.fallback_state = primeiro;
+  }
   Object.assign(acao.ACTION_DATA, padraoDaAcao(novoTipo));
   withMirrors('action', acao);
 }
@@ -972,6 +982,81 @@ export function transicaoParaEstado(bot, transitionId) {
   return t ? t.STATE : undefined;
 }
 
+// ---- Enviar Flow (23): lista de Flows da rota e detalhe do Flow -----------
+// As duas chamadas são as do formulário nativo (flowLoadList e
+// flowLoadDetail) e só acontecem por ação da pessoa. A resposta só vale se a
+// ação ainda estiver na mesma rota (e no mesmo Flow) quando ela chegar.
+function acaoDaTransicao(bot, transitionId, actionId) {
+  return (bot?.BOT_ACTIONS || []).find((a) => a.TRANSITION_ID === transitionId && a.ID === actionId);
+}
+
+function statusDoFlow(acao, texto, erro = false) {
+  if (!acao) return;
+  if (texto) memoriaFlows.status.set(acao, { texto, erro });
+  else memoriaFlows.status.delete(acao);
+}
+
+const CARREGANDO_FLOW = 'Carregando...';
+
+export async function carregarFlowsDaRota(bot, transitionId, actionId) {
+  const acao = acaoDaTransicao(bot, transitionId, actionId);
+  const rota = String(acao?.ACTION_DATA?.flow_entrance ?? '');
+  if (!acao || !rota) return;
+  statusDoFlow(acao, CARREGANDO_FLOW);
+  rerenderTransicao(bot, transitionId);
+  const r = await buscarFlowsDaRota(rota);
+  const atual = acaoDaTransicao(bot, transitionId, actionId);
+  if (state.botCarregado !== bot || !atual || String(atual.ACTION_DATA?.flow_entrance ?? '') !== rota) return;
+  if (!r.ok) {
+    statusDoFlow(atual, r.erro, true);
+    rerenderTransicao(bot, transitionId);
+    return;
+  }
+  memoriaFlows.listas.set(rota, { flows: r.flows, assinaturaFalhou: r.assinaturaFalhou });
+  statusDoFlow(atual, r.flows.length ? '' : 'Nenhum Flow publicado ou em rascunho nesta rota.');
+  const flowId = String(atual.ACTION_DATA?.flow_id ?? '');
+  // Flow escolhido continua na rota: o nativo o escolhe de novo, o que
+  // recarrega a tela inicial e as variáveis (Flow mudado na Gupshup).
+  if (flowId && r.flows.some((f) => f.value === flowId)) {
+    await escolherFlow(bot, transitionId, actionId, flowId);
+    return;
+  }
+  if (flowId) atual.ACTION_DATA = limparSelecaoFlow(atual.ACTION_DATA);
+  rerenderTransicao(bot, transitionId);
+}
+
+export async function escolherFlow(bot, transitionId, actionId, flowId) {
+  const acao = acaoDaTransicao(bot, transitionId, actionId);
+  if (!acao) return;
+  const d = acao.ACTION_DATA || {};
+  const rota = String(d.flow_entrance ?? '');
+  // Nome e modo vêm do item da lista; sem a lista, é o Flow já gravado.
+  const opcao = memoriaFlows.listas.get(rota)?.flows.find((f) => f.value === flowId);
+  const nome = opcao ? opcao.nome : (flowId === String(d.flow_id ?? '') ? String(d.flow_name ?? '') : '');
+  const rascunho = opcao ? opcao.rascunho : (flowId === String(d.flow_id ?? '') && d.flow_mode === 'draft');
+  acao.ACTION_DATA = flowId
+    ? { ...limparSelecaoFlow(d), flow_id: flowId, flow_name: nome, flow_mode: rascunho ? 'draft' : 'published' }
+    : limparSelecaoFlow(d);
+  if (!flowId || !rota) {
+    statusDoFlow(acao, '');
+    rerenderTransicao(bot, transitionId);
+    return;
+  }
+  statusDoFlow(acao, CARREGANDO_FLOW);
+  rerenderTransicao(bot, transitionId);
+  const r = await buscarDetalheDoFlow(rota, flowId);
+  const atual = acaoDaTransicao(bot, transitionId, actionId);
+  if (state.botCarregado !== bot || !atual || String(atual.ACTION_DATA?.flow_id ?? '') !== flowId || String(atual.ACTION_DATA?.flow_entrance ?? '') !== rota) return;
+  if (!r.ok) {
+    statusDoFlow(atual, r.erro, true);
+  } else {
+    atual.ACTION_DATA = { ...atual.ACTION_DATA, flow_screen: r.tela, flow_variables: r.variaveis };
+    statusDoFlow(atual, '');
+  }
+  // Redesenha também a lista de variáveis: as {$flow_<campo>} mudaram.
+  rerenderTransicao(bot, transitionId);
+}
+
 // Re-render "cirúrgico": recria só o <div class="estado-row"> desta
 // transição em vez do #bv-estados inteiro. Seguro pras mutações que só
 // afetam o conteúdo INTERNO de uma transição (condições/ações) — nada fora
@@ -1402,6 +1487,10 @@ export function initAcoesDelegadas() {
         reabrirCombobox(campo);
         break;
       }
+      // Enviar Flow: recarrega a lista da rota (nativo: botão Recarregar).
+      case 'flow-recarregar':
+        carregarFlowsDaRota(state.botCarregado, btn.dataset.transitionId, btn.dataset.actionId);
+        break;
       // Exemplo da voz, o mesmo arquivo que o nativo toca (bot.php:4553-4563).
       case 'ouvir-voz': {
         const opcao = btn.parentElement.querySelector('select')?.selectedOptions[0];
@@ -1512,7 +1601,8 @@ export function initAcoesDelegadas() {
         break;
       }
       case 'mudar-tipo-acao': {
-        const chave = resolverPorLabel(ACTION_TYPE_LABELS, el.value);
+        // Só os tipos que esta versão da Orpen tem ("Enviar Flow" só com Flows).
+        const chave = resolverPorLabel(tiposDeAcaoDisponiveis(), el.value);
         if (!chave) { el.value = el.defaultValue; return; }
         mudarTipoAcao(bot, el.dataset.transitionId, el.dataset.actionId, chave);
         rerenderTransicao(bot, el.dataset.transitionId);
@@ -1536,6 +1626,20 @@ export function initAcoesDelegadas() {
         // (a mesma voz existe nos três idiomas) e o "ouvir" tocaria o idioma
         // errado; nada mais na tela depende da voz.
         if (el.dataset.campo !== 'model_audio') rerenderTransicao(bot, el.dataset.transitionId);
+        break;
+      // Enviar Flow (23): trocar a rota esvazia o Flow e carrega a lista da
+      // rota (nativo: change de flow_entrance -> flowClearSelection + flowLoadList).
+      case 'flow-rota': {
+        const acao = acaoDaTransicao(bot, el.dataset.transitionId, el.dataset.actionId);
+        if (!acao) break;
+        acao.ACTION_DATA = { ...limparSelecaoFlow(acao.ACTION_DATA || {}), flow_entrance: el.value };
+        memoriaFlows.status.delete(acao);
+        rerenderTransicao(bot, el.dataset.transitionId);
+        if (el.value) carregarFlowsDaRota(bot, el.dataset.transitionId, el.dataset.actionId);
+        break;
+      }
+      case 'flow-escolher':
+        escolherFlow(bot, el.dataset.transitionId, el.dataset.actionId, el.value);
         break;
       case 'mudar-campo-acao-buscavel': {
         const dict = DICTS_BUSCAVEIS[el.dataset.dict];
@@ -1911,8 +2015,8 @@ export function initBotViewWiring() {
   // fixo com state.ambienteOrpen.variables, que só fica disponível depois do
   // bootstrap.js injetar os dados do ambiente) — aqui só as fixas, que não
   // dependem de bot carregado nem de ambiente.
-  $('#acao-tipo-datalist').innerHTML = agruparOpcoes(ACTION_TYPE_LABELS, GRUPOS_ACAO)
-    .map(o => `<option value="${escapeHtml(o.label)}" data-grupo="${escapeHtml(o.grupo)}">`).join('');
+  // Refeita em abrirBotView, quando o ambiente (com ou sem Flows) já chegou.
+  atualizarListaTiposAcao();
   $('#update-contact-datalist').innerHTML = entriesToOptions(UPDATE_CONTACT_LABELS).map(o => `<option value="${escapeHtml(o.label)}">`).join('');
 
   initAcoesDelegadas();

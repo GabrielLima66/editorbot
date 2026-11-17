@@ -102,6 +102,10 @@ function esvaziarAmbienteAcao(a, relatorio, transitionId) {
     // {$variável} (a ação 4 aceita) não é ID de cadastro: vale em qualquer ambiente.
     if (!vazio(d[campo]) && !ehVariavel(d[campo])) { d[campo] = ''; relatorio.push({ transitionId, itemId: a.ID, tipoItem: 'Ação', campo }); }
   });
+  // Enviar Flow: nome, modo, tela e variáveis são do Flow esvaziado acima.
+  if (a.ACTION_TYPE === '23' && vazio(d.flow_id)) {
+    Object.assign(d, { flow_name: '', flow_mode: 'published', flow_screen: '', flow_variables: '' });
+  }
   if (a.ACTION_TYPE === '16' && Array.isArray(d.labels) && d.labels.length) {
     d.labels = [];
     relatorio.push({ transitionId, itemId: a.ID, tipoItem: 'Ação', campo: 'labels' });

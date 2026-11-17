@@ -40,6 +40,8 @@ import {
   CHAVE_ESCALA, normalizarEscala, maiorPassoPermitido, escalaEfetiva, passoAdjacente, rotuloEscala,
   definirEscalaAtual, lerPreferencia, gravarPreferencia,
 } from './escala.js';
+import { MSG_ASSINATURA, completarPadroesFlow } from './flows.js';
+import { padroesFlow } from './orpen-env.js';
 
 const HOST_ID = 'orpen-editor-bot-host';
 
@@ -910,6 +912,10 @@ async function salvarBotNaOrpenAgora() {
       const n = conferencia.descartados;
       avisos.push(`${n} ${n === 1 ? 'condição/ação sem tipo foi ignorada' : 'condições/ações sem tipo foram ignoradas'} pela plataforma e não ${n === 1 ? 'aparecerá' : 'aparecerão'} ao reabrir.`);
     }
+    // Enviar Flow: o bot foi salvo, mas a assinatura de respostas de alguma
+    // rota não se confirmou na Gupshup (ajax.php da PRD-2594, updateBot).
+    // O nativo avisa e recarrega a página; aqui só avisa.
+    if (Array.isArray(data?.flow_subscription_failed) && data.flow_subscription_failed.length) avisos.push(MSG_ASSINATURA);
     mostrarToast(avisos.join(' '));
     // Se outro bot foi aberto enquanto este salvava, o que foi gravado não
     // é referência nem pendência dele.
@@ -989,6 +995,7 @@ export async function abrirEditorOrpen(botId, envData = null) {
     }
 
     state.botCarregado = fromGetBotResponse(raw);
+    completarPadroesFlow(state.botCarregado, padroesFlow());
     abrirBotView(state.botCarregado);
     // Depois do abrirBotView: se o render normalizar algum campo, isso não
     // conta como alteração do usuário.

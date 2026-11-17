@@ -1,5 +1,11 @@
 # Histórico de Versões (Changelog)
 
+## [0.8.35] - 2026-11-17
+* **Ação "Enviar Flow (WhatsApp)"**: nas versões da Orpen que já têm a ação (hoje só no HML), ela aparece no editor junto das integrações, com os mesmos campos do modal nativo: rota do WhatsApp (Gupshup), Flow (com "Recarregar" e rascunhos marcados), variáveis de retorno, texto, botão, estado de retorno, estado de não resposta e tempo limite. Nas versões sem a ação, ela não é oferecida; um bot que já a tenha mostra a ação com o nome certo, e rota e Flow só podem ser trocados onde ela existe.
+* A lista de Flows só é buscada quando você troca a rota ou clica em "Recarregar", como no nativo (essa busca também confirma, na Gupshup, a assinatura das respostas). Escolher um Flow traz a tela inicial e as variáveis dele.
+* As variáveis {$Flow_Status}, {$Flow_Response} e {$flow_<campo>} de cada Flow do bot aparecem na condição e no menu de variáveis quando o bot tem a ação.
+* O salvar trava nos mesmos casos do nativo (rota, Flow, texto e botão obrigatórios; os dois estados; tempo limite só com números; ação grande demais) e avisa se a assinatura de respostas não se confirmou na Gupshup. O que é gravado é igual ao do nativo.
+
 ## [0.8.34] - 2026-11-04
 * **Expandir e recolher todos os estados**: dois botões novos na barra "Transições", antes do "Copiar / colar", abrem ou fecham todos os estados de uma vez. Do meio da lista, sem rolar até os botões, **Alt + clique** no cabeçalho de um estado faz o mesmo: num estado fechado abre todos, num aberto fecha todos. O estado clicado (ou, pelos botões, o que estava no topo da tela) não sai do lugar, então você não se perde quando a lista cresce ou encolhe. O clique normal continua abrindo e fechando só aquele estado. Num bot grande, "Expandir" pode levar um instante na primeira vez, porque monta as transições de todos os estados que ainda não tinham sido abertos.
 * **Erros e avisos no cabeçalho do estado**: cada estado com problema achado pelo "Analisar bot" mostra, ao lado de "N transições", um selo com a contagem de erros (vermelho) e de avisos (laranja), mesmo fechado e sem abrir o painel. Passar o mouse lista os problemas; clicar abre o "Analisar bot" no primeiro problema do estado e leva até ele. O selo acompanha as edições: corrigiu, ele some; moveu o estado, ele vai junto. Os informativos continuam só no painel.

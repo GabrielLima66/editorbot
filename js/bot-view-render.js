@@ -17,6 +17,7 @@ import {
   UPDATE_CONTACT_LABELS,
   VARIABLE_KIND,
   GRUPOS_VARIAVEL,
+  GRUPOS_ACAO,
   agruparOpcoes,
 } from './dictionaries.js';
 import { $, escapeHtml, optionsHtml, entriesToOptions } from './utils.js';
@@ -33,7 +34,12 @@ import {
   opcoesCalendarios, comValorAtual, opcoesLabels, temLabels,
   assistentesOpenAi, opcoesAssistentesDaConta, opcoesContasComAssistentes,
   opcoesAnexos, temAnexos,
+  temFlows, opcoesEntradasFlow, padroesFlow,
 } from './orpen-env.js';
+import {
+  normalizarDadosFlow, dadosFlowNovos, variaveisFlowDoBot, textoVariaveisFlow, opcaoDoFlow,
+  memoriaFlows, limparMemoriaFlows, MSG_ASSINATURA,
+} from './flows.js';
 
 // Kinds cuja variável cai no switch genérico de check_condition() (Bot.class.php,
 // bloco final "case 0: return true") — só nesses "Sempre verdadeiro" de fato
@@ -325,10 +331,11 @@ export function opcoesVariavelCondicao(bot = state.botCarregado) {
     const fixas = { ...VARIABLE_LABELS };
     delete fixas.assistant_analysis_status;
     delete fixas.assistant_analysis_text;
-    opcoes = agruparOpcoes(fixas, GRUPOS_VARIAVEL);
+    opcoes = [...agruparOpcoes(fixas, GRUPOS_VARIAVEL), ...variaveisFlowDoBot(bot).map((o) => ({ ...o, grupo: 'Flow' }))];
   } else {
     const acoes = bot?.BOT_ACTIONS || [];
     const temAutomacao = acoes.some((a) => String(a.ACTION_TYPE) === '22');
+    const temFlow = acoes.some((a) => String(a.ACTION_TYPE) === '23');
     const scripts = new Set(acoes.filter((a) => String(a.ACTION_TYPE) === '7').map((a) => String(a.ACTION_DATA?.script_name ?? '')));
     const grupoFixo = {};
     GRUPOS_VARIAVEL.forEach(([grupo, chaves]) => chaves.forEach((k) => { grupoFixo[k] = grupo; }));
@@ -339,6 +346,11 @@ export function opcoesVariavelCondicao(bot = state.botCarregado) {
       const item = { value: String(v.id), label: v.name || String(v.id) };
       if (v.parent === 'automate') {
         if (temAutomacao) fixas.push({ ...item, grupo: 'Automação' });
+      } else if (v.parent === 'flow') {
+        // Flow_Status e Flow_Response, só com "Enviar Flow" no bot (nativo:
+        // reRenderSelects/hasFlowAction). As flow_<campo> que a página tenha
+        // guardado são de outro bot: as deste saem das ações dele, abaixo.
+        if (temFlow && !String(v.id).startsWith('flow_')) fixas.push({ ...item, grupo: 'Flow' });
       } else if (v.parent) {
         if (scripts.has(v.parent)) deScripts.push({ ...item, grupo: 'Scripts' });
       } else if (VARIABLE_LABELS[v.id] !== undefined) {
@@ -347,8 +359,10 @@ export function opcoesVariavelCondicao(bot = state.botCarregado) {
         doBot.push({ ...item, grupo: 'Variáveis do bot' });
       }
     });
+    // Variáveis de retorno dos Flows do bot (nativo: prescanFlowVariables).
+    variaveisFlowDoBot(bot).forEach((o) => fixas.push({ ...o, grupo: 'Flow' }));
     // Fixas na ordem dos tópicos (GRUPOS_VARIAVEL), depois as do bot e dos scripts.
-    const ordemGrupo = [...GRUPOS_VARIAVEL.map(([g]) => g), 'Outras'];
+    const ordemGrupo = [...GRUPOS_VARIAVEL.map(([g]) => g), 'Flow', 'Outras'];
     fixas.sort((a, b) => ordemGrupo.indexOf(a.grupo) - ordemGrupo.indexOf(b.grupo));
     opcoes = [...fixas, ...doBot, ...deScripts];
   }
@@ -360,7 +374,8 @@ export function opcoesVariavelCondicao(bot = state.botCarregado) {
 // escondidas agora (ex.: script removido do fluxo), para não virar código.
 export function nomeVariavelCondicao(variavel) {
   const doAmbiente = variaveisDoAmbienteCondicao().find((v) => String(v.id) === String(variavel));
-  return doAmbiente?.name || VARIABLE_LABELS[variavel] || variavel;
+  if (doAmbiente?.name || VARIABLE_LABELS[variavel]) return doAmbiente?.name || VARIABLE_LABELS[variavel];
+  return String(variavel).startsWith('flow_') ? `Flow: ${String(variavel).slice(5)}` : variavel;
 }
 
 // A lista de variáveis depende das ações do bot (scripts e Automação):
@@ -420,8 +435,66 @@ export function defaultActionData(tipo) {
     case '20': return { message_content: '', callback_state: '', fallback_state: '', model_audio: 'alloy', model_openai: 'tts-1', speed: '1' };
     case '21': return { contact_item_type: 'EMAIL', message_text: '' };
     case '22': return { url: '', payload: '', callback_state: '', fallback_state: '', timeout: '' };
+    case '23': return dadosFlowNovos(padroesFlow());
     default: return {};
   }
+}
+
+// Ação "Enviar Flow (WhatsApp)" (23), na ordem do formulário nativo (bot.php
+// da PRD-2594, createAction case 23): rota, Flow (com Recarregar), variáveis
+// de retorno, texto, botão, estados e tempo limite. Rota e Flow só se trocam
+// numa versão da Orpen com Flows; nas outras a ação aparece como está.
+// A lista de Flows e a linha de status ficam em flows.js (memoriaFlows) para
+// sobreviver ao redesenho da transição; os eventos estão em
+// bot-view-interactions.js (flow-rota, flow-escolher, flow-recarregar).
+const DICA_FLOW = 'Envia um formulário do WhatsApp (Flow) e <b>pausa</b> o atendimento. Quando o contato enviar o formulário, o fluxo segue pelo estado de retorno com as variáveis <code>{$flow_&lt;campo&gt;}</code> e <code>{$Flow_Response}</code>. Sem resposta no tempo limite, falha de envio ou atendimento de outra rota seguem pelo estado de não resposta. As ações colocadas depois desta na mesma transição ainda rodam.';
+
+function renderAcaoFlow(a, estadoPorNumero) {
+  const d = normalizarDadosFlow(a.ACTION_DATA);
+  const alvo = `data-transition-id="${escapeHtml(a.TRANSITION_ID)}" data-action-id="${escapeHtml(a.ID)}"`;
+  let rotaEFlow;
+  if (temFlows()) {
+    const rotas = opcoesEntradasFlow();
+    // Rota gravada que não está na lista: o nativo a mostra como "ID: n".
+    if (d.flow_entrance && !rotas.some((o) => o.value === d.flow_entrance)) rotas.push({ value: d.flow_entrance, label: `ID: ${d.flow_entrance}` });
+    const lista = memoriaFlows.listas.get(d.flow_entrance);
+    const flows = lista?.flows ? [...lista.flows] : [];
+    // Sem a lista carregada, o nativo mostra só o Flow gravado.
+    if (d.flow_id && !flows.some((o) => o.value === d.flow_id)) flows.push(opcaoDoFlow({ id: d.flow_id, name: d.flow_name, status: d.flow_mode === 'draft' ? 'DRAFT' : 'PUBLISHED' }));
+    const status = memoriaFlows.status.get(a);
+    const linhaStatus = status?.texto ? `<p class="flow-status${status.erro ? ' flow-status-erro' : ''}">${escapeHtml(status.texto)}</p>` : '';
+    const aviso = lista?.assinaturaFalhou ? `<p class="flow-status flow-status-erro">${escapeHtml(MSG_ASSINATURA)}</p>` : '';
+    rotaEFlow = campoBloco('Rota do WhatsApp (Gupshup)', `<select class="field-view" data-action="flow-rota" ${alvo}>${optionsHtml([{ value: '', label: '--' }, ...rotas], d.flow_entrance)}</select>`)
+      + campoBloco('Flow', `<div class="flex gap-1.5"><select class="field-view flex-1" data-action="flow-escolher" ${alvo}>${optionsHtml([{ value: '', label: '--' }, ...flows], d.flow_id)}</select><button type="button" class="ir-para-estado-btn shrink-0" data-action="flow-recarregar" ${alvo} title="Recarregar os Flows desta rota" aria-label="Recarregar os Flows desta rota"${d.flow_entrance ? '' : ' disabled'}><i data-lucide="refresh-cw" class="w-3.5 h-3.5 pointer-events-none"></i></button></div>${linhaStatus}${aviso}`);
+  } else {
+    const nomeFlow = d.flow_id ? opcaoDoFlow({ id: d.flow_id, name: d.flow_name, status: d.flow_mode === 'draft' ? 'DRAFT' : '' }).label : '';
+    rotaEFlow = campoBloco('Rota do WhatsApp (Gupshup)', `<input type="text" class="field-view" readonly value="${escapeHtml(d.flow_entrance ? `ID: ${d.flow_entrance}` : '')}">`)
+      + campoBloco('Flow', `<input type="text" class="field-view" readonly value="${escapeHtml(nomeFlow)}"><p class="flow-status flow-status-erro">Esta versão da Orpen não tem a ação Enviar Flow: a rota e o Flow só podem ser trocados onde ela existe.</p>`);
+  }
+  return `<p class="flow-dica">${DICA_FLOW}</p>`
+    + rotaEFlow
+    + campoBloco('Variáveis de retorno do Flow', `<p class="flow-variaveis">${escapeHtml(textoVariaveisFlow(d.flow_variables))}</p>`)
+    + campoBloco('Texto da mensagem (aceita variáveis {$...})', `<textarea rows="3" maxlength="600" class="textarea-view" data-action="mudar-campo-acao" ${alvo} data-campo="flow_text">${escapeHtml(d.flow_text)}</textarea>`)
+    + campoBloco('Texto do botão (até 20 caracteres)', `<input type="text" maxlength="20" class="field-view" value="${escapeHtml(d.flow_cta)}" data-action="mudar-campo-acao" ${alvo} data-campo="flow_cta">`)
+    + campoEstadoLivre('Estado de retorno (formulário enviado)', estadoPorNumero, a.TRANSITION_ID, a.ID, 'callback_state', d.callback_state)
+    + campoEstadoLivre('Estado de não resposta (tempo limite, falha ou outra rota)', estadoPorNumero, a.TRANSITION_ID, a.ID, 'fallback_state', d.fallback_state)
+    + campoBloco('Tempo limite da resposta (segundos)', `<input type="number" min="60" step="1" class="field-view" value="${escapeHtml(d.timeout)}" data-action="mudar-campo-acao" ${alvo} data-campo="timeout"><p class="flow-status">Tempo máximo aguardando o contato enviar o formulário. Ao estourar, o atendimento segue pelo estado de não resposta. Vazio ou 0 usa o padrão de 600s (10 min).</p>`);
+}
+
+// Tipos de ação oferecidos na busca do tipo: "Enviar Flow" só nas versões da
+// Orpen que têm a ação (o nativo só a lista nelas). Refeita ao abrir cada bot,
+// quando o ambiente já chegou.
+export function tiposDeAcaoDisponiveis() {
+  const tipos = { ...ACTION_TYPE_LABELS };
+  if (!temFlows()) delete tipos['23'];
+  return tipos;
+}
+
+export function atualizarListaTiposAcao() {
+  const lista = $('#acao-tipo-datalist');
+  if (!lista) return;
+  lista.innerHTML = agruparOpcoes(tiposDeAcaoDisponiveis(), GRUPOS_ACAO)
+    .map((o) => `<option value="${escapeHtml(o.label)}" data-grupo="${escapeHtml(o.grupo)}">`).join('');
 }
 
 export function renderAcao(a, estadoPorNumero, indice, total) {
@@ -564,8 +637,11 @@ export function renderAcao(a, estadoPorNumero, indice, total) {
         + campoEstadoLivre('Estado de falha (timeout)', estadoPorNumero, a.TRANSITION_ID, a.ID, 'fallback_state', d.fallback_state)
         + campoTextoEditavel('Timeout (seg, vazio = 120 padrão)', a.TRANSITION_ID, a.ID, 'timeout', d.timeout);
       break;
+    case '23':
+      corpo = renderAcaoFlow(a, estadoPorNumero);
+      break;
     default:
-      // Tipo de ação desconhecido (fora da tabela 1-22 do bot-engine-spec.md)
+      // Tipo de ação desconhecido (fora da tabela 1-23 do bot-engine-spec.md)
       // — sem forma definida de campos, não dá pra editar com segurança.
       corpo = `<textarea readonly rows="2" class="textarea-view">${escapeHtml(JSON.stringify(d))}</textarea>`;
   }
@@ -779,6 +855,7 @@ const ROTULO_CAMPO_ESTADO = {
   '18': { callback_state: 'Estado de callback' },
   '20': { callback_state: 'Estado de retorno (callback)', fallback_state: 'Estado de falha (fallback)' },
   '22': { callback_state: 'Estado de retorno', fallback_state: 'Estado de falha (timeout)' },
+  '23': { callback_state: 'Estado de retorno (formulário enviado)', fallback_state: 'Estado de não resposta' },
 };
 
 // Uma linha do painel de origens, na linguagem da lista de estados: selo
@@ -945,6 +1022,8 @@ export function abrirBotView(bot, { abertos } = {}) {
   // em mudar-condicao-variavel) e o tópico em data-grupo.
   atualizarListaVariaveisCondicao(bot);
   atualizarDatalistsVariaveis(bot);
+  atualizarListaTiposAcao();
+  limparMemoriaFlows(bot);
 
   $('#bv-numero').value = bot.ID ?? '';
   $('#bv-nome').value = bot.NAME ?? '';

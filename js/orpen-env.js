@@ -91,6 +91,19 @@ export function opcoesAssistentesDaConta(contaId) {
   return (conta?.assistants || []).map((a) => ({ value: String(a.id), label: a.name }));
 }
 
+// Ação "Enviar Flow (WhatsApp)" (23): disponível só quando o bot.php da
+// página tem o recurso (page-env-collector.js, `flowEntrances`). A lista de
+// rotas pode vir vazia: o nativo mostra a ação mesmo assim.
+export function temFlows() {
+  return !!state.ambienteOrpen?.flows && Array.isArray(state.ambienteOrpen.flows.entradas);
+}
+export function opcoesEntradasFlow() { return opcoesDe(state.ambienteOrpen?.flows?.entradas); }
+// Texto do botão e tempo limite que o formulário nativo já traz preenchidos.
+export function padroesFlow() {
+  const f = state.ambienteOrpen?.flows || {};
+  return { cta: f.cta || 'Preencher formulário', timeout: f.timeout || '600' };
+}
+
 // Labels vêm da API REST da Orpen, de forma assíncrona (page-env-collector.js):
 // null quando não carregaram. Sem a lista, o editor mostra o campo de IDs.
 export function temLabels() {

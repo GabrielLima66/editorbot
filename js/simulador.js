@@ -416,7 +416,7 @@ function executarAcao(sessao, a, mensagens, rodada) {
       return;
     }
     case '17': saida(sessao, 'arquivo', { texto: `Arquivo (ID ${d.send_file || '—'})` }); reg('Enviou um arquivo'); return;
-    case '18': case '20': case '22': {
+    case '18': case '20': case '22': case '23': {
       if (tipo === '20') saida(sessao, 'audio', { texto: t(d.message_content ?? '') });
       sessao.status = 'aguardando';
       sessao.pausa = { acaoId: a.ID, tipo, nome, callback: String(d.callback_state ?? ''), fallback: String(d.fallback_state ?? ''), assistente: d.assistant_id ?? '' };
@@ -538,6 +538,8 @@ export function responderCallback(sessao, { ok = true, status, texto = '' } = {}
     sessao.extra.assistant_analysis_text = texto;
   }
   if (p.tipo === '22') { sessao.extra.automate_status = ok ? 'success' : 'error'; sessao.extra.automate_message = texto; }
+  // Enviar Flow: resposta do formulário (answered) ou não resposta (timeout).
+  if (p.tipo === '23') { sessao.extra.Flow_Status = ok ? 'answered' : 'timeout'; sessao.extra.Flow_Response = texto; }
   const destino = ok ? p.callback : (p.fallback || p.callback);
   sessao.pausa = null;
   sessao.status = 'ativa';

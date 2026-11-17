@@ -57,6 +57,40 @@
     return lista;
   }
 
+  // Rótulo igual ao select do nativo: "NOME (entrada)" ou "ID: n".
+  // Os padrões do botão e do tempo limite vêm do próprio formulário nativo
+  // (o texto do botão depende do idioma da página); montar a ação 23 fora da
+  // tela não chama a Gupshup (a lista só carrega ao trocar a rota).
+  function coletarFlows() {
+    if (!Array.isArray(window.flowEntrances)) return null;
+    var entradas = window.flowEntrances.map(function (e) {
+      var id = e.ID !== undefined ? e.ID : e.id;
+      var nome = e.NAME || e.name;
+      var entrada = e.ENTRANCE || e.entrance;
+      return { id: id, name: (nome ? String(nome) : 'ID: ' + id) + (entrada ? ' (' + entrada + ')' : '') };
+    });
+    // Lidos uma vez por página: montar a ação nativa mexe em variáveis
+    // globais do bot.php (div, s_action_type) e nos selects da página.
+    if (!padroesFlowLidos) padroesFlowLidos = lerPadroesFlow();
+    return { entradas: entradas, cta: padroesFlowLidos.cta, timeout: padroesFlowLidos.timeout };
+  }
+
+  var padroesFlowLidos = null;
+  function lerPadroesFlow() {
+    var padroes = { cta: '', timeout: '' };
+    if (typeof window.createAction === 'function' && typeof window.$ !== 'undefined') {
+      try {
+        var dummy = window.$('<div><div class="actions"></div></div>');
+        window.createAction(dummy, '23', {});
+        padroes.cta = String(dummy.find('input[name="flow_cta"]').first().val() || '');
+        padroes.timeout = String(dummy.find('input[name="flow_timeout"]').first().val() || '');
+      } catch (e) {
+        console.warn('[EDITOR_BOT] Aviso ao ler os padrões da ação Enviar Flow:', e);
+      }
+    }
+    return padroes;
+  }
+
   function coletarDados() {
     var dados = {
       queues: toArray(window.queue).map(function (q) {
@@ -93,6 +127,11 @@
       // Ação "Enviar msg. à Entrance" (12): lista própria, montada dentro do
       // formulário da ação (bot.php:4155-4164), preenchida abaixo.
       entrances: [],
+      // Ação "Enviar Flow (WhatsApp)" (23, PRD-2594): só existe nas versões
+      // da Orpen cujo bot.php declara `flowEntrances` (rotas WhatsApp
+      // Gupshup com app id e token). null = versão sem Flows; [] = versão
+      // com Flows e nenhuma rota apta (o nativo mostra a ação mesmo assim).
+      flows: coletarFlows(),
       calendars: toArray(window.calendario).map(function (c) {
         return { id: c.id || c.ID, name: c.name || c.NAME || c.id };
       }),
@@ -179,6 +218,7 @@
         scripts: dados.scripts.length,
         checkpoints: dados.checkpoints.length,
         entrances: dados.entrances.length,
+        flows: dados.flows ? dados.flows.entradas.length + ' rota(s)' : 'versão sem Flows',
         subStatus: dados.subStatus.length
       });
     } catch (err) {

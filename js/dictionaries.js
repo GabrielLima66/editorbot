@@ -53,7 +53,7 @@ export const GRUPOS_ACAO = [
   ['Fluxo do bot', ['2', '8', '9', '13']],
   ['Encaminhamento', ['4', '5', '6', '14']],
   ['Contato e atendimento', ['15', '16', '19', '21']],
-  ['Integrações', ['7', '18', '22']],
+  ['Integrações', ['7', '18', '22', '23']],
 ];
 
 /** [{ value, label, grupo }] na ordem dos grupos; o que sobrar vai em "Outras". */
@@ -93,6 +93,9 @@ export const ACTION_TYPE_LABELS = {
   '13': 'Armazenar variável', '14': 'Substatus', '15': 'Tags', '16': 'Atualizar contato',
   '17': 'Enviar anexo', '18': 'OpenAI', '19': 'Adicionar nota ao atendimento',
   '20': 'Enviar mensagem de áudio', '21': 'Adicionar forma de contato', '22': 'Executar Automação',
+  // Só oferecida nas versões da Orpen com Flows (orpen-env.js, temFlows); o
+  // rótulo fica sempre, para uma ação já gravada aparecer com o nome certo.
+  '23': 'Enviar Flow (WhatsApp)',
 };
 export const OPENAI_METHOD_LABELS = { call_assistant: 'Chamar assistente' };
 export const UPDATE_CONTACT_LABELS = {
@@ -154,6 +157,7 @@ export const CAMPOS_ESTADO_POR_TIPO = {
   '18': ['callback_state', 'fallback_state'],
   '20': ['callback_state', 'fallback_state'],
   '22': ['callback_state', 'fallback_state'],
+  '23': ['callback_state', 'fallback_state'],
 };
 
 // Campos de ACTION_DATA/CONDITION_DATA que só existem no ambiente de destino
@@ -173,4 +177,7 @@ export const CAMPOS_PENDENCIA_POR_TIPO = {
   '17': [['send_file', 'Arquivo (ID)']],
   '18': [['openai_account', 'Conta OpenAI'], ['assistant_id', 'Assistente']],
   '22': [['url', 'URL']],
+  // A rota é do ambiente e o Flow é da conta Gupshup da rota: sem a rota, o
+  // Flow escolhido também não vale (trechos.js esvazia os dois juntos).
+  '23': [['flow_entrance', 'Rota do WhatsApp (Gupshup)'], ['flow_id', 'Flow']],
 };

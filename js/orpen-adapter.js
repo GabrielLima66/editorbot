@@ -21,6 +21,7 @@
 
 import { withMirrors } from './bot-view-interactions.js';
 import { lerContaTranscricao } from './bot-view-render.js';
+import { normalizarDadosFlow } from './flows.js';
 
 function agruparPor(lista, campo) {
   const mapa = {};
@@ -148,6 +149,9 @@ export function fromGetBotResponse(getBotJson) {
 // texto-para-voz (Bot.class.php:1706-1711).
 function dadosDaAcao(a) {
   const d = a.ACTION_DATA || {};
+  // Enviar Flow (23): o nativo grava sempre as 11 chaves, na mesma ordem,
+  // com flow_mode draft|published (bot.php da PRD-2594, case 23 do salvar).
+  if (String(a.ACTION_TYPE) === '23') return normalizarDadosFlow(d);
   if (String(a.ACTION_TYPE) !== '20') return d;
   if (d.speed && d.model_audio && d.model_openai) return d;
   return { ...d, speed: d.speed || '1', model_audio: d.model_audio || 'alloy', model_openai: d.model_openai || 'tts-1' };
