@@ -97,6 +97,7 @@ Condição e ação de tipo 0 não são gravadas pelo servidor: a análise as ig
 - Atualiza sozinho enquanto se edita (cerca de 400 ms depois de digitar ou de qualquer mudança no editor, inclusive no timeout do cabeçalho). Se o filtro ativo zera (o último erro foi corrigido), o painel volta a mostrar tudo.
 - Sem achados: "Nenhum ponto solto encontrado", com o lembrete de que a análise não vê calendário, fila nem dados do cliente.
 - Se a análise falhar, o painel diz isso e o erro vai para o console. O editor nunca quebra por causa dela.
+- **Selo no cabeçalho de cada estado** (`js/selos-analise.js`), mesmo com o painel fechado e o estado recolhido: ao lado de "N transições", a contagem de erros (vermelho) e de avisos (laranja) daquele estado; a borda segue o mais grave. Informativos e achados da configuração do bot (timeout) não entram no selo. O tooltip lista até 6 títulos. Clicar abre o painel sem filtro no primeiro erro do estado (ou no primeiro aviso) e leva até ele, como clicar no achado. Acompanha as edições como o painel; quando um estado é recriado (abrir o bot, mover, duplicar, excluir, colar), a análise roda na hora, para o selo nunca aparecer no estado errado depois de uma renumeração.
 
 ---
 
@@ -115,6 +116,7 @@ Condição e ação de tipo 0 não são gravadas pelo servidor: a análise as ig
 11. Condição `message Diferente de x` → T01. Transição sem condições antes de outras → T02.
 12. O bot analisado não é alterado. Os bots reais de exemplo rodam sem erro, e todo achado aponta para estado, transição e ação que existem.
 13. [UI] Abrir o painel fecha o Localizar, e o contrário. Esc fecha só o painel. Clicar no achado destaca o item por cerca de 1,6 s. Tema claro e escuro legíveis.
+14. [UI] Estado com 1 erro e 2 avisos → selo `⊗ 1 ⚠ 2` no cabeçalho, com o estado fechado. Clicar abre o painel no erro e o estado; o estado não fecha ao clicar de novo. Corrigir o erro deixa só `⚠ 2`. Mover esse estado para outra posição leva o selo junto, sem piscar no estado que ficou com o número antigo.
 
 ---
 
