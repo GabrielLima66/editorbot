@@ -69,7 +69,7 @@ No bot (raiz) continuam `"7"` = `TIMEOUT_DESTINY` e `"8"` = `TIMEOUT_MESSAGE`. `
 | `error_count` | Contador de Erros | 1 igual, 6 maior, 7 maior-igual, 8 menor, 9 menor-igual | número |
 | `calendario` / `calendario_falso` | CALENDARIO (Verdadeiro/Falso) | **ID do calendário** | — |
 | `agent_on_queue` | AGENTES NA FILA | o **ID/nome da fila** (o ID da fila é o próprio nome, como em `opcoesFilas()`) | — |
-| `agent_online` | AGENTE LOGADO | ID do agente (ou `{$variável}` em `value`) | — |
+| `agent_online` | AGENTE LOGADO | ID do agente; ou, com "Usar do extra data", o marcador não numérico do nativo, e o agente vem de `{$variável}` em `value` | — |
 | `agent_available_on_chat` | DISPONÍVEL CHAT | ID do agente | — |
 | `status_last_att` | Status Último Atendimento | ID do status CRM | — |
 | `opt_in` / `uci` | CONTATO possui OptIn / UCI | 1 possui, 2 não possui | — |

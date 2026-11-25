@@ -10,7 +10,7 @@
 import { ACTION_TYPE_LABELS, VARIABLE_KIND } from './dictionaries.js';
 import { lerContaTranscricao } from './bot-view-render.js';
 import { problemaDoFlow } from './flows.js';
-import { temFlows } from './orpen-env.js';
+import { temFlows, ehAgenteDoExtraData } from './orpen-env.js';
 
 const CAMPO_JSON_OBRIGATORIO = { '10': 'message_option_text', '11': 'message_option_form', '13': 'bot_variables_text' };
 
@@ -58,9 +58,14 @@ export function problemaAntesDeSalvar(bot) {
     const t = transicaoPorId[c.TRANSITION_ID];
     const tipo = String(c.CONDITION_TYPE ?? '').trim();
     if (!t || !String(VARIABLE_KIND[c.CONDITION_DATA?.variable] || '').startsWith('ref_')) continue;
+    const e = estadoPorNumero[t.STATE];
+    const onde = ` no estado ${t.STATE}${e?.ALIAS ? ` "${e.ALIAS}"` : ''}, transição ${t.PRIORITY}`;
     if (tipo === '' || tipo === '0') {
-      const e = estadoPorNumero[t.STATE];
-      return `uma condição${` no estado ${t.STATE}${e?.ALIAS ? ` "${e.ALIAS}"` : ''}, transição ${t.PRIORITY}`} está sem o cadastro escolhido (fila, agente, entrada, calendário ou status). Sem ele o servidor descarta a condição.`;
+      return `uma condição${onde} está sem o cadastro escolhido (fila, agente, entrada, calendário ou status). Sem ele o servidor descarta a condição.`;
+    }
+    // "Usar do extra data": o agente vem do valor. Vazio, a condição nunca é verdadeira.
+    if (c.CONDITION_DATA?.variable === 'agent_online' && ehAgenteDoExtraData(tipo) && String(c.CONDITION_DATA?.value ?? '').trim() === '') {
+      return `a condição AGENTE LOGADO${onde} está em "Usar do extra data" sem a variável com o ID do agente (ex.: {$agent_last_att}).`;
     }
   }
   if (usaIa && !lerContaTranscricao(bot)) {

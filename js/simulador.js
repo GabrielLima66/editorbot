@@ -28,7 +28,7 @@
 import { VARIABLE_LABELS, TEXT_OPERATORS, CONTACT_OPERATORS, ERROR_COUNT_OPERATORS, ACTION_TYPE_LABELS, VARIABLE_KIND, CAMPOS_ESTADO_POR_TIPO } from './dictionaries.js';
 import { parseMenuModel, extrairItensMenu } from './menu-builder.js';
 import { tipoDaCondicao } from './orpen-adapter.js';
-import { opcoesCalendarios, opcoesFilas, opcoesAgentes, opcoesCrmStatus, opcoesEntradasCondicao } from './orpen-env.js';
+import { opcoesCalendarios, opcoesFilas, opcoesAgentes, opcoesCrmStatus, opcoesEntradasCondicao, ehAgenteDoExtraData } from './orpen-env.js';
 
 export const LIMITE_RODADAS = 25;
 
@@ -306,6 +306,11 @@ function avaliarCondicao(sessao, c, mensagens) {
     case 'agent_on_queue': return ret(externa(sessao, `agent_on_queue:${tipo}`, `Fila ${nomeDoCadastro('agent_on_queue', tipo)}: há agente logado e disponível?`) === 'sim');
     case 'agent_online': {
       const agente = /^\d+$/.test(tipo) && tipo !== '0' ? tipo : valor;
+      // "Usar do extra data" com a variável vazia: não há agente para consultar.
+      if (String(agente).trim() === '') {
+        avisos.push(`AGENTE LOGADO: "${String(d.value ?? '')}" está vazio neste atendimento, então não há agente para verificar e a condição é falsa.`);
+        return ret(false);
+      }
       return ret(externa(sessao, `agent_online:${agente}`, `Agente ${nomeDoCadastro('agent_online', agente)}: está logado?`) === 'sim');
     }
     case 'agent_available_on_chat': return ret(externa(sessao, `agent_available_on_chat:${tipo}`, `Agente ${nomeDoCadastro('agent_available_on_chat', tipo)}: está disponível no chat?`) === 'sim');
@@ -350,6 +355,7 @@ function descreverCondicao(c) {
   let op = '';
   if (kind === 'error_count') op = ERROR_COUNT_OPERATORS[tipo] || '';
   else if (!kind || kind === 'text' || kind === 'contact') op = TEXT_OPERATORS[tipo] || CONTACT_OPERATORS[tipo] || (tipo === '0' ? 'sempre' : `tipo ${tipo}`);
+  else if (d.variable === 'agent_online' && ehAgenteDoExtraData(tipo)) op = 'do extra data';
   else op = nomeDoCadastro(d.variable, tipo);
   const valor = d.value !== undefined && d.value !== '' ? ` "${String(d.value).replace(/\n/g, ' / ')}"` : '';
   return `${rotuloVar} ${op}${valor}`.trim();
@@ -584,7 +590,8 @@ export function requisitosDeContexto(bot) {
     switch (c.CONDITION_DATA?.variable) {
       case 'calendario': case 'calendario_falso': add(`calendario:${tipo}`, `Calendário ${nomeDoCadastro('calendario', tipo)}: dentro do período agora?`); break;
       case 'agent_on_queue': add(`agent_on_queue:${tipo}`, `Fila ${nomeDoCadastro('agent_on_queue', tipo)}: há agente disponível?`); break;
-      case 'agent_online': add(`agent_online:${tipo}`, `Agente ${nomeDoCadastro('agent_online', tipo)}: está logado?`); break;
+      // "Usar do extra data": o agente só se sabe no teste, depois de trocar a variável.
+      case 'agent_online': if (!ehAgenteDoExtraData(tipo) && tipo !== '0') add(`agent_online:${tipo}`, `Agente ${nomeDoCadastro('agent_online', tipo)}: está logado?`); break;
       case 'agent_available_on_chat': add(`agent_available_on_chat:${tipo}`, `Agente ${nomeDoCadastro('agent_available_on_chat', tipo)}: disponível no chat?`); break;
       case 'opt_in': add('opt_in', 'O contato tem Opt-in?'); break;
       case 'uci': add('uci', 'O contato tem UCI?'); break;
