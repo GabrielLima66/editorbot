@@ -35,7 +35,6 @@ import {
   assistentesOpenAi, opcoesAssistentesDaConta, opcoesContasComAssistentes,
   opcoesAnexos, temAnexos,
   temFlows, opcoesEntradasFlow, padroesFlow,
-  ehAgenteDoExtraData, marcadorAgenteExtraData, ROTULO_AGENTE_EXTRA_DATA,
 } from './orpen-env.js';
 import {
   normalizarDadosFlow, dadosFlowNovos, variaveisFlowDoBot, textoVariaveisFlow, opcaoDoFlow,
@@ -64,27 +63,10 @@ export const IA_OPERADORES = [{ value: '1', label: 'Status da análise' }, { val
 export const IA_STATUS = [{ value: 'success', label: 'Sucesso' }, { value: 'error', label: 'Falha' }];
 export const IA_CONTEUDO = [{ value: '1', label: 'Igual a' }, { value: '2', label: 'Contém' }, { value: '3', label: 'Diferente de' }, { value: '4', label: 'Não contém' }];
 
-// AGENTE LOGADO: os agentes e, no topo, "Usar do extra data" como no nativo
-// (o agente vem de uma {$variável} no valor; ver ehAgenteDoExtraData). A opção
-// só aparece quando o marcador do nativo é conhecido ou a condição já o usa.
-function opcoesAgenteLogado(currentValue) {
-  const jaUsa = ehAgenteDoExtraData(currentValue);
-  const marcador = jaUsa ? String(currentValue).trim() : marcadorAgenteExtraData();
-  const atualDeAgente = jaUsa ? '' : currentValue;
-  const agentes = temAmbiente()
-    ? comValorAtual(opcoesAgentes(), atualDeAgente)
-    : (jaUsa ? [] : [{ value: currentValue ?? '', label: `ID ${currentValue ?? '—'} (cadastro externo)` }]);
-  return marcador ? [{ value: marcador, label: ROTULO_AGENTE_EXTRA_DATA }, ...agentes] : agentes;
-}
-
-// `variavel` (opcional) separa as variáveis que dividem a mesma kind: só
-// AGENTE LOGADO tem "Usar do extra data"; DISPONÍVEL CHAT é só o ID.
-export function buildOperatorOptions(kind, currentValue, variavel = '') {
+export function buildOperatorOptions(kind, currentValue) {
   const sempre = { value: '0', label: 'Sempre verdadeiro (else)' };
   let base;
-  if (kind === 'ref_agente' && variavel === 'agent_online') kind = 'ref_agente_logado';
   switch (kind) {
-    case 'ref_agente_logado': base = opcoesAgenteLogado(currentValue); break;
     case 'text': base = entriesToOptions(TEXT_OPERATORS); break;
     case 'contact': base = entriesToOptions(CONTACT_OPERATORS); break;
     case 'error_count': base = entriesToOptions(ERROR_COUNT_OPERATORS); break;
@@ -127,7 +109,7 @@ export function renderCondicao(c, indice, total) {
   // o status de CONDITION_DATA.value e o operador de conteúdo de
   // CONDITION_DATA.type (Bot.class.php:609-629).
   const currentType = isAssistant ? (iaStatus ? '1' : '2') : (c.CONDITION_TYPE ?? '');
-  const operatorOptions = buildOperatorOptions(kind, currentType, variable);
+  const operatorOptions = buildOperatorOptions(kind, currentType);
   const listaOperador = listaCompartilhada(operatorOptions.map((o) => ({ value: o.value, label: o.label })));
 
   // Mesmo nome da lista (nome do nativo quando há ambiente).
@@ -147,11 +129,8 @@ export function renderCondicao(c, indice, total) {
   const valor = Array.isArray(valorBruto) ? valorBruto.join(', ') : valorBruto;
 
   const ehLabels = String(c.CONDITION_TYPE) === '18' && !isAssistant;
-  // "Usar do extra data" (AGENTE LOGADO): o agente vem do valor, que volta a aparecer.
-  const agenteDoValor = variable === 'agent_online' && ehAgenteDoExtraData(currentType);
-  const esconderValor = !agenteDoValor && (iaStatus || ['openai_status', 'ref_calendario', 'ref_fila', 'ref_agente', 'ref_crm_status', 'ref_entrance', 'ref'].includes(kind));
-  const placeholderValor = ehLabels ? 'IDs das labels, separados por vírgula' : (agenteDoValor ? 'Variável com o ID do agente, ex.: {$agent_last_att}' : '');
-  const textareaHtml = `<textarea rows="2" class="textarea-view${esconderValor ? ' hidden' : ''}"${placeholderValor ? ` placeholder="${escapeHtml(placeholderValor)}"` : ''} data-action="mudar-condicao-valor" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">${escapeHtml(valor)}</textarea>`;
+  const esconderValor = iaStatus || ['openai_status', 'ref_calendario', 'ref_fila', 'ref_agente', 'ref_crm_status', 'ref_entrance', 'ref'].includes(kind);
+  const textareaHtml = `<textarea rows="2" class="textarea-view${esconderValor ? ' hidden' : ''}"${ehLabels ? ' placeholder="IDs das labels, separados por vírgula"' : ''} data-action="mudar-condicao-valor" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">${escapeHtml(valor)}</textarea>`;
   const valorHtml = ehLabels
     ? campoLabels(null, valorBruto, `data-alvo="condicao" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}"`, textareaHtml)
     : textareaHtml;
@@ -166,7 +145,7 @@ export function renderCondicao(c, indice, total) {
         <div class="flex-1 min-w-0">
           <div class="flex gap-2 mb-1.5">
             <input type="search" list="variaveis-datalist" class="field-view condicao-variavel flex-1" value="${escapeHtml(textoVariavel)}"${isAssistant ? ' placeholder="Escolha o assistente"' : ''} data-action="mudar-condicao-variavel" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
-            <input type="search" list="${listaOperador}" class="field-view condicao-operador flex-1" value="${escapeHtml((operatorOptions.find(o => String(o.value) === String(currentType)) || {}).label ?? '')}" data-action="mudar-condicao-operador" data-kind="${escapeHtml(kind)}" data-variable="${escapeHtml(variable)}" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
+            <input type="search" list="${listaOperador}" class="field-view condicao-operador flex-1" value="${escapeHtml((operatorOptions.find(o => String(o.value) === String(currentType)) || {}).label ?? '')}" data-action="mudar-condicao-operador" data-kind="${escapeHtml(kind)}" data-transition-id="${escapeHtml(c.TRANSITION_ID)}" data-condition-id="${escapeHtml(c.ID)}">
           </div>
           ${assistantLine}
           ${valorHtml}

@@ -75,57 +75,6 @@
     return { entradas: entradas, cta: padroesFlowLidos.cta, timeout: padroesFlowLidos.timeout };
   }
 
-  // Condição AGENTE LOGADO, opção "Usar do extra data": o valor que o nativo
-  // grava em CONDITION_TYPE no lugar do ID do agente. Não está em variável
-  // global; vem da <option> (se um formulário nativo de condição estiver na
-  // tela) ou do código inline do bot.php que monta esse select. O valor é o
-  // `value` mais próximo antes do texto da opção ("<option value='x'>Usar do
-  // extra data", "{value: 'x', text: 'Usar do extra data'}", ".val('x')
-  // .text('Usar do extra data')"). null quando não acha: o editor da extensão
-  // então só oferece a opção se o bot já tiver uma condição que a use.
-  var TEXTO_EXTRA_DATA = /us(?:ar|e)\s+(?:d[oe]l?\s+|from\s+)?(?:the\s+)?extra[\s_]*data/i;
-  function marcadorValido(v) {
-    return typeof v === 'string' && v.trim() !== '' && v.trim() !== '0' && !/^\d+$/.test(v.trim()) && v.length <= 60;
-  }
-  function lerMarcadorAgenteExtraData() {
-    try {
-      var opcoes = document.getElementsByTagName('option');
-      for (var i = 0; i < opcoes.length; i++) {
-        if (TEXTO_EXTRA_DATA.test(opcoes[i].textContent || '') && marcadorValido(opcoes[i].value)) return opcoes[i].value.trim();
-      }
-      var padroes = [
-        /value\s*=\s*\\?["']([^"'\\<>]*)\\?["']/g,
-        /value\s*:\s*["']([^"'<>]*)["']/g,
-        /\.val\(\s*["']([^"'<>]*)["']\s*\)/g,
-        /\.attr\(\s*["']value["']\s*,\s*["']([^"'<>]*)["']\s*\)/g
-      ];
-      var scripts = document.getElementsByTagName('script');
-      for (var j = 0; j < scripts.length; j++) {
-        var txt = scripts[j].textContent || '';
-        var busca = new RegExp(TEXTO_EXTRA_DATA.source, 'gi');
-        var achado;
-        while ((achado = busca.exec(txt))) {
-          var antes = txt.slice(Math.max(0, achado.index - 250), achado.index);
-          var melhor = null;
-          var posMelhor = -1;
-          for (var k = 0; k < padroes.length; k++) {
-            padroes[k].lastIndex = 0;
-            var m;
-            while ((m = padroes[k].exec(antes))) {
-              if (m.index > posMelhor) { posMelhor = m.index; melhor = m[1]; }
-            }
-          }
-          // Outra <option> entre o value e o texto: o value é de outra opção.
-          if (melhor !== null && antes.slice(posMelhor).search(/<option|<\/option/i) > 0) melhor = null;
-          if (marcadorValido(melhor)) return melhor.trim();
-        }
-      }
-    } catch (e) {
-      console.warn('[EDITOR_BOT] Aviso ao procurar a opção "Usar do extra data":', e);
-    }
-    return null;
-  }
-
   var padroesFlowLidos = null;
   function lerPadroesFlow() {
     var padroes = { cta: '', timeout: '' };
@@ -245,7 +194,6 @@
     }
     opcoesDoFormularioNativo('9', 'check_point', dados.checkpoints, 'checkpoints');
     opcoesDoFormularioNativo('12', 'entrances', dados.entrances, 'entradas de envio');
-    dados.agenteExtraData = lerMarcadorAgenteExtraData();
 
     return dados;
   }
@@ -271,7 +219,6 @@
         checkpoints: dados.checkpoints.length,
         entrances: dados.entrances.length,
         flows: dados.flows ? dados.flows.entradas.length + ' rota(s)' : 'versão sem Flows',
-        agenteExtraData: dados.agenteExtraData || 'opção "Usar do extra data" não encontrada na página',
         subStatus: dados.subStatus.length
       });
     } catch (err) {

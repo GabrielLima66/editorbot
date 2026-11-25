@@ -1,11 +1,5 @@
 # Histórico de Versões (Changelog)
 
-## [0.8.36] - 2026-11-25
-* **AGENTE LOGADO com "Usar do extra data"**: a condição ganhou, no topo da lista de agentes, a mesma opção do editor nativo. Com ela o agente sai de uma variável em vez de um ID fixo, e o campo de valor aparece para você escrever a variável, por exemplo `{$agent_last_att}` para verificar se o último agente que atendeu está logado antes de uma Transf. Agente para `{$agent_last_att}`. Voltar a escolher um agente limpa a variável.
-* O valor gravado é o mesmo do nativo: a extensão o lê da página da Orpen ou de uma condição do bot que já use a opção. Se não conseguir descobrir, a opção não aparece, para não gravar algo que o nativo não reconheça. Condições que já usam a opção aparecem certas mesmo assim.
-* O salvar trava se a opção estiver escolhida sem a variável (a condição nunca seria verdadeira). No "Testar bot", o simulador troca a variável e pergunta se aquele agente está logado; com a variável vazia, a condição é falsa e o teste avisa.
-* Nada muda no que já estava gravado nos bots.
-
 ## [0.8.35] - 2026-11-17
 * **Ação "Enviar Flow (WhatsApp)"**: nas versões da Orpen que já têm a ação (hoje só no HML), ela aparece no editor junto das integrações, com os mesmos campos do modal nativo: rota do WhatsApp (Gupshup), Flow (com "Recarregar" e rascunhos marcados), variáveis de retorno, texto, botão, estado de retorno, estado de não resposta e tempo limite. Nas versões sem a ação, ela não é oferecida; um bot que já a tenha mostra a ação com o nome certo, e rota e Flow só podem ser trocados onde ela existe.
 * A lista de Flows só é buscada quando você troca a rota ou clica em "Recarregar", como no nativo (essa busca também confirma, na Gupshup, a assinatura das respostas). Escolher um Flow traz a tela inicial e as variáveis dele.

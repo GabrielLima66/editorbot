@@ -34,28 +34,6 @@ export function rotuloComId(tipo, id, nome) {
 export function opcoesAgentes() {
   return opcoesDe(state.ambienteOrpen?.agents).map((o) => ({ ...o, label: rotuloComId('Agente', o.value, o.label) }));
 }
-// Condição AGENTE LOGADO, opção "Usar do extra data" do nativo: em vez do ID de
-// um agente, CONDITION_TYPE leva um marcador não numérico e o motor lê o agente
-// de CONDITION_DATA.value, com as {$variáveis} trocadas (simulador.js). Tipo
-// numérico ≠ 0 é sempre o ID de um agente.
-export function ehAgenteDoExtraData(tipo) {
-  const t = String(tipo ?? '').trim();
-  return t !== '' && !/^\d+$/.test(t);
-}
-// O marcador que o nativo grava: lido da página da Orpen pelo coletor
-// (content/page-env-collector.js) ou, sem ele, de uma condição do bot aberto
-// que já use a opção. null quando não dá para saber: a opção não é oferecida,
-// para não gravar um valor que o nativo não reconheça.
-export function marcadorAgenteExtraData() {
-  const daPagina = state.ambienteOrpen?.agenteExtraData;
-  if (daPagina) return String(daPagina);
-  for (const bot of [state.botCarregado, state.botTransformado]) {
-    const c = (bot?.BOT_CONDITIONS || []).find((x) => x?.CONDITION_DATA?.variable === 'agent_online' && ehAgenteDoExtraData(x.CONDITION_TYPE));
-    if (c) return String(c.CONDITION_TYPE).trim();
-  }
-  return null;
-}
-export const ROTULO_AGENTE_EXTRA_DATA = 'Usar do extra data';
 export function opcoesBots() {
   return opcoesDe(state.ambienteOrpen?.bots).map((o) => ({ ...o, label: rotuloComId('Bot', o.value, o.label) }));
 }

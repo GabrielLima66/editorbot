@@ -41,7 +41,7 @@ import { initCombobox, datalistDe, correspondeExato, filtrarOpcoes, lerOpcoes, r
 import { initVariaveisTexto } from './variaveis-texto.js';
 import {
   assistentesOpenAi, opcoesFilas, opcoesCrmStatus, opcoesAgentes, opcoesScripts, opcoesCheckpoints,
-  opcoesEntrancesEnvioNaOrdemDoNativo, opcoesSubStatus, ehAgenteDoExtraData,
+  opcoesEntrancesEnvioNaOrdemDoNativo, opcoesSubStatus,
 } from './orpen-env.js';
 import { mostrarResumoBot } from './upload.js';
 
@@ -321,9 +321,7 @@ export function mudarCondicaoVariavel(bot, transitionId, conditionId, novaVariav
   // "Sempre verdadeiro" (0) segue disponível na lista, mas não pode ser o padrão:
   // o servidor descarta condição de tipo 0 (Bot.class.php:226), e a condição
   // sumiria sozinha ao salvar se a pessoa não notasse o operador.
-  // Em AGENTE LOGADO o padrão é o primeiro agente, não "Usar do extra data".
-  const opcoesOperador = buildOperatorOptions(kind, '', novaVariavel)
-    .filter((o) => !(novaVariavel === 'agent_online' && ehAgenteDoExtraData(o.value)));
+  const opcoesOperador = buildOperatorOptions(kind, '');
   const primeiroTipo = (opcoesOperador.find((o) => String(o.value) !== '0') ?? opcoesOperador[0])?.value ?? '';
   const raizAssistente = tipoRaizAssistente(novaVariavel);
   if (raizAssistente) {
@@ -366,11 +364,6 @@ export function mudarCondicaoOperador(bot, transitionId, conditionId, novoTipo) 
       cond.CONDITION_TYPE = '2';
     }
   } else {
-    // AGENTE LOGADO saindo de "Usar do extra data" para um agente: o valor
-    // (a variável) fica escondido e o motor deixa de lê-lo; não fica para trás.
-    if (cond.CONDITION_DATA?.variable === 'agent_online' && ehAgenteDoExtraData(cond.CONDITION_TYPE) && !ehAgenteDoExtraData(novoTipo)) {
-      cond.CONDITION_DATA = { ...cond.CONDITION_DATA, value: '' };
-    }
     cond.CONDITION_TYPE = novoTipo;
   }
   withMirrors('condition', cond);
@@ -1566,7 +1559,7 @@ export function initAcoesDelegadas() {
           }
         }
         if (chave === undefined) {
-          const opcoes = buildOperatorOptions(el.dataset.kind, '', el.dataset.variable);
+          const opcoes = buildOperatorOptions(el.dataset.kind, '');
           chave = resolverPorLabelLista(opcoes, el.value);
         }
         if (chave === undefined) { el.value = el.defaultValue; return; }

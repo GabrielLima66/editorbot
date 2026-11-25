@@ -160,7 +160,7 @@ Antes de tudo: `valor` = `CONDITION_DATA.value` como texto, passado por `trocarV
 | `calendario` | Verdadeira se a resposta for `'sim'`. | `calendario:<CONDITION_TYPE>` = `'sim'`/`'nao'` |
 | `calendario_falso` | Verdadeira se a resposta **não** for `'sim'`. | mesma chave de `calendario` |
 | `agent_on_queue` | `'sim'`. | `agent_on_queue:<tipo>` |
-| `agent_online` | `'sim'`. O agente é o `tipo` se for numérico ≠ 0; senão é o `valor` com as variáveis trocadas ("Usar do extra data"). Valor vazio depois da troca: falsa, com aviso. | `agent_online:<agente>` |
+| `agent_online` | `'sim'`. O agente é o `tipo` se for numérico ≠ 0; senão é o `valor`. | `agent_online:<agente>` |
 | `agent_available_on_chat` | `'sim'`. | `agent_available_on_chat:<tipo>` |
 | `status_last_att` | `String(resposta) === tipo`. | `status_last_att` (texto) |
 | `opt_in`, `uci` | Tipo 1: verdadeira se `'sim'`; outro tipo: verdadeira se **não** `'sim'`. | `opt_in`, `uci` |
